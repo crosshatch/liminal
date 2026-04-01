@@ -1,18 +1,43 @@
 {
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
   "version": "0.2",
+  "enableGlobDot": true,
   "dictionaryDefinitions": [
+    "bash",
+    "coding-compound-terms",
+    "companies",
+    "computing-acronyms",
+    "cryptocurrencies",
+    "cryptocurrencies-legacy",
+    "css",
+    "docker",
+    "filetypes",
+    "fonts",
+    "fullstack",
+    "git",
+    "html",
+    "html-symbol-entities",
+    "markdown",
+    "mnemonics",
+    "networking-terms",
+    "node",
+    "npm",
+    "people-names",
+    "pokemon",
+    "public-licenses",
+    "software-term-suggestions",
+    "software-tools",
+    "softwareTerms",
+    "sql",
+    "typescript",
+    "web-services",
     {
       "name": "project-words",
-      "path": "words.txt"
+      "path": "./words.txt",
+      "addWords": true
     }
   ],
-  "enableGlobDot": true,
-  "dictionaries": [
-    "project-words"
-  ],
-  "ignorePaths": [
-    "LICENSE"
-  ],
-  "useGitignore": true
+  "dictionaries": ["project-words"],
+  "useGitignore": true,
+  "ignorePaths": ["LICENSE"]
 }

@@ -1,8 +1,8 @@
 {
-  "name": "liminal",
+  "name": "liminal-cloudflare",
   "version": "0.17.0",
   "private": true,
-  "description": "Actors x Effects",
+  "description": "Actors x Effects on Cloudflare",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
   },
@@ -10,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/crosshatch/liminal.git",
-    "directory": "liminal"
+    "directory": "liminal-cloudflare"
   },
   "type": "module",
   "sideEffects": false,
@@ -26,10 +26,12 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@effect-atom/atom": "catalog:",
     "@effect/ai": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "liminal": "workspace:*"
   }
 }

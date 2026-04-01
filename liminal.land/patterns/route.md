@@ -1,3 +1,0 @@
-# Route
-
-## `Route.describe`

@@ -1,36 +1,38 @@
 {
-  "private": true,
+  "name": "liminal-root",
   "type": "module",
-  "workspaces": [
-    "examples",
-    "liminal",
-    "@liminal/*",
-    "lmnl.im/*",
-    "liminal.land"
-  ],
   "scripts": {
     "prepare": "ts-patch install -s",
     "build": "tsc -b",
     "watch": "tsc -b -w",
+    "dev": "turbo run //#watch //#test dev",
     "test": "vitest run",
-    "test:watch": "vitest run -w",
-    "changeset": "changeset",
-    "ensure-no-cycles": "dpdm --exit-code circular:1 -T ./liminal/index.ts"
+    "clean": "repo-util clean --ignore repos",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
-    "@effect/language-service": "^0.23.5",
-    "@effect/platform-bun": "^0.77.1",
-    "@effect/vitest": "^0.25.0",
-    "@types/bun": "^1.2.19",
-    "dpdm": "^3.14.0",
-    "dprint": "^0.50.1",
-    "drizzle-kit": "^0.31.4",
-    "drizzle-orm": "^0.44.4",
-    "ts-patch": "^3.3.0",
-    "tstyche": "^4.3.0",
-    "typescript": "^5.9.2",
-    "vitepress-plugin-llms": "^1.7.2",
-    "vitest": "^3.2.4"
-  }
+    "@changesets/cli": "^2.29.8",
+    "@crosshatch/repo-util": "catalog:",
+    "@effect/language-service": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/browser": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/expect": "catalog:",
+    "@vitest/web-worker": "catalog:",
+    "fake-indexeddb": "catalog:",
+    "happy-dom": "catalog:",
+    "oxlint": "catalog:",
+    "playwright": "catalog:",
+    "ts-patch": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  },
+  "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc"
 }

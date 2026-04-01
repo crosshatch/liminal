@@ -1,5 +1,0 @@
-{
-  "extends": "./tsconfig.base",
-  "references": [{ "path": "./liminal" }],
-  "include": ["vitest.ts"]
-}
