@@ -26,16 +26,6 @@ import { NativeRequest } from "./NativeRequest.ts"
 
 export const SecWebSocketProtocol = "Sec-WebSocket-Protocol" as const
 
-const extractProtocol = Effect.fnUntraced(function* (headers: Headers) {
-  const protocols = yield* Effect.fromNullable(headers.get(SecWebSocketProtocol)).pipe(
-    Effect.map(flow(String.split(","), Array.map(String.trim))),
-  )
-  const liminalProtocolI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-  return yield* Effect.fromNullable(protocols[liminalProtocolI + 1]).pipe(
-    Effect.flatMap(Encoding.decodeBase64UrlString),
-  )
-})
-
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
 export interface ActorRegistryDefinition<
@@ -50,8 +40,8 @@ export interface ActorRegistryDefinition<
   EventDefinitions extends FieldsRecord,
   PreludeROut,
   PreludeE,
-  HandlerROut,
-  HandlerE,
+  RunROut,
+  RunE,
 > {
   readonly binding: Binding_
 
@@ -68,22 +58,18 @@ export interface ActorRegistryDefinition<
 
   readonly preludeLayer: Layer.Layer<PreludeROut, PreludeE>
 
-  readonly requestLayer: Layer.Layer<HandlerROut, HandlerE, ActorSelf | PreludeROut>
+  readonly runLayer: Layer.Layer<RunROut, RunE, ActorSelf | PreludeROut>
 
   readonly handlers: Method.Handlers<
     MethodDefinitions,
-    ActorSelf | HandlerROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
+    ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
   >
 
-  readonly onConnect: Effect.Effect<
-    void,
-    never,
-    ActorSelf | HandlerROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
-  >
+  readonly onConnect: Effect.Effect<void, never, ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope>
 
   readonly hibernation?: Duration.DurationInput | undefined
 
-  readonly disableLogging?: boolean
+  readonly disableLogging?: boolean | undefined
 }
 
 export interface ActorRegistry<
@@ -100,8 +86,8 @@ export interface ActorRegistry<
   EventDefinitions extends FieldsRecord,
   PreludeROut,
   PreludeE,
-  HandlerROut,
-  HandlerE,
+  RunROut,
+  RunE,
 > extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace> {
   new (state: DurableObjectState<{}>): Context.TagClassShape<RegistryId, DurableObjectNamespace>
 
@@ -119,8 +105,8 @@ export interface ActorRegistry<
     EventDefinitions,
     PreludeROut,
     PreludeE,
-    HandlerROut,
-    HandlerE
+    RunROut,
+    RunE
   >
 
   readonly upgrade: (
@@ -144,8 +130,8 @@ export const Service =
     EventDefinitions extends FieldsRecord,
     PreludeROut,
     PreludeE,
-    HandlerROut,
-    HandlerE,
+    RunROut,
+    RunE,
   >(
     id: RegistryId,
     definition: ActorRegistryDefinition<
@@ -160,8 +146,8 @@ export const Service =
       EventDefinitions,
       PreludeROut,
       PreludeE,
-      HandlerROut,
-      HandlerE
+      RunROut,
+      RunE
     >,
   ): ActorRegistry<
     RegistrySelf,
@@ -177,21 +163,24 @@ export const Service =
     EventDefinitions,
     PreludeROut,
     PreludeE,
-    HandlerROut,
-    HandlerE
+    RunROut,
+    RunE
   > => {
-    const { hibernation, actor, preludeLayer, requestLayer, handlers, binding, onConnect, disableLogging } = definition
+    const { hibernation, actor, preludeLayer, runLayer, handlers, binding, onConnect, disableLogging } = definition
     const {
-      definition: { name: nameSchema, client },
-      schema,
+      definition: {
+        name: Name,
+        client: { schema, key: clientId },
+      },
+      schema: { attachments: Attachments },
     } = actor
 
-    const paramsSchema = S.compose(
+    const Params = S.compose(
       S.StringFromBase64Url,
       S.parseJson(
         S.Struct({
-          name: nameSchema,
-          attachments: schema.attachments,
+          name: Name,
+          attachments: Attachments,
         }),
       ),
     )
@@ -216,12 +205,10 @@ export const Service =
 
         this.runtime = Effect.gen(this, function* () {
           this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap((v) =>
-              typeof v === "string" ? S.decode(actor.definition.name)(v) : Effect.succeed(undefined),
-            ),
+            Effect.flatMap((v) => (typeof v === "string" ? S.decode(Name)(v) : Effect.succeed(undefined))),
           )
           for (const socket of this.state.getWebSockets()) {
-            const attachments = yield* S.decodeUnknown(schema.attachments)(socket.deserializeAttachment())
+            const attachments = yield* S.decodeUnknown(Attachments)(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
           return Layer.mergeAll(
@@ -237,10 +224,10 @@ export const Service =
       fetch(request: Request): Promise<Response> {
         return Effect.gen(this, function* () {
           const url = new URL(request.url)
-          const { name, attachments } = yield* S.decodeUnknown(paramsSchema)(url.searchParams.get("__liminal"))
+          const { name, attachments } = yield* S.decodeUnknown(Params)(url.searchParams.get("__liminal"))
           if (!this.#name) {
             this.#name = name
-            const encoded = yield* S.encode(nameSchema)(name)
+            const encoded = yield* S.encode(Name)(name)
             yield* Effect.promise(() => this.state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
@@ -250,15 +237,15 @@ export const Service =
               _tag: "AuditionSucceeded",
             }),
           )
-          const caller = yield* this.directory.register(server, attachments)
+          const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
-            currentClient: caller,
+            currentClient,
           })
           yield* onConnect.pipe(
             Effect.scoped,
-            Effect.provide([ActorLive, requestLayer.pipe(Layer.provideMerge(ActorLive))]),
+            Effect.provide([ActorLive, runLayer.pipe(Layer.provideMerge(ActorLive))]),
           )
           yield* this.directory.flush
           return new Response(null, {
@@ -272,14 +259,14 @@ export const Service =
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen(this, function* () {
           yield* Effect.addFinalizer(() => this.directory.flush)
-          const caller = yield* this.directory.get(socket)
+          const currentClient = yield* this.directory.get(socket)
           const name = yield* Effect.fromNullable(this.#name)
           const layer = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
-            currentClient: caller,
+            currentClient,
           })
-          const message = yield* S.decodeUnknown(S.parseJson(client.schema.call))(
+          const message = yield* S.decodeUnknown(S.parseJson(schema.call))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           if (disableLogging === undefined || !disableLogging) {
@@ -288,16 +275,16 @@ export const Service =
           const { id, payload } = message
           const { _tag, value } = payload
           yield* handlers[_tag](value).pipe(
-            Effect.provide(requestLayer.pipe(Layer.provideMerge(layer))),
+            Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encode(S.parseJson(client.schema.success))({
+                S.encode(S.parseJson(schema.success))({
                   _tag: "Success",
                   id,
                   value: { _tag, value },
                 }),
               onFailure: (value) =>
-                S.encode(S.parseJson(client.schema.failure))({
+                S.encode(S.parseJson(schema.failure))({
                   _tag: "Failure",
                   id,
                   cause: { _tag, value },
@@ -323,30 +310,38 @@ export const Service =
 
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
       const namespace = yield* tag
-      const nameEncoded = yield* S.encode(nameSchema)(name)
+      const nameEncoded = yield* S.encode(Name)(name)
       const stub = namespace.getByName(nameEncoded)
       const request = yield* NativeRequest
-      const actual = yield* extractProtocol(request.headers)
-      const expected = client.key
-      if (actual !== expected) {
-        const { 0: client, 1: server } = new WebSocketPair()
+      const protocols = yield* Effect.fromNullable(request.headers.get(SecWebSocketProtocol)).pipe(
+        Effect.map(flow(String.split(","), Array.map(String.trim))),
+      )
+      const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
+      const requestClientId = yield* Effect.fromNullable(protocols[liminalTokenI + 1]).pipe(
+        Effect.flatMap(Encoding.decodeBase64UrlString),
+      )
+      if (requestClientId !== clientId) {
+        const { 0: webSocket, 1: server } = new WebSocketPair()
         server.accept()
         server.close(
           4003,
           yield* S.encode(S.parseJson(Protocol.AuditionFailureMessage))(
-            Protocol.AuditionFailureMessage.make({ expected, actual }),
+            Protocol.AuditionFailureMessage.make({
+              expected: clientId,
+              actual: requestClientId,
+            }),
           ),
         )
         return yield* HttpServerResponse.raw(
           new Response(null, {
             status: 101,
-            webSocket: client,
+            webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           }),
         )
       }
       const url = new URL(request.url)
-      const params = yield* S.encode(paramsSchema)({ name, attachments })
+      const params = yield* S.encode(Params)({ name, attachments })
       url.searchParams.set("__liminal", params)
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
         Effect.map((v) => HttpServerResponse.raw(v)),

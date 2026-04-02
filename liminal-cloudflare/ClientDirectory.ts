@@ -2,20 +2,23 @@ import type { Fields, FieldsRecord } from "liminal/_types"
 
 import { Schema as S, Effect, Ref, Cause, ParseResult } from "effect"
 import { Method, Actor, ClientHandle } from "liminal"
+import { phantom } from "liminal/_util/phantom"
 
 export interface ClientDirectory<ActorSelf, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
-  readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
+  readonly "": {
+    readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
+  }
 
-  readonly handles: ReadonlySet<this["Handle"]>
+  readonly handles: ReadonlySet<this[""]["Handle"]>
 
   readonly register: (
     socket: WebSocket,
     attachments: {
       readonly [K in keyof S.Struct.Type<AttachmentFields>]: S.Struct.Type<AttachmentFields>[K]
     },
-  ) => Effect.Effect<this["Handle"], ParseResult.ParseError, never>
+  ) => Effect.Effect<this[""]["Handle"], ParseResult.ParseError, never>
 
-  readonly get: (socket: WebSocket) => Effect.Effect<this["Handle"], Cause.NoSuchElementException, never>
+  readonly get: (socket: WebSocket) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementException, never>
 
   readonly unregister: (socket: WebSocket) => Effect.Effect<void>
 
@@ -106,7 +109,7 @@ export const make = <
   })
 
   return {
-    Handle: null!,
+    ...phantom,
     handles,
     register,
     get,

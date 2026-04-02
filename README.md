@@ -355,12 +355,12 @@ That is all you need if the client only exposes one method.
 
 ### Optional: Derive Request-Local Context
 
-`ActorRegistry` has both a `preludeLayer` and a `requestLayer`.
+`ActorRegistry` has both a `preludeLayer` and a `runLayer`.
 
 - `preludeLayer` is the actor runtime's long-lived infrastructure
-- `requestLayer` is rebuilt for each connection and each incoming message
+- `runLayer` is rebuilt for each incoming message
 
-If you want a request-local dependency derived from the current client, `requestLayer` is the right place.
+If you want a request-local dependency derived from the current client, `runLayer` is the right place.
 
 For Tic-Tac-Toe, a small `CurrentPlayer` service is a good example.
 
@@ -397,7 +397,7 @@ export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>(
   binding: "TIC_TAC_TOE",
   actor: TicTacToeActor,
   preludeLayer: PreludeLive,
-  requestLayer: CurrentPlayer.layer,
+  runLayer: CurrentPlayer.layer,
   onConnect,
   handlers: { handleMakeMove },
 }) {}
@@ -408,7 +408,7 @@ What each field means:
 - `binding`: the Cloudflare Durable Object binding name
 - `actor`: the actor definition
 - `preludeLayer`: durable infrastructure and shared services
-- `requestLayer`: per-message or per-connection derived dependencies
+- `runLayer`: per-run derived dependencies
 - `handlers`: the method implementation table
 - `onConnect`: setup logic for each new socket
 - `hibernation`: the hibernation timeout for hibernatable WebSocket events

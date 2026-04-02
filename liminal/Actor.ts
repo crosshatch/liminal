@@ -13,7 +13,7 @@ export const TypeId = "~liminal/Actor" as const
 export interface Service<ActorSelf, NameA, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
   readonly name: NameA
 
-  readonly currentClient?: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions> | undefined
+  readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
 
   readonly clients: ReadonlySet<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>>
 }
