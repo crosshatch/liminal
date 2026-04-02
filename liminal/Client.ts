@@ -16,8 +16,6 @@ import {
   Schema as S,
   Array,
   Struct,
-  ExecutionStrategy,
-  Exit,
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
@@ -241,12 +239,13 @@ const make = <
       acquire: Effect.gen(function* () {
         const { listen, send } = yield* build
 
+        const audition = yield* Deferred.make<void, AuditionError>()
         const inflights: Record<string, Deferred.Deferred<_["Success"], FError<MethodDefinitions>>> = {}
         let callId = 0
         let takeCount = 0
-        let finalError: ClientError | undefined
+        let finalError: ClientError | UnresolvedError | undefined
         const pubsub = yield* PubSub.unbounded<EventTake<_["Event"], ClientError>>()
-        const audition = yield* Deferred.make<void, ClientError>()
+
         const replayState = yield* Ref.make<{
           readonly startupOpen: boolean
           readonly buffer: ReadonlyArray<EventTake<_["Event"], ClientError>>
@@ -317,20 +316,17 @@ const make = <
               )
         }).pipe(Stream.unwrapScoped)
 
-        const parentScope = yield* Scope.Scope
-        const scope = yield* Scope.fork(parentScope, ExecutionStrategy.sequential)
-        const publishFinalTake = (take: Take.Take<_["Event"], ClientError>) =>
-          publishTake(take).pipe(Effect.andThen(Scope.close(scope, Exit.void)))
-
         yield* listen(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
               case "AuditionSucceeded": {
-                return yield* Deferred.succeed(audition, void 0)
+                yield* Deferred.succeed(audition, void 0)
+                break
               }
               case "Event": {
                 const { event } = message
-                return yield* publishTake(Take.of(event), true)
+                yield* publishTake(Take.of(event), true)
+                break
               }
               case "Success":
               case "Failure": {
@@ -349,26 +345,30 @@ const make = <
                     }
                   }
                 }
-                return
+                break
               }
               case "AuditionFailure": {
                 const { actual, expected } = message
-                return yield* publishFinalTake(
-                  Take.fail((finalError = AuditionError.make({ value: { actual, expected } }))),
-                )
+                finalError = AuditionError.make({ value: { actual, expected } })
+                yield* Deferred.fail(audition, finalError)
+                break
               }
               case "Disconnect":
               case "TransportFailure": {
                 yield* Deferred.succeed(audition, void 0)
                 switch (message._tag) {
                   case "Disconnect": {
-                    return yield* publishFinalTake(Take.end)
+                    finalError = UnresolvedError.make()
+                    yield* publishTake(Take.end)
+                    break
                   }
                   case "TransportFailure": {
                     const { cause } = message
-                    return yield* publishFinalTake(Take.fail((finalError = ConnectionError.make({ cause }))))
+                    yield* publishTake(Take.fail((finalError = ConnectionError.make({ cause }))))
+                    break
                   }
                 }
+                break
               }
             }
           }),
@@ -380,7 +380,9 @@ const make = <
                 Effect.forEach(
                   Record.values(inflights),
                   (deferred) => Deferred.fail(deferred, finalError ?? UnresolvedError.make()),
-                  { concurrency: "unbounded" },
+                  {
+                    concurrency: "unbounded",
+                  },
                 ),
                 RcRef.invalidate(rcr),
               ],
@@ -388,13 +390,13 @@ const make = <
             ),
           ),
           Effect.forkScoped,
-          Scope.extend(scope),
         )
 
         yield* Deferred.await(audition)
 
         const f: F<ClientSelf, MethodDefinitions> = (_tag) =>
           Effect.fnUntraced(function* (value) {
+            if (finalError) return yield* finalError
             const id = callId++
             const inflight = yield* Deferred.make<_["Success"], FError<MethodDefinitions>>()
             inflights[id] = inflight
@@ -445,15 +447,12 @@ export const layerSocket = <
               Effect.fnUntraced(function* (raw) {
                 const message = yield* S.decodeUnknown(S.parseJson(client.schema.actor))(
                   raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                ).pipe(
-                  Effect.catchTag("ParseError", (cause) =>
-                    Effect.succeed(Protocol.TransportFailureMessage.make({ _tag: "TransportFailure", cause })),
-                  ),
                 )
                 yield* publish(message)
               }),
             )
             .pipe(
+              Effect.catchTag("ParseError", (cause) => publish({ _tag: "TransportFailure", cause })),
               Effect.catchTag(
                 "SocketError",
                 Effect.fnUntraced(function* (cause) {
