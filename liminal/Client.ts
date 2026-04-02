@@ -244,6 +244,7 @@ const make = <
         const inflights: Record<string, Deferred.Deferred<_["Success"], FError<MethodDefinitions>>> = {}
         let callId = 0
         let takeCount = 0
+        let finalError: ClientError | undefined
         const pubsub = yield* PubSub.unbounded<EventTake<_["Event"], ClientError>>()
         const audition = yield* Deferred.make<void, ClientError>()
         const replayState = yield* Ref.make<{
@@ -269,10 +270,8 @@ const make = <
                   replay.limit === undefined
                     ? [...state.buffer, eventTake]
                     : [...(state.buffer.length >= replay.limit ? state.buffer.slice(1) : state.buffer), eventTake]
-                return {
-                  startupOpen: state.startupOpen,
-                  buffer,
-                }
+                const { startupOpen } = state
+                return { startupOpen, buffer }
               })
             }
             yield* PubSub.publish(pubsub, eventTake)
@@ -355,11 +354,7 @@ const make = <
               case "AuditionFailure": {
                 const { actual, expected } = message
                 return yield* publishFinalTake(
-                  Take.fail(
-                    AuditionError.make({
-                      value: { actual, expected },
-                    }),
-                  ),
+                  Take.fail((finalError = AuditionError.make({ value: { actual, expected } }))),
                 )
               }
               case "Disconnect":
@@ -371,7 +366,7 @@ const make = <
                   }
                   case "TransportFailure": {
                     const { cause } = message
-                    return yield* publishFinalTake(Take.fail(ConnectionError.make({ cause })))
+                    return yield* publishFinalTake(Take.fail((finalError = ConnectionError.make({ cause }))))
                   }
                 }
               }
@@ -382,10 +377,9 @@ const make = <
             Effect.all(
               [
                 PubSub.shutdown(pubsub),
-                // TODO: last take error if present
                 Effect.forEach(
                   Record.values(inflights),
-                  (deferred) => Deferred.fail(deferred, UnresolvedError.make()),
+                  (deferred) => Deferred.fail(deferred, finalError ?? UnresolvedError.make()),
                   { concurrency: "unbounded" },
                 ),
                 RcRef.invalidate(rcr),
