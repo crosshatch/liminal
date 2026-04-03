@@ -247,7 +247,6 @@ export const Service =
             Effect.scoped,
             Effect.provide([ActorLive, runLayer.pipe(Layer.provideMerge(ActorLive))]),
           )
-          yield* this.directory.flush
           return new Response(null, {
             status: 101,
             webSocket,
@@ -258,7 +257,6 @@ export const Service =
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen(this, function* () {
-          yield* Effect.addFinalizer(() => this.directory.flush)
           const currentClient = yield* this.directory.get(socket)
           const name = yield* Effect.fromNullable(this.#name)
           const layer = Layer.succeed(actor, {
@@ -275,6 +273,7 @@ export const Service =
           const { id, payload } = message
           const { _tag, value } = payload
           yield* handlers[_tag](value).pipe(
+            Effect.scoped,
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
@@ -292,8 +291,7 @@ export const Service =
             }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
           )
-          yield* this.directory.flush
-        }).pipe(Mutex.task, Effect.scoped, this.runtime.runFork)
+        }).pipe(Mutex.task, this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {

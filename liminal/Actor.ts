@@ -1,4 +1,4 @@
-import { Context, Schema as S, Effect, Cause } from "effect"
+import { Context, Schema as S, Effect } from "effect"
 
 import type { FieldsRecord, Fields } from "./_types.ts"
 import type * as ActorClient from "./Client.ts"
@@ -60,12 +60,6 @@ export interface Actor<
     readonly attachments: S.Schema<S.Struct<AttachmentFields>["Type"], S.Struct<AttachmentFields>["Encoded"]>
   }
 
-  readonly assertCurrentClient: Effect.Effect<
-    ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>,
-    Cause.NoSuchElementException,
-    ActorSelf
-  >
-
   readonly sendAll: Send<ActorSelf, EventDefinitions>
 
   readonly evict: Effect.Effect<void, never, ActorSelf>
@@ -91,11 +85,6 @@ export const Service =
     definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions>,
   ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
     const tag = Context.Tag(id)<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>()
-
-    const assertCurrentClient = Effect.gen(function* () {
-      const { currentClient } = yield* tag
-      return yield* Effect.fromNullable(currentClient)
-    })
 
     const sendAll: Send<ActorSelf, EventDefinitions> = Effect.fnUntraced(function* (key, payload) {
       const { clients } = yield* tag
@@ -123,7 +112,6 @@ export const Service =
       schema: {
         attachments: S.Struct(definition.attachments) as never,
       },
-      assertCurrentClient,
       sendAll,
       evict,
       handler,
