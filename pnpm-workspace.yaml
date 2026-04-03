@@ -1,4 +1,5 @@
 packages:
+  - docs
   - liminal
   - liminal-browser
   - liminal-cloudflare

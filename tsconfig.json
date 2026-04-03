@@ -1,4 +1,9 @@
 {
   "include": [],
-  "references": [{ "path": "./liminal" }, { "path": "./liminal-browser" }, { "path": "./liminal-cloudflare" }]
+  "references": [
+    { "path": "./docs" },
+    { "path": "./liminal" },
+    { "path": "./liminal-browser" },
+    { "path": "./liminal-cloudflare" }
+  ]
 }
