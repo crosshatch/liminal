@@ -6,9 +6,9 @@ Effect-first actors for WebSockets, workers, and Cloudflare Durable Objects.
 
 ## Packages
 
-- `liminal`: core protocol, actor, client, method, `Audition`, and `Accumulator` primitives
+- `liminal`: core `Protocol`, `Actor`, `Client`, `Method`, `Audition`, `Accumulator`, and `Reducer` primitives
 - `liminal-cloudflare`: Durable Object registry, Worker entrypoint, and Cloudflare resource helpers such as Assets, Hyperdrive, and KV
-- `liminal-browser`: browser-local actor hosting via `Singleton.make(...)`
+- `liminal-browser`: browser-local actor hosting via `Singleton`
 
 ## Core model
 
@@ -23,29 +23,16 @@ Most apps follow the same shape:
 
 ## Recommended reading order
 
-1. [Quickstart: Cloudflare](./docs/01-quickstart-cloudflare.md)
-2. [Clients and Methods](./docs/02-clients-and-methods.md)
-3. [Actors, Handlers, and Lifecycle](./docs/03-actors-handlers-and-lifecycle.md)
-4. [Cloudflare Registry and Routing](./docs/04-cloudflare-registry-and-routing.md)
-5. [State Sync with Audition and Accumulator](./docs/05-state-sync-with-audition-and-accumulator.md)
-6. [Browser and Worker Transports](./docs/06-browser-and-worker-transports.md)
-7. [Operational Notes](./docs/07-operational-notes.md)
+1. [Quickstart: Cloudflare](./docs/quickstart-cloudflare.md)
+2. [Clients and Methods](./docs/clients-and-methods.md)
+3. [Actors, Handlers, and Lifecycle](./docs/actors-handlers-and-lifecycle.md)
+4. [Cloudflare Registry and Routing](./docs/cloudflare/registry-and-routing.md)
+5. [Audition](./docs/audition.md)
+6. [Accumulator](./docs/accumulator.md)
+7. [Browser and Worker Transports](./docs/browser/transports.md)
 
 ## Cloudflare Resource Guides
 
-- [Cloudflare Assets](./docs/08-cloudflare-assets.md)
-- [Cloudflare Hyperdrive](./docs/09-cloudflare-hyperdrive.md)
-- [Cloudflare KV](./docs/10-cloudflare-kv.md)
-
-## Patterns this repo actually uses
-
-The docs above are organized around the patterns visible in this codebase:
-
-- separate `Method.define(...)` modules under `methods/`
-- shared handlers built with `Method.handler(...)`
-- snapshot events emitted from `onConnect`
-- request-local context derived in `runLayer`
-- UI state reduced with `Audition` and `Accumulator`
-- both WebSocket and worker/message-port transports
-
-If you want the shortest path, start with the quickstart and then jump straight to the state-sync guide.
+- [Cloudflare Assets](./docs/cloudflare/assets.md)
+- [Cloudflare Hyperdrive](./docs/cloudflare/hyperdrive.md)
+- [Cloudflare KV](./docs/cloudflare/kv.md)
