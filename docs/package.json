@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vocs dev --port 7774",
+    "dev": "portless liminal.actor --app-port 7774 -- vocs dev",
     "build": "vocs build",
     "preview": "vocs preview"
   },
@@ -16,6 +16,7 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "liminal": "workspace:*",
+    "portless": "catalog:",
     "typescript": "catalog:"
   }
 }

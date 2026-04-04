@@ -2,6 +2,13 @@ import PackageJson from "liminal/package.json" with { type: "json" }
 import { defineConfig } from "vocs"
 
 export default defineConfig({
+  vite: {
+    server: {
+      host: "127.0.0.1",
+      port: 7774,
+      strictPort: true,
+    },
+  },
   title: "Liminal",
   aiCta: false,
   baseUrl: "https://liminal.actor",
