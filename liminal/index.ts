@@ -1,4 +1,3 @@
-export * as Accumulator from "./Accumulator.ts"
 export * as Actor from "./Actor.ts"
 export * as Audition from "./Audition.ts"
 export * as Client from "./Client.ts"
