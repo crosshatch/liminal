@@ -434,11 +434,7 @@ export const layerSocket = <
     client,
     Effect.gen(function* () {
       const socket = yield* Socket.makeWebSocket(url, {
-        protocols: [
-          "liminal",
-          Encoding.encodeBase64Url(client.key),
-          ...(protocols ? (Array.isArray(protocols) ? protocols : [protocols]) : []),
-        ],
+        protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
       return {
         listen: Effect.fnUntraced(function* (publish) {
