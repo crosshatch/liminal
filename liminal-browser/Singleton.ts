@@ -79,16 +79,16 @@ export const make = Effect.fnUntraced(function* <
         const expected = actor.definition.client.key
         if (raw !== expected) {
           return Stream.succeed(
-            Protocol.AuditionFailureMessage.make({
-              _tag: "AuditionFailure",
+            Protocol.Audition.Failure.make({
+              _tag: "Audition.Failure",
               actual: raw,
               expected,
             }),
           )
         }
         return Stream.succeed(
-          Protocol.AuditionSuccessMessage.make({
-            _tag: "AuditionSucceeded",
+          Protocol.Audition.Success.make({
+            _tag: "Audition.Success",
           }),
         ).pipe(
           Stream.concat(
@@ -101,7 +101,7 @@ export const make = Effect.fnUntraced(function* <
         )
       }
       return Effect.gen(function* () {
-        const message = yield* S.validate(schema.call)(raw)
+        const message = yield* S.validate(schema.call.payload)(raw)
         const { id, payload } = message
         const { _tag, value } = payload
         const handler = handlers[_tag]
@@ -109,13 +109,13 @@ export const make = Effect.fnUntraced(function* <
           Effect.matchEffect({
             onSuccess: (value) =>
               pubsub.offer({
-                _tag: "Success" as const,
+                _tag: "Call.Success" as const,
                 id,
                 value: { _tag, value },
               }),
             onFailure: (value) =>
               pubsub.offer({
-                _tag: "Failure" as const,
+                _tag: "Call.Failure" as const,
                 id,
                 cause: { _tag, value },
               }),

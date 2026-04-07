@@ -233,8 +233,8 @@ export const Service =
           const { 0: webSocket, 1: server } = new WebSocketPair()
           this.state.acceptWebSocket(server)
           server.send(
-            yield* S.encode(S.parseJson(Protocol.AuditionSuccessMessage))({
-              _tag: "AuditionSucceeded",
+            yield* S.encode(S.parseJson(Protocol.Audition.Success))({
+              _tag: "Audition.Success",
             }),
           )
           const currentClient = yield* this.directory.register(server, attachments)
@@ -264,7 +264,7 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknown(S.parseJson(schema.call))(
+          const message = yield* S.decodeUnknown(S.parseJson(schema.call.payload))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           if (disableLogging === undefined || !disableLogging) {
@@ -277,14 +277,14 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encode(S.parseJson(schema.success))({
-                  _tag: "Success",
+                S.encode(S.parseJson(schema.call.success))({
+                  _tag: "Call.Success",
                   id,
                   value: { _tag, value },
                 }),
               onFailure: (value) =>
-                S.encode(S.parseJson(schema.failure))({
-                  _tag: "Failure",
+                S.encode(S.parseJson(schema.call.failure))({
+                  _tag: "Call.Failure",
                   id,
                   cause: { _tag, value },
                 }),
@@ -323,8 +323,8 @@ export const Service =
         server.accept()
         server.close(
           4003,
-          yield* S.encode(S.parseJson(Protocol.AuditionFailureMessage))(
-            Protocol.AuditionFailureMessage.make({
+          yield* S.encode(S.parseJson(Protocol.Audition.Failure))(
+            Protocol.Audition.Failure.make({
               expected: clientId,
               actual: requestClientId,
             }),

@@ -68,11 +68,42 @@ export interface Spec<
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
   EventDefinitions extends FieldsRecord,
 > {
-  Call: Protocol.CallMessage.Type<MethodDefinitions>
-  Success: Protocol.SuccessMessage.Type<MethodDefinitions>
-  Failure: Protocol.FailureMessage.Type<MethodDefinitions>
+  Call: {
+    Payload: Protocol.Call.Payload.Type<MethodDefinitions>
+    Success: Protocol.Call.Success.Type<MethodDefinitions>
+    Failure: Protocol.Call.Failure.Type<MethodDefinitions>
+  }
   Event: FieldsRecord.TaggedMember.Type<EventDefinitions>
-  Actor: Protocol.ActorMessage.Type<MethodDefinitions, EventDefinitions>
+  Actor: Protocol.Actor.Type<MethodDefinitions, EventDefinitions>
+}
+
+export interface ClientSchema<
+  MethodDefinitions extends Record<string, MethodDefinition.Any>,
+  EventDefinitions extends FieldsRecord,
+> {
+  readonly call: {
+    readonly payload: S.Schema<
+      Protocol.Call.Payload.Type<MethodDefinitions>,
+      Protocol.Call.Payload.Encoded<MethodDefinitions>
+    >
+
+    readonly success: S.Schema<
+      Protocol.Call.Success.Type<MethodDefinitions>,
+      Protocol.Call.Success.Encoded<MethodDefinitions>
+    >
+
+    readonly failure: S.Schema<
+      Protocol.Call.Failure.Type<MethodDefinitions>,
+      Protocol.Call.Failure.Encoded<MethodDefinitions>
+    >
+  }
+
+  readonly event: S.Schema<Protocol.Event.Type<EventDefinitions>, Protocol.Event.Encoded<EventDefinitions>>
+
+  readonly actor: S.Schema<
+    Protocol.Actor.Type<MethodDefinitions, EventDefinitions>,
+    Protocol.Actor.Encoded<MethodDefinitions, EventDefinitions>
+  >
 }
 
 export interface Client<
@@ -87,32 +118,7 @@ export interface Client<
 
   readonly definition: ClientDefinition<MethodDefinitions, EventDefinitions>
 
-  readonly schema: {
-    readonly call: S.Schema<
-      Protocol.CallMessage.Type<MethodDefinitions>,
-      Protocol.CallMessage.Encoded<MethodDefinitions>
-    >
-
-    readonly success: S.Schema<
-      Protocol.SuccessMessage.Type<MethodDefinitions>,
-      Protocol.SuccessMessage.Encoded<MethodDefinitions>
-    >
-
-    readonly failure: S.Schema<
-      Protocol.FailureMessage.Type<MethodDefinitions>,
-      Protocol.FailureMessage.Encoded<MethodDefinitions>
-    >
-
-    readonly event: S.Schema<
-      Protocol.EventMessage.Type<EventDefinitions>,
-      Protocol.EventMessage.Encoded<EventDefinitions>
-    >
-
-    readonly actor: S.Schema<
-      Protocol.ActorMessage.Type<MethodDefinitions, EventDefinitions>,
-      Protocol.ActorMessage.Encoded<MethodDefinitions, EventDefinitions>
-    >
-  }
+  readonly schema: ClientSchema<MethodDefinitions, EventDefinitions>
 
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf>
 
@@ -131,55 +137,46 @@ export const Service =
   ): Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
     const clientTag = Context.Tag(id)<ClientSelf, Service<ClientSelf, MethodDefinitions, EventDefinitions>>()
 
-    const call: S.Schema<
-      Protocol.CallMessage.Type<MethodDefinitions>,
-      Protocol.CallMessage.Encoded<MethodDefinitions>
-    > = S.TaggedStruct("Call", {
-      id: S.Int,
-      payload: S.Union(
-        ...Record.toEntries(definition.methods).map(([_tag, { payload }]) =>
-          S.TaggedStruct(_tag, { value: S.Struct(payload) }),
+    const call: ClientSchema<MethodDefinitions, EventDefinitions>["call"] = {
+      payload: S.TaggedStruct("Call.Payload", {
+        id: S.Int,
+        payload: S.Union(
+          ...Record.toEntries(definition.methods).map(([_tag, { payload }]) =>
+            S.TaggedStruct(_tag, { value: S.Struct(payload) }),
+          ),
         ),
-      ),
-    }) as never
-
-    const success: S.Schema<
-      Protocol.SuccessMessage.Type<MethodDefinitions>,
-      Protocol.SuccessMessage.Encoded<MethodDefinitions>
-    > = S.TaggedStruct("Success", {
-      id: S.Int,
-      value: S.Union(
-        ...Record.toEntries(definition.methods).map(([_tag, { success: value }]) => S.TaggedStruct(_tag, { value })),
-      ),
-    }) as never
-
-    const failure: S.Schema<
-      Protocol.FailureMessage.Type<MethodDefinitions>,
-      Protocol.FailureMessage.Encoded<MethodDefinitions>
-    > = S.TaggedStruct("Failure", {
-      id: S.Int,
-      cause: S.Union(
-        ...Record.toEntries(definition.methods).map(([_tag, { failure: value }]) => S.TaggedStruct(_tag, { value })),
-      ),
-    }) as never
+      }) as never,
+      success: S.TaggedStruct("Call.Success", {
+        id: S.Int,
+        value: S.Union(
+          ...Record.toEntries(definition.methods).map(([_tag, { success: value }]) => S.TaggedStruct(_tag, { value })),
+        ),
+      }) as never,
+      failure: S.TaggedStruct("Call.Failure", {
+        id: S.Int,
+        cause: S.Union(
+          ...Record.toEntries(definition.methods).map(([_tag, { failure: value }]) => S.TaggedStruct(_tag, { value })),
+        ),
+      }) as never,
+    }
 
     const event: S.Schema<
-      Protocol.EventMessage.Type<EventDefinitions>,
-      Protocol.EventMessage.Encoded<EventDefinitions>
+      Protocol.Event.Type<EventDefinitions>,
+      Protocol.Event.Encoded<EventDefinitions>
     > = S.TaggedStruct("Event", {
       event: S.Union(...Object.entries(definition.events).map(([_tag, fields]) => S.TaggedStruct(_tag, fields))),
     }) as never
 
     const actor: S.Schema<
-      Protocol.ActorMessage.Type<MethodDefinitions, EventDefinitions>,
-      Protocol.ActorMessage.Encoded<MethodDefinitions, EventDefinitions>
+      Protocol.Actor.Type<MethodDefinitions, EventDefinitions>,
+      Protocol.Actor.Encoded<MethodDefinitions, EventDefinitions>
     > = S.Union(
-      success,
-      failure,
+      call.success,
+      call.failure,
       event,
-      Protocol.AuditionSuccessMessage,
-      Protocol.AuditionFailureMessage,
-      Protocol.DisconnectMessage,
+      Protocol.Audition.Success,
+      Protocol.Audition.Failure,
+      Protocol.Disconnect,
     )
 
     const events: Stream.Stream<
@@ -197,7 +194,7 @@ export const Service =
     return Object.assign(clientTag, {
       [TypeId]: TypeId,
       definition,
-      schema: { call, success, failure, event, actor },
+      schema: { call, event, actor },
       events,
       f,
     })
@@ -209,13 +206,11 @@ export interface Transport<
 > {
   readonly listen: (
     publish: (
-      message:
-        | Protocol.ActorMessage.Type<MethodDefinitions, EventDefinitions>
-        | typeof Protocol.TransportFailureMessage.Type,
+      message: Protocol.Actor.Type<MethodDefinitions, EventDefinitions> | typeof Protocol.TransportFailure.Type,
     ) => Effect.Effect<void, never>,
   ) => Effect.Effect<void, never, Scope.Scope>
 
-  readonly send: (v: Protocol.CallMessage.Type<MethodDefinitions>) => Effect.Effect<void, ConnectionError, never>
+  readonly send: (v: Protocol.Call.Payload.Type<MethodDefinitions>) => Effect.Effect<void, ConnectionError, never>
 }
 
 const make = <
@@ -240,7 +235,7 @@ const make = <
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void, AuditionError>()
-        const inflights: Record<string, Deferred.Deferred<_["Success"], FError<MethodDefinitions>>> = {}
+        const inflights: Record<string, Deferred.Deferred<_["Call"]["Success"], FError<MethodDefinitions>>> = {}
         let callId = 0
         let takeCount = 0
         let finalError: ClientError | UnresolvedError | undefined
@@ -319,7 +314,7 @@ const make = <
         yield* listen(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
-              case "AuditionSucceeded": {
+              case "Audition.Success": {
                 yield* Deferred.succeed(audition, void 0)
                 break
               }
@@ -328,18 +323,18 @@ const make = <
                 yield* publishTake(Take.of(event), true)
                 break
               }
-              case "Success":
-              case "Failure": {
+              case "Call.Success":
+              case "Call.Failure": {
                 const { id } = message
                 const deferred = inflights[id]
                 if (deferred) {
                   delete inflights[id]
                   switch (message._tag) {
-                    case "Success": {
+                    case "Call.Success": {
                       yield* Deferred.succeed(deferred, message.value.value)
                       break
                     }
-                    case "Failure": {
+                    case "Call.Failure": {
                       yield* Deferred.fail(deferred, message.cause.value)
                       break
                     }
@@ -347,7 +342,7 @@ const make = <
                 }
                 break
               }
-              case "AuditionFailure": {
+              case "Audition.Failure": {
                 const { actual, expected } = message
                 finalError = AuditionError.make({ value: { actual, expected } })
                 yield* Deferred.fail(audition, finalError)
@@ -398,10 +393,10 @@ const make = <
           Effect.fnUntraced(function* (value) {
             if (finalError) return yield* finalError
             const id = callId++
-            const inflight = yield* Deferred.make<_["Success"], FError<MethodDefinitions>>()
+            const inflight = yield* Deferred.make<_["Call"]["Success"], FError<MethodDefinitions>>()
             inflights[id] = inflight
             yield* send({
-              _tag: "Call",
+              _tag: "Call.Payload",
               id,
               payload: { _tag, value },
             })
@@ -468,15 +463,13 @@ export const layerSocket = <
                           return yield* publish({ _tag: "Disconnect" })
                         }
                         case 4003: {
-                          const parsed = S.decodeUnknownOption(S.parseJson(Protocol.AuditionFailureMessage))(
-                            closeReason,
-                          )
+                          const parsed = S.decodeUnknownOption(S.parseJson(Protocol.Audition.Failure))(closeReason)
                           if (parsed._tag === "None") {
                             return yield* publish({ _tag: "TransportFailure", cause })
                           }
                           const { actual, expected } = parsed.value
                           return yield* publish({
-                            _tag: "AuditionFailure",
+                            _tag: "Audition.Failure",
                             actual,
                             expected,
                           })
@@ -491,7 +484,7 @@ export const layerSocket = <
         }),
         send: Effect.fnUntraced(function* (v) {
           const write = yield* socket.writer
-          const message = yield* S.encode(S.parseJson(client.schema.call))(v).pipe(
+          const message = yield* S.encode(S.parseJson(client.schema.call.payload))(v).pipe(
             Effect.mapError((cause) => ConnectionError.make({ cause })),
           )
           yield* write(message).pipe(Effect.catchTag("SocketError", (cause) => ConnectionError.make({ cause })))
@@ -519,13 +512,13 @@ export const layerWorker = <
       const manager = yield* Worker.makeManager
       const worker = yield* manager
         .spawn<
-          Protocol.CallMessage.Type<MethodDefinitions> | string,
-          Protocol.ActorMessage.Type<MethodDefinitions, EventDefinitions>,
+          Protocol.Call.Payload.Type<MethodDefinitions> | string,
+          Protocol.Actor.Type<MethodDefinitions, EventDefinitions>,
           never
         >({})
         .pipe(Effect.catchTag("WorkerError", (cause) => ConnectionError.make({ cause })))
 
-      const send = (message: Protocol.CallMessage.Type<MethodDefinitions>) =>
+      const send = (message: Protocol.Call.Payload.Type<MethodDefinitions>) =>
         worker.executeEffect(message).pipe(Effect.catchTag("WorkerError", (cause) => ConnectionError.make({ cause })))
 
       return {
@@ -537,7 +530,7 @@ export const layerWorker = <
                 return Stream.empty
               }).pipe(Stream.unwrap),
             ),
-            Stream.takeUntil((message) => message._tag === "Disconnect" || message._tag === "AuditionFailure"),
+            Stream.takeUntil((message) => message._tag === "Disconnect" || message._tag === "Audition.Failure"),
             Stream.runForEach(publish),
           )
         }),
