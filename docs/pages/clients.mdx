@@ -1,0 +1,199 @@
+# Clients and Methods
+
+`Client.Service(...)` defines the wire contract between clients and actors.
+
+Everything else in Liminal hangs off that contract:
+
+- actors point at a client definition
+- handlers implement the client's methods
+- `Audition`s can merge multiple clients into one event stream and call surface
+
+## Define a client
+
+A client is just a named set of methods and events.
+
+```ts
+import { Schema as S } from "effect"
+import { Client } from "liminal"
+import { SendMessage } from "./methods/SendMessage.ts"
+import { PinMessage } from "./methods/PinMessage.ts"
+
+export class ChatClient extends Client.Service<ChatClient>()("ChatClient", {
+  methods: {
+    SendMessage,
+    PinMessage,
+  },
+  events: {
+    RoomSnapshot: {
+      members: S.Array(
+        S.Struct({
+          userId: S.String,
+          displayName: S.String,
+        }),
+      ),
+      recentMessages: S.Array(
+        S.Struct({
+          userId: S.String,
+          content: S.String,
+          timestamp: S.Date,
+        }),
+      ),
+    },
+    MessageReceived: {
+      userId: S.String,
+      content: S.String,
+      timestamp: S.Date,
+    },
+    UserJoined: {
+      userId: S.String,
+      displayName: S.String,
+    },
+    UserLeft: {
+      userId: S.String,
+    },
+  },
+}) {}
+```
+
+## Define methods with `Method.define(...)`
+
+For anything beyond a toy example, you may want to define methods separately.
+
+```ts
+import { Schema as S } from "effect"
+import { Method } from "liminal"
+
+export const SendMessage = Method.define({
+  payload: {
+    content: S.String,
+  },
+  success: S.Struct({
+    messageId: S.String,
+    timestamp: S.Date,
+  }),
+  failure: S.Never,
+})
+```
+
+This is the dominant pattern because it makes methods reusable across clients and actors. Shared methods such as
+`UpdateProfile` or `ReportUser` can live under a common `shared/methods` directory.
+
+## Implement shared handlers with `Method.handler(...)`
+
+If a method is shared, its handler can be shared too.
+
+```ts
+import { Effect } from "effect"
+import { Method } from "liminal"
+
+import { UpdateProfile } from "../shared/methods/UpdateProfile.ts"
+
+export default Method.handler(
+  UpdateProfile,
+  Effect.fn(function* ({ displayName, avatarUrl }) {
+    // shared logic here
+    return { updated: true }
+  }),
+)
+```
+
+If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is usually simpler. The next guide covers
+that pattern.
+
+## Call methods with `Client.f(...)`
+
+Method calls are keyed by method name.
+
+```ts
+yield * ChatClient.f("SendMessage")({ content: "Hello, world!" })
+
+yield * ChatClient.f("PinMessage")({ messageId })
+```
+
+The effect error type is wider than just the method's domain failure. A call can fail with:
+
+- the method's typed `failure` schema
+- `ConnectionError` if the transport fails.
+- `AuditionError` if the URL to which the client tries to connect routes to an actor that is not of that client type.
+- `UnresolvedError` if the underlying transport dies before the call resolves.
+
+## Consume events from `Client.events`
+
+Events arrive as a tagged union keyed by `_tag`.
+
+```ts
+Effect.gen(function* () {
+  yield* ChatClient.events.pipe(
+    Stream.runForEach(
+      Effect.fn(function* (event) {
+        switch (event._tag) {
+          case "RoomSnapshot": {
+            const { members, recentMessages } = event
+            break
+          }
+          case "MessageReceived": {
+            const { userId, content, timestamp } = event
+            break
+          }
+          case "UserJoined": {
+            const { userId, displayName } = event
+            break
+          }
+          case "UserLeft": {
+            const { userId } = event
+            break
+          }
+        }
+      }),
+    ),
+  )
+})
+```
+
+For larger apps, many screens do not consume `Client.events` directly. They feed event streams into an `Accumulator`
+instead. See [`accumulator.md`](./accumulator.md).
+
+## Choose a transport
+
+Liminal ships two client transports:
+
+- `Client.layerSocket(...)` for WebSockets
+- `Client.layerWorker(...)` for workers or other `MessagePort` transports
+
+```ts
+import { Client } from "liminal"
+
+const ChatClientLive = Client.layerSocket({
+  client: ChatClient,
+  url: "/chat",
+})
+
+const NotificationClientLive = Client.layerWorker({
+  client: NotificationClient,
+})
+```
+
+Both transports support the same method and event surface. They also share the same optional replay configuration.
+
+## Replay is event-only
+
+Replay only affects `client.events`.
+
+```ts
+Client.layerSocket({
+  client: ChatClient,
+  url: "/chat",
+  replay: {
+    mode: "startup",
+    limit: 16,
+  },
+})
+```
+
+Important details:
+
+- No `replay`: subscribers only see events once they're connected (prior events are dropped).
+- `mode: "startup"`: the first subscriber gets the buffered events once.
+- `mode: "all-subscribers"`: every subscriber gets the buffer.
+- `limit` caps buffer size.
+- Method successes and failures are never replayed.

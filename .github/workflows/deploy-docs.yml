@@ -1,0 +1,28 @@
+name: Deploy liminal.actor
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: deploy-docs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/configure_environment
+      - run: pnpm build
+      - run: pnpm build
+        working-directory: docs
+      - run: pnpm wrangler deploy
+        working-directory: docs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

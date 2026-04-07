@@ -8,6 +8,7 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+    "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.AsyncIterable"],
     "module": "ESNext",
     "moduleDetection": "force",
@@ -23,6 +24,18 @@
     "noUncheckedSideEffectImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "transform": "@effect/language-service/transform",
+        "diagnosticSeverity": {
+          "returnEffectInGen": "off",
+          "layerMergeAllWithDependencies": "off",
+          "preferSchemaOverJson": "off",
+          "effectSucceedWithVoid": "off"
+        }
+      }
+    ],
     "resolveJsonModule": true,
     "rewriteRelativeImportExtensions": true,
     "skipLibCheck": true,
@@ -32,11 +45,11 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
+    "stripInternal": true,
     "target": "ESNext",
-    "typeRoots": ["node_modules/@types"],
     "useDefineForClassFields": true,
     "useUnknownInCatchVariables": true,
     "verbatimModuleSyntax": true
   },
-  "exclude": ["**/dist", "node_modules"]
+  "exclude": ["node_modules", "repos"]
 }

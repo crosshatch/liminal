@@ -1,0 +1,203 @@
+# Cloudflare Registry and Routing
+
+`liminal` defines the actor model. `liminal-cloudflare` mounts that model onto Cloudflare Workers and Durable Objects.
+
+This guide covers:
+
+- `ActorRegistry.Service(...)`
+- `Entry.make(...)`
+
+## Define a registry with `ActorRegistry.Service(...)`
+
+An actor registry wraps one actor type as one Durable Object class.
+
+```ts
+import { ActorRegistry } from "liminal-cloudflare"
+
+import * as CurrentUserId from "../context/CurrentUserId.ts"
+import { PreludeLive } from "../PreludeLive.ts"
+import { ChatActor } from "./ChatActor.ts"
+import * as handlers from "./handlers/handlers.ts"
+import { onConnect } from "./lifecycle/onConnect.ts"
+
+export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatRegistry", {
+  binding: "CHAT_ROOMS",
+  actor: ChatActor,
+  preludeLayer: PreludeLive,
+  runLayer: CurrentUserId.layerChat,
+  onConnect,
+  handlers,
+}) {}
+```
+
+## What each registry field means
+
+- `binding`: the Durable Object binding name from Wrangler
+- `actor`: the Liminal actor definition
+- `preludeLayer`: long-lived runtime dependencies for the Durable Object instance
+- `runLayer`: short-lived, request-local dependencies derived from actor context
+- `onConnect`: logic that runs for newly upgraded sockets
+- `handlers`: the method implementation table
+- `hibernation`: optional hibernatable WebSocket timeout
+- `disableLogging`: optional request/message logging switch
+
+In practice, `runLayer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name and
+current client attachments.
+
+## `preludeLayer` versus `runLayer`
+
+This split is one of the most important concepts in Liminal Cloudflare.
+
+Use `preludeLayer` for long-lived infrastructure:
+
+- database access
+- config
+- logging
+- asset bindings
+- Cloudflare service bindings
+
+Use `runLayer` for short-lived context derived from the current client-specific actor invocation:
+
+- current user id
+- current authorization
+
+In the following example, we showcase how to––for two different actors––create a `runLayer` that provides the
+actor-specific `CurrentUserId`.
+
+```ts
+import { Layer, Effect, Context, Schema as S } from "effect"
+
+import { ChatActor } from "../chat/ChatActor.ts"
+import { LobbyActor } from "../lobby/LobbyActor.ts"
+
+const UserId = S.String.pipe(S.brand("UserId"))
+
+export class CurrentUserId extends Context.Tag("CurrentUserId")<CurrentUserId, typeof UserId.Type>() {}
+
+// Use the actor name as the ID.
+export const layerLobby = Effect.gen(function* () {
+  const { name } = yield* LobbyActor
+  return name
+}).pipe(Layer.effect(CurrentUserId))
+
+// Use the current client attachment as the ID.
+export const layerChat = Effect.gen(function* () {
+  const { currentClient } = yield* ChatActor
+  const { userId } = yield* currentClient.attachments
+  return userId
+}).pipe(Layer.effect(CurrentUserId))
+```
+
+## Upgrade into an actor from HTTP
+
+`Registry.upgrade(name, attachments)` is the handoff from HTTP to the Durable Object.
+
+```ts
+import { HttpApiBuilder, HttpApiError } from "@effect/platform"
+import { Effect } from "effect"
+
+import { ChatRegistry } from "./chat/ChatRegistry.ts"
+import { LobbyRegistry } from "./lobby/LobbyRegistry.ts"
+
+export const SessionApiLive = HttpApiBuilder.group(Api, "session", (_) =>
+  Effect.succeed(
+    _.handleRaw(
+      "connect",
+      Effect.fn(function* () {
+        const sessionToken = yield* readSessionToken
+        const user = yield* lookupUser(sessionToken)
+
+        if (user) {
+          const roomId = yield* getActiveRoom(user.id)
+          return yield* ChatRegistry.upgrade(roomId, { userId: user.id })
+        }
+
+        return yield* LobbyRegistry.upgrade(sessionToken, {})
+      }),
+    ),
+  ),
+)
+```
+
+The route decides:
+
+- which actor name to connect to
+- which actor type to use
+- what the initial attachments should be
+
+`upgrade(...)` handles the rest.
+
+## What `upgrade(...)` does for you
+
+On the Cloudflare side, `upgrade(...)`:
+
+- resolves the Durable Object by actor name
+- validates that the connecting WebSocket is using the expected Liminal client id
+- serializes attachments onto the WebSocket
+- returns the `101 Switching Protocols` response
+
+That validation step is why the client and actor definitions must line up. If the wrong client tries to connect, the
+session fails with an audition error rather than silently misbehaving.
+
+## Build the Worker `fetch` entrypoint with `Entry.make(...)`
+
+The Worker entrypoint usually exports:
+
+- a default `fetch` handler
+- each Durable Object class as a named export
+
+```ts
+import { HttpLayerRouter, HttpServer, HttpServerResponse } from "@effect/platform"
+import { Layer, Effect } from "effect"
+import { Entry } from "liminal-cloudflare"
+
+import { ChatRegistry } from "./chat/ChatRegistry.ts"
+import { ApiLive } from "./ApiLive.ts"
+import { LobbyRegistry } from "./lobby/LobbyRegistry.ts"
+import { PreludeLive } from "./PreludeLive.ts"
+
+export { ChatRegistry, LobbyRegistry }
+
+export default ApiLive.pipe(
+  Layer.provide([HttpServer.layerContext, ChatRegistry.layer, LobbyRegistry.layer]),
+  HttpLayerRouter.toHttpEffect,
+  Effect.flatMap((handler) => handler),
+  Effect.catchAll(() => HttpServerResponse.empty({ status: 500 })),
+  Entry.make(PreludeLive),
+)
+```
+
+`Entry.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
+Durable Object runtime for actor messages.
+
+Both sides can share the same `PreludeLive`.
+
+## Wrangler alignment matters
+
+The registry binding, named export, and Wrangler config must line up.
+
+```jsonc
+{
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_ROOMS",
+        "class_name": "ChatRegistry",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["ChatRegistry"],
+    },
+  ],
+}
+```
+
+The important correspondence is:
+
+- `binding: "CHAT_ROOMS"` in `ActorRegistry`
+- `name: "CHAT_ROOMS"` in Wrangler
+- `export { ChatRegistry }` in the Worker entrypoint
+- `class_name: "ChatRegistry"` in Wrangler

@@ -1,15 +1,9 @@
 {
-  "files": [],
+  "include": [],
   "references": [
-    { "path": "./examples" },
+    { "path": "./docs" },
     { "path": "./liminal" },
-    { "path": "./@liminal/sqlite" },
-    { "path": "./@liminal/workerd" },
-    { "path": "./lmnl.im/client" },
-    { "path": "./lmnl.im/domain" },
-    { "path": "./lmnl.im/worker" },
-    { "path": "./liminal.land/_blocks" },
-    { "path": "./liminal.land/.vitepress" },
-    { "path": "./tsconfig.root.json" }
+    { "path": "./liminal-browser" },
+    { "path": "./liminal-cloudflare" }
   ]
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@liminal/docs",
+  "version": "0.17.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "portless liminal.actor --app-port 7774 -- vocs dev",
+    "build": "vocs build",
+    "preview": "vocs preview"
+  },
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vocs": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "liminal": "workspace:*",
+    "portless": "catalog:",
+    "typescript": "catalog:"
+  }
+}

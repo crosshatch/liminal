@@ -1,0 +1,95 @@
+# Cloudflare KV
+
+`Kv.Service(...)` is the `liminal-cloudflare` wrapper for Cloudflare KV.
+
+It turns a KV namespace into a typed Effect service with schema-driven key encoding and value encoding/decoding.
+
+## Define a KV service
+
+`Kv.Service(...)` needs three things:
+
+- the Cloudflare binding name
+- a schema whose encoded form is a string key
+- a schema for the stored value
+
+```ts
+import { Schema as S } from "effect"
+import { Kv } from "liminal-cloudflare"
+
+const SessionId = S.String.pipe(S.brand("SessionId"))
+
+const SessionValue = S.Struct({
+  accountId: S.String,
+  expiresAt: S.Date,
+})
+
+export class SessionKv extends Kv.Service<SessionKv>()("SessionKv", {
+  binding: "SESSIONS",
+  key: SessionId,
+  value: SessionValue,
+}) {}
+```
+
+## What the wrapper gives you
+
+The service exposes:
+
+- `.layer` from the shared binding helper
+- `.binding` with the Cloudflare env binding name
+- `.put(key, value)`
+- `.get(key)`
+- `.remove(key)`
+
+## Write values with `put`
+
+```ts
+Effect.gen(function* () {
+  // ...
+
+  yield* SessionKv.put(sessionId, {
+    accountId,
+    expiresAt,
+  })
+})
+```
+
+## Read values with `get`
+
+```ts
+Effect.gen(function* () {
+  // ...
+
+  const session = yield* SessionKv.get(sessionId)
+})
+```
+
+## Delete values with `remove`
+
+```ts
+Effect.gen(function* () {
+  // ...
+
+  yield* SessionKv.remove(sessionId)
+})
+```
+
+## Access the raw KV namespace when you need more than the wrapper
+
+The wrapper currently does not currently provide effectful functionality for other operations such as:
+
+- `list`
+- expiration options
+- metadata options
+- cache TTL options
+
+If you need those, yield the raw service directly:
+
+```ts
+Effect.gen(function* () {
+  // ...
+
+  const kv = yield* SessionKv
+
+  yield* Effect.promise(() => kv.list())
+})
+```
