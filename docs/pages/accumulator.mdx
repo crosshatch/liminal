@@ -1,104 +1,130 @@
 # Accumulator
 
 An `Accumulator` is a typed state container driven by events. It reduces incoming events into long-lived client state,
-giving UI code stable field-level streams instead of forcing every component to understand the full event log.
+giving UI code a stable state stream instead of forcing every component to understand the full event log.
 
 If you are building anything larger than a toy screen, this is the most important guide after the quickstart.
 
 ## Define an accumulator
 
-A simple example:
+An accumulator is a tagged service parameterized by its state type.
 
 ```ts
-import { Option, Schema as S } from "effect"
 import { Accumulator } from "liminal"
 
-import { LobbyClient } from "./LobbyClient.ts"
+import type { LobbyEvent } from "./LobbyClient.ts"
 
-const RoomId = S.String.pipe(S.brand("RoomId"))
+interface LobbyState {
+  readonly currentRoomId: string | undefined
+}
 
-export class LobbyAccumulator extends Accumulator.Service<LobbyAccumulator>()("LobbyAccumulator", {
-  fields: {
-    currentRoomId: S.Option(RoomId),
-  },
-  events: LobbyClient.definition.events,
-}) {}
+export class LobbyAccumulator extends Accumulator.Service<LobbyAccumulator, LobbyState>()("LobbyAccumulator") {}
 ```
 
-An accumulator has two type surfaces:
+The state is a plain TypeScript type. There is no schema config — you control the shape directly.
 
-- `fields`: the local reduced state
-- `events`: the incoming event union it knows how to process
+## Extract initial state from the first event
 
-## Write reducers one event at a time
-
-Reducers attach behavior to one event tag.
+The `initial` function inspects each event until it finds one that produces the starting state.
 
 ```ts
-const RoomJoined = LobbyAccumulator.reducer("RoomJoined", ({ roomId }) => {
-  return LobbyAccumulator.update({
-    currentRoomId: Option.some(roomId),
-  })
-})
+import { Effect, Option } from "effect"
 
-const SessionEnded = LobbyAccumulator.reducer("SessionEnded", () =>
-  LobbyAccumulator.update({
-    currentRoomId: Option.none(),
-  }),
+const initial = (event: LobbyEvent) => {
+  if (event._tag === "LobbySnapshot") {
+    return Effect.succeed(
+      Option.some<LobbyState>({
+        currentRoomId: event.currentRoomId,
+      }),
+    )
+  }
+  return Effect.succeed(Option.none())
+}
+```
+
+Until `initial` returns `Some`, the accumulator is not yet active and no reductions occur.
+
+## Write the reduce function
+
+The `reduce` function folds each subsequent event into the current state.
+
+```ts
+const reduce = (event: LobbyEvent) => (state: LobbyState) => {
+  switch (event._tag) {
+    case "RoomJoined":
+      return Effect.succeed({ ...state, currentRoomId: event.roomId })
+    case "SessionEnded":
+      return Effect.succeed({ ...state, currentRoomId: undefined })
+    default:
+      return Effect.succeed(state)
+  }
+}
+```
+
+## Use `reducer` for type-safe per-event reducers
+
+The `reducer` helper narrows the event type to a single tag, which is useful when composing reducers.
+
+```ts
+const RoomJoined = LobbyAccumulator.reducer<LobbyEvent>()(
+  "RoomJoined",
+  ({ roomId }) =>
+    (state) =>
+      Effect.succeed({ ...state, currentRoomId: roomId }),
+)
+
+const SessionEnded = LobbyAccumulator.reducer<LobbyEvent>()(
+  "SessionEnded",
+  () =>
+    (state) =>
+      Effect.succeed({ ...state, currentRoomId: undefined }),
 )
 ```
 
-For small state updates, you usually want one of two helpers:
-
-- `Accumulator.update(...)` to replace whole state
-- `Accumulator.updateField(...)` to update one field
-
-Larger accumulators use `updateField(...)` heavily for array edits like add, rename, and remove.
+Each call returns the reducer function unchanged — the value is in the type narrowing, not runtime behavior.
 
 ## Build the accumulator layer
 
-Once you have the source event stream and reducers, install the live layer.
+Combine the source stream, initial function, and reduce function into a layer.
 
 ```ts
-export const layer = LobbyAccumulator.layer({
+export const LobbyAccumulatorLive = LobbyAccumulator.layer({
   source: LobbyClient.events,
-  reducers: { RoomJoined, SessionEnded },
-  initial: {
-    currentRoomId: Option.none(),
-  },
+  initial,
+  reduce,
 })
 ```
 
 That layer starts the reduction loop and exposes:
 
-- `LobbyAccumulator.current`
-- `LobbyAccumulator.state`
-- `LobbyAccumulator.signal("field")`
+- `LobbyAccumulator.get` — an `Effect` that reads the current state
+- `LobbyAccumulator.stream` — a `Stream` of state changes
 
-## Consume reduced state with `signal(...)`
+## Consume state
 
-UI code usually consumes accumulator fields rather than raw events.
+UI code reads the accumulator's current value or subscribes to its stream.
 
 ```ts
-export const currentRoomIdAtom = atomRuntime.atom(LobbyAccumulator.signal("currentRoomId"))
+// Read the current state
+const state = yield* LobbyAccumulator.get
+
+// Subscribe to state changes
+const stateStream = LobbyAccumulator.stream
 ```
 
-The same pattern works for any field:
+Atoms or signals in the UI layer can subscribe to the stream directly:
 
-- `ChatAccumulator.signal("messages")`
-- `ChatAccumulator.signal("members")`
-- `ChatAccumulator.signal("roomInfo")`
-
-That pattern gives the UI stable field-level streams instead of forcing every component to understand the full event
-log.
+```ts
+export const lobbyStateAtom = atomRuntime.atom(LobbyAccumulator.stream)
+```
 
 ## Snapshot-on-connect plus delta events
 
 The accumulator design depends on a deliberate event pattern:
 
-1. `onConnect` sends a snapshot event such as `RoomSnapshot` or `SessionStarted`
-2. later handlers emit delta events such as `MessageReceived` or `UserLeft`
-3. reducers apply the snapshot first, then keep folding deltas
+1. `onConnect` sends a snapshot event such as `LobbySnapshot` or `SessionStarted`
+2. later handlers emit delta events such as `RoomJoined` or `SessionEnded`
+3. `initial` extracts state from the snapshot, then `reduce` folds deltas
 
 That is why `onConnect` is so important. Without a snapshot event, a reconnecting UI would need a separate imperative
 fetch path.
@@ -110,37 +136,38 @@ Larger apps combine `Audition` and `Accumulator` together.
 An app-wide accumulator listens to both lobby and chat events:
 
 ```ts
-const UserId = S.String.pipe(S.brand("UserId"))
-const RoomId = S.String.pipe(S.brand("RoomId"))
+interface AppState {
+  readonly roomId: string | undefined
+  readonly userId: string | undefined
+  readonly members: Array<{
+    readonly userId: string
+    readonly displayName: string
+  }>
+}
 
-export class AppAccumulator extends Accumulator.Service<AppAccumulator>()("AppAccumulator", {
-  events: {
-    ...LobbyClient.definition.events,
-    ...ChatClient.definition.events,
-  },
-  fields: {
-    roomId: RoomId.pipe(S.optional),
-    userId: UserId.pipe(S.optional),
-    members: S.Array(
-      S.Struct({
-        userId: UserId,
-        displayName: S.String,
-      }),
-    ),
-  },
-}) {}
+export class AppAccumulator extends Accumulator.Service<AppAccumulator, AppState>()("AppAccumulator") {}
 ```
 
-And its live layer waits for the first snapshot event before installing the initial state:
+And its live layer uses the merged event stream, with `initial` extracting the first snapshot:
 
 ```ts
 const source = audition.events.pipe(Stream.forever)
-const { _tag, ...initial } = yield * Deferred.await(deferred)
 
-return AppAccumulator.layer({
+const AppAccumulatorLive = AppAccumulator.layer({
   source,
-  reducers,
-  initial,
+  initial: (event) => {
+    if (event._tag === "SessionStarted") {
+      return Effect.succeed(
+        Option.some<AppState>({
+          roomId: event.roomId,
+          userId: event.userId,
+          members: event.members,
+        }),
+      )
+    }
+    return Effect.succeed(Option.none())
+  },
+  reduce,
 })
 ```
 
@@ -153,6 +180,6 @@ Use `Accumulator` when:
 - multiple screens care about the same evolving state
 - reconnects should replay state from events
 - `onConnect` already emits a snapshot event
-- you want field-level streams like `signal("members")`
+- you want a stable state stream derived from events
 
 Skip it when a screen only needs one or two direct method calls and no long-lived local state.

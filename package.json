@@ -9,7 +9,8 @@
     "test": "vitest run",
     "clean": "repo-util clean --ignore repos",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "changeset": "changeset"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",

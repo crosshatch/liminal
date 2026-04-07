@@ -40,11 +40,9 @@ Use worker transport when the actor lives in a worker, a `MessagePort`, or anoth
 import { Layer } from "effect"
 import { Client } from "liminal"
 
-const NotificationLive = Layer.mergeAll(
-  NotificationAccumulator.layer.pipe(
-    Layer.provideMerge(
-      Client.layerWorker({ client: NotificationClient }).pipe(Layer.provide(NotificationWorker.layer)),
-    ),
+const NotificationLive = NotificationAccumulatorLive.pipe(
+  Layer.provideMerge(
+    Client.layerWorker({ client: NotificationClient }).pipe(Layer.provide(NotificationWorker.layer)),
   ),
 )
 ```

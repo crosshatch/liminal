@@ -123,6 +123,8 @@ export interface Client<
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf>
 
   readonly f: F<ClientSelf, MethodDefinitions>
+
+  readonly invalidate: Effect.Effect<void, never, ClientSelf>
 }
 
 export const Service =
@@ -135,7 +137,7 @@ export const Service =
     id: ClientId,
     definition: ClientDefinition<MethodDefinitions, EventDefinitions>,
   ): Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
-    const clientTag = Context.Tag(id)<ClientSelf, Service<ClientSelf, MethodDefinitions, EventDefinitions>>()
+    const tag = Context.Tag(id)<ClientSelf, Service<ClientSelf, MethodDefinitions, EventDefinitions>>()
 
     const call: ClientSchema<MethodDefinitions, EventDefinitions>["call"] = {
       payload: S.TaggedStruct("Call.Payload", {
@@ -179,24 +181,27 @@ export const Service =
       Protocol.Disconnect,
     )
 
-    const events: Stream.Stream<
-      FieldsRecord.TaggedMember.Type<EventDefinitions>,
-      ClientError,
-      ClientSelf
-    > = clientTag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrapScoped)
+    const events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf> = tag.pipe(
+      Effect.flatMap(RcRef.get),
+      Effect.map(Struct.get("events")),
+      Stream.unwrapScoped,
+    )
 
     const f: F<ClientSelf, MethodDefinitions> = (_tag) =>
       Effect.fnUntraced(function* (value) {
-        const { f } = yield* clientTag.pipe(Effect.flatMap(RcRef.get))
+        const { f } = yield* tag.pipe(Effect.flatMap(RcRef.get))
         return yield* f(_tag)(value)
       }, Effect.scoped)
 
-    return Object.assign(clientTag, {
+    const invalidate = tag.pipe(Effect.flatMap(RcRef.invalidate))
+
+    return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       schema: { call, event, actor },
       events,
       f,
+      invalidate,
     })
   }
 

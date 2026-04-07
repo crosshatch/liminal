@@ -17,14 +17,14 @@ import {
   Encoding,
 } from "effect"
 import { Protocol, type Actor, type Method } from "liminal"
+import { SecWebSocketProtocol } from "liminal/_constants"
 import * as Mutex from "liminal/_util/Mutex"
 
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
+import { failSocket } from "./failSocket.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
-
-export const SecWebSocketProtocol = "Sec-WebSocket-Protocol" as const
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
@@ -319,22 +319,11 @@ export const Service =
         Effect.flatMap(Encoding.decodeBase64UrlString),
       )
       if (requestClientId !== clientId) {
-        const { 0: webSocket, 1: server } = new WebSocketPair()
-        server.accept()
-        server.close(
-          4003,
-          yield* S.encode(S.parseJson(Protocol.Audition.Failure))(
-            Protocol.Audition.Failure.make({
-              expected: clientId,
-              actual: requestClientId,
-            }),
-          ),
-        )
-        return yield* HttpServerResponse.raw(
-          new Response(null, {
-            status: 101,
-            webSocket,
-            headers: { [SecWebSocketProtocol]: "liminal" },
+        return yield* failSocket(
+          S.parseJson(Protocol.Audition.Failure),
+          Protocol.Audition.Failure.make({
+            expected: clientId,
+            actual: requestClientId,
           }),
         )
       }

@@ -5,11 +5,9 @@ import type { MethodDefinition } from "./Method.ts"
 
 export class UnresolvedError extends S.TaggedError<UnresolvedError>()("UnresolvedError", {}) {}
 
-// TODO: flatten
-export type FError<MethodDefinitions extends Record<string, MethodDefinition.Any>> =
-  | MethodDefinitions[keyof MethodDefinitions]["failure"]["Type"]
-  | ClientError
-  | UnresolvedError
+export type FError<MethodDefinitions extends Record<string, MethodDefinition.Any>> = [
+  MethodDefinitions[keyof MethodDefinitions]["failure"]["Type"] | ClientError | UnresolvedError,
+][0]
 
 export type F<ClientSelf, MethodDefinitions extends Record<string, MethodDefinition.Any>> = <
   Method extends keyof MethodDefinitions,
