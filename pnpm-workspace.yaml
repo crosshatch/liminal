@@ -7,6 +7,7 @@ packages:
 catalog:
   "@cloudflare/vite-plugin": ^1.25.0
   "@cloudflare/vitest-pool-workers": ^0.12.14
+  "@cloudflare/workers-types": ^4.20260207.0
   "@crosshatch/repo-util": ^0.2.1
   "@dotenvx/dotenvx": ^1.52.0
   "@effect-atom/atom": ^0.5.2
