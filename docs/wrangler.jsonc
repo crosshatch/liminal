@@ -4,10 +4,13 @@
   "main": "./liminal.ts",
   "compatibility_date": "2026-04-08",
   "keep_vars": true,
-  "assets": { "directory": "./public" },
-  "observability": { "enabled": true },
+  "observability": {
+    "enabled": true
+  },
   "upload_source_maps": true,
-  "placement": { "mode": "smart" },
+  "placement": {
+    "mode": "smart"
+  },
   "assets": {
     "directory": "dist",
     "binding": "ASSETS",
