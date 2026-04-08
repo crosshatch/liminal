@@ -36,7 +36,7 @@ export const Service =
       payload,
     }: {
       readonly url: string
-      readonly payload?: P
+      readonly payload?: P | undefined
     },
   ): TemplateClass<Self, Id, Payload.FromDefinition<P>> => {
     type Make_ = Template<Payload.FromDefinition<P>>
@@ -49,11 +49,14 @@ export const Service =
         return yield* new NoSuchTemplateError({ url })
       }
       const [head, ...rest] = pipe(template, String.trim, String.split("{{"))
-      if ((!payload || !Object.keys(payload).length) && rest.length === 1) {
+      if ((!payload || !Object.keys(payload).length) && !rest.length) {
         return () => template
       }
       const segments = rest.flatMap((part) => {
         const i = part.indexOf("}}")
+        if (i === -1) {
+          return []
+        }
         return {
           key: part.slice(0, i).trim(),
           tail: part.slice(i + 2),

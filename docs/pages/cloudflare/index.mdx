@@ -11,16 +11,15 @@ We'll implement a trimmed-down Tic-Tac-Toe example:
 - Upgrade the client from an Effect HTTP layer router route.
 - Consume the client from a browser with `Client.layerSocket(...)`.
 
-For larger apps, split methods, events, handlers, and lifecycle files into separate modules. The next
-guides cover that structure in more detail.
+For larger apps, split methods, events, handlers, and lifecycle files into separate modules. The next guides cover that
+structure in more detail.
 
 ## Define the client
 
 Start with the protocol the browser and actor will share.
 
 ```ts
-import { Socket } from "@effect/platform"
-import { Effect, Layer, Schema as S, Stream } from "effect"
+import { Schema as S } from "effect"
 import { Client } from "liminal"
 
 export const Player = S.Literal("X", "O")

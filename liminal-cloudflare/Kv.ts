@@ -43,14 +43,14 @@ export const Service =
 
     const { key, value } = definition
     const encodeKey = S.encode(key)
-    const encodeValue = S.encode(value)
+    const encodeValue = S.encode(S.parseJson(value))
     const decodeValue = S.decodeUnknown(S.parseJson(value))
 
     const put = Effect.fnUntraced(function* (key: KeyA, value: ValueA) {
       const kv = yield* tag
       const keyEncoded = yield* encodeKey(key)
       const valueEncoded = yield* encodeValue(value)
-      yield* Effect.promise(() => kv.put(keyEncoded, JSON.stringify(valueEncoded)))
+      yield* Effect.promise(() => kv.put(keyEncoded, valueEncoded))
     })
 
     const get = Effect.fnUntraced(function* (key: KeyA) {

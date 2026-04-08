@@ -105,16 +105,20 @@ that pattern.
 Method calls are keyed by method name.
 
 ```ts
-yield * ChatClient.f("SendMessage")({ content: "Hello, world!" })
+Effect.gen(function* () {
+  // ...
 
-yield * ChatClient.f("PinMessage")({ messageId })
+  yield* ChatClient.f("SendMessage")({ content: "Hello, world!" })
+
+  yield* ChatClient.f("PinMessage")({ messageId })
+})
 ```
 
 The effect error type is wider than just the method's domain failure. A call can fail with:
 
 - the method's typed `failure` schema
 - `ConnectionError` if the transport fails.
-- `AuditionError` if the URL to which the client tries to connect routes to an actor that is not of that client type.
+- `AuditionError` if the client connects to an actor that does not match its client type.
 - `UnresolvedError` if the underlying transport dies before the call resolves.
 
 ## Consume events from `Client.events`
@@ -151,7 +155,7 @@ Effect.gen(function* () {
 ```
 
 For larger apps, many screens do not consume `Client.events` directly. They feed event streams into an `Accumulator`
-instead. See [`accumulator.md`](./accumulator.md).
+instead. See [Accumulator](./accumulator).
 
 ## Choose a transport
 
@@ -175,6 +179,12 @@ const NotificationClientLive = Client.layerWorker({
 
 Both transports support the same method and event surface. They also share the same optional replay configuration.
 
+`layerSocket` accepts two additional optional fields:
+
+- `url` — the WebSocket endpoint path. Defaults to `"/"` when omitted.
+- `protocols` — one or more WebSocket sub-protocols (`string | Array<string>`). Liminal always includes its own internal
+  protocols; these are appended.
+
 ## Replay is event-only
 
 Replay only affects `client.events`.
@@ -195,5 +205,13 @@ Important details:
 - No `replay`: subscribers only see events once they're connected (prior events are dropped).
 - `mode: "startup"`: the first subscriber gets the buffered events once.
 - `mode: "all-subscribers"`: every subscriber gets the buffer.
-- `limit` caps buffer size.
+- `limit` caps buffer size. When omitted, the buffer is unbounded.
 - Method successes and failures are never replayed.
+
+## Lifecycle helpers
+
+Two additional properties are available on every client:
+
+- `Client.endEvents` — signals to the event stream that no more events will arrive. Useful when you want to cleanly shut
+  down event processing.
+- `Client.invalidate` — invalidates the underlying transport session, causing it to be re-acquired on next use.

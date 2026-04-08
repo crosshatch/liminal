@@ -1,8 +1,7 @@
-import type { FieldsRecord, Fields } from "liminal/_types"
-
 import { WorkerRunner } from "@effect/platform"
 import { Layer, Scope, Effect, Schema as S, PubSub, Ref, ExecutionStrategy, Exit, ParseResult, Stream } from "effect"
 import { Actor, ClientHandle, Method, Protocol } from "liminal"
+import type { FieldsRecord, Fields } from "liminal/_types"
 
 // TODO: use fiber map?
 export const make = Effect.fnUntraced(function* <

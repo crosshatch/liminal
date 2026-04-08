@@ -4,9 +4,8 @@ import type { FieldsRecord, Fields } from "./_types.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
-import type { Send } from "./Send.ts"
-
 import * as Method from "./Method.ts"
+import type { Send } from "./Send.ts"
 
 export const TypeId = "~liminal/Actor" as const
 
@@ -88,9 +87,9 @@ export const Service =
 
     const sendAll: Send<ActorSelf, EventDefinitions> = Effect.fnUntraced(function* (key, payload) {
       const { clients } = yield* tag
-      for (const client of clients) {
-        yield* client.send(key, payload)
-      }
+      yield* Effect.forEach(clients, (client) => client.send(key, payload), {
+        concurrency: "unbounded",
+      })
     })
 
     // TODO: more eviction

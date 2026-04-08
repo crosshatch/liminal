@@ -81,15 +81,15 @@ export const Service =
               }
               const current = yield* Ref.get(ref)
               const reduced = yield* reduce(item)(current)
-              yield* pubsub.publish(reduced)
               yield* Ref.set(ref, reduced)
+              yield* pubsub.publish(reduced)
             }, semaphore.withPermits(1)),
           ),
           Effect.forkScoped,
         )
         const initial_ = yield* Deferred.await(deferred)
-        yield* pubsub.publish(initial_)
         const ref = yield* Ref.make(initial_)
+        yield* pubsub.publish(initial_)
         return { ref, pubsub }
       }).pipe(Layer.scoped(tag))
 

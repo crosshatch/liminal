@@ -1,5 +1,3 @@
-import type { Fields, FieldsRecord } from "liminal/_types"
-
 import { HttpServerResponse } from "@effect/platform"
 import {
   Layer,
@@ -18,11 +16,12 @@ import {
 } from "effect"
 import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
+import type { Fields, FieldsRecord } from "liminal/_types"
 import * as Mutex from "liminal/_util/Mutex"
 
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
-import { failSocket } from "./failSocket.ts"
+import { close } from "./close.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 
@@ -267,13 +266,12 @@ export const Service =
           const message = yield* S.decodeUnknown(S.parseJson(schema.call.payload))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
-          if (disableLogging === undefined || !disableLogging) {
+          if (!disableLogging) {
             yield* Effect.log(message)
           }
           const { id, payload } = message
           const { _tag, value } = payload
           yield* handlers[_tag](value).pipe(
-            Effect.scoped,
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
@@ -290,6 +288,7 @@ export const Service =
                 }),
             }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
+            Effect.scoped,
           )
         }).pipe(Mutex.task, this.runtime.runFork)
       }
@@ -299,10 +298,10 @@ export const Service =
       }
 
       webSocketError(socket: WebSocket, cause: unknown) {
-        this.directory.unregister(socket).pipe(
-          Effect.andThen(() => Effect.fail(cause)),
-          this.runtime.runFork,
-        )
+        Effect.gen(this, function* () {
+          yield* this.directory.unregister(socket)
+          yield* Effect.fail(cause)
+        }).pipe(this.runtime.runFork)
       }
     }
 
@@ -319,12 +318,14 @@ export const Service =
         Effect.flatMap(Encoding.decodeBase64UrlString),
       )
       if (requestClientId !== clientId) {
-        return yield* failSocket(
-          S.parseJson(Protocol.Audition.Failure),
-          Protocol.Audition.Failure.make({
-            expected: clientId,
-            actual: requestClientId,
-          }),
+        return yield* close(
+          4003,
+          yield* S.encode(S.parseJson(Protocol.Audition.Failure))(
+            Protocol.Audition.Failure.make({
+              expected: clientId,
+              actual: requestClientId,
+            }),
+          ),
         )
       }
       const url = new URL(request.url)

@@ -1,7 +1,6 @@
-import type { Fields, FieldsRecord } from "liminal/_types"
-
 import { Schema as S, Effect, Ref, Cause, ParseResult } from "effect"
 import { Method, Actor, ClientHandle } from "liminal"
+import type { Fields, FieldsRecord } from "liminal/_types"
 import { phantom } from "liminal/_util/phantom"
 
 export interface ClientDirectory<ActorSelf, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
