@@ -9,14 +9,14 @@
     "preview": "vocs preview"
   },
   "dependencies": {
+    "@types/react": "catalog:",
+    "effect": "catalog:",
+    "liminal": "workspace:*",
+    "liminal-cloudflare": "workspace:*",
+    "portless": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "typescript": "catalog:",
     "vocs": "catalog:"
-  },
-  "devDependencies": {
-    "@types/react": "catalog:",
-    "liminal": "workspace:*",
-    "portless": "catalog:",
-    "typescript": "catalog:"
   }
 }
