@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/configure_environment
       - run: pnpm run build
       - uses: changesets/action@v1
         with:
