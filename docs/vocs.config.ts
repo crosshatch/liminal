@@ -29,6 +29,27 @@ export default defineConfig({
         text: "Clients",
       },
       {
+        link: "/actors-handlers-and-lifecycle",
+        text: "Actors, Handlers, and Lifecycle",
+      },
+      {
+        link: "/accumulator",
+        text: "Accumulator",
+      },
+      {
+        link: "/audition",
+        text: "Audition",
+      },
+      {
+        text: "Browser",
+        items: [
+          {
+            link: "/browser/transports",
+            text: "Transports",
+          },
+        ],
+      },
+      {
         text: "Cloudflare",
         items: [
           {
@@ -42,6 +63,10 @@ export default defineConfig({
           {
             link: "/cloudflare/kv",
             text: "KV",
+          },
+          {
+            link: "/cloudflare/registry-and-routing",
+            text: "Registry and Routing",
           },
           {
             link: "/cloudflare/hyperdrive",

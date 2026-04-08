@@ -1,19 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "liminal-docs",
-  "main": "./liminal.ts",
   "compatibility_date": "2026-04-08",
-  "keep_vars": true,
   "observability": {
-    "enabled": true
-  },
-  "upload_source_maps": true,
-  "placement": {
-    "mode": "smart"
+    "enabled": true,
   },
   "assets": {
     "directory": "dist",
-    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
   },
   "routes": [
