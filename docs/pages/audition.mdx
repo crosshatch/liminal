@@ -19,8 +19,12 @@ export const audition = Audition.empty.pipe(Audition.add(LobbyClient), Audition.
 After that, callers can use one method surface:
 
 ```ts
-yield * audition.f("JoinRoom")({ roomId })
-yield * audition.f("SendMessage")({ content: "Hello!" })
+Effect.gen(function* () {
+  // ...
+
+  yield* audition.f("JoinRoom")({ roomId })
+  yield* audition.f("SendMessage")({ content: "Hello!" })
+})
 ```
 
 And one event stream:
@@ -40,6 +44,9 @@ Audition.empty.pipe(Audition.add(LobbyClient), Audition.add(ChatClient))
 ```
 
 runtime lookup tries `LobbyClient` first, then falls back to `ChatClient`.
+
+Fallback only triggers when the prior client produces an `AuditionError`. Other errors such as `ConnectionError` or
+`UnresolvedError` propagate directly without trying the next client.
 
 If multiple clients expose the same method name, keep the method definitions identical. The type-level merge assumes
 matching shapes for overlapping method keys.

@@ -1,11 +1,11 @@
 import { HttpServerResponse } from "@effect/platform"
-import { Effect, flow, Schema as S } from "effect"
+import { Effect, flow } from "effect"
 import { SecWebSocketProtocol } from "liminal/_constants"
 
-export const failSocketRaw = Effect.fnUntraced(function* <A, I>(schema: S.Schema<A, I>, value: A) {
+export const closeRaw = Effect.fnUntraced(function* (status?: number | undefined, reason?: string | undefined) {
   const { 0: webSocket, 1: server } = new WebSocketPair()
   server.accept()
-  server.close(4003, yield* S.encode(S.parseJson(schema))(value))
+  server.close(status, reason)
   return new Response(null, {
     status: 101,
     webSocket,
@@ -13,4 +13,4 @@ export const failSocketRaw = Effect.fnUntraced(function* <A, I>(schema: S.Schema
   })
 })
 
-export const failSocket = flow(failSocketRaw, Effect.map(HttpServerResponse.raw))
+export const close = flow(closeRaw, Effect.map(HttpServerResponse.raw))

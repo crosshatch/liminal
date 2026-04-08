@@ -19,10 +19,9 @@ import {
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
-import type { MethodDefinition } from "./Method.ts"
-
 import { type ClientError, AuditionError, ConnectionError } from "./errors.ts"
 import { type F, type FError, UnresolvedError } from "./F.ts"
+import type { MethodDefinition } from "./Method.ts"
 import * as Protocol from "./Protocol.ts"
 
 export const TypeId = "~liminal/Client" as const
@@ -56,6 +55,8 @@ export interface TransportSession<
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError>
 
   readonly f: F<ClientSelf, MethodDefinitions>
+
+  readonly endEvents: Effect.Effect<void>
 }
 
 export type Service<
@@ -121,6 +122,8 @@ export interface Client<
   readonly schema: ClientSchema<MethodDefinitions, EventDefinitions>
 
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf>
+
+  readonly endEvents: Effect.Effect<void, never, ClientSelf>
 
   readonly f: F<ClientSelf, MethodDefinitions>
 
@@ -195,11 +198,19 @@ export const Service =
 
     const invalidate = tag.pipe(Effect.flatMap(RcRef.invalidate))
 
+    const endEvents = tag.pipe(
+      Effect.flatMap(RcRef.get),
+      Effect.flatMap(({ endEvents }) => endEvents),
+      Effect.scoped,
+      Effect.ignore,
+    )
+
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       schema: { call, event, actor },
       events,
+      endEvents,
       f,
       invalidate,
     })
@@ -408,9 +419,12 @@ const make = <
             return yield* Deferred.await(inflight)
           }, Effect.scoped)
 
-        return { events, f }
+        const endEvents = publishTake(Take.end)
+
+        return { events, f, endEvents }
       }),
     })
+
     return rcr
   }).pipe(Layer.scoped(client))
 
@@ -426,14 +440,14 @@ export const layerSocket = <
   replay,
 }: {
   readonly client: Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions>
-  readonly url: string
+  readonly url?: string | undefined
   readonly protocols?: string | Array<string> | undefined
   readonly replay?: ReplayConfig | undefined
 }): Layer.Layer<ClientSelf, never, Socket.WebSocketConstructor> =>
   make<ClientSelf, ClientId, MethodDefinitions, EventDefinitions, Socket.WebSocketConstructor>(
     client,
     Effect.gen(function* () {
-      const socket = yield* Socket.makeWebSocket(url, {
+      const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
       return {

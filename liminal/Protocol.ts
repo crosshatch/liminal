@@ -138,5 +138,5 @@ export declare namespace Actor {
     | Call.Success.Encoded<MethodDefinitions>
     | Call.Failure.Encoded<MethodDefinitions>
     | Event.Encoded<EventDefinitions>
-    | typeof Disconnect.Type
+    | typeof Disconnect.Encoded
 }

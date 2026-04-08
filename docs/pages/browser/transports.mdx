@@ -41,13 +41,11 @@ import { Layer } from "effect"
 import { Client } from "liminal"
 
 const NotificationLive = NotificationAccumulatorLive.pipe(
-  Layer.provideMerge(
-    Client.layerWorker({ client: NotificationClient }).pipe(Layer.provide(NotificationWorker.layer)),
-  ),
+  Layer.provideMerge(Client.layerWorker({ client: NotificationClient }).pipe(Layer.provide(NotificationWorker.layer))),
 )
 ```
 
 `layerWorker(...)` needs a `Worker.PlatformWorker` and `Worker.Spawner` in the environment. The exact provider depends
 on whether you are using a real worker, a platform bridge, or a message port.
 
-## TODO: rest
+<!-- TODO: document Singleton.make and browser-local actor hosting -->

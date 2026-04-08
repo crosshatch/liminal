@@ -75,9 +75,7 @@ const RoomJoined = LobbyAccumulator.reducer<LobbyEvent>()(
 
 const SessionEnded = LobbyAccumulator.reducer<LobbyEvent>()(
   "SessionEnded",
-  () =>
-    (state) =>
-      Effect.succeed({ ...state, currentRoomId: undefined }),
+  () => (state) => Effect.succeed({ ...state, currentRoomId: undefined }),
 )
 ```
 
@@ -105,11 +103,15 @@ That layer starts the reduction loop and exposes:
 UI code reads the accumulator's current value or subscribes to its stream.
 
 ```ts
-// Read the current state
-const state = yield* LobbyAccumulator.get
+Effect.gen(function* () {
+  // ...
 
-// Subscribe to state changes
-const stateStream = LobbyAccumulator.stream
+  // Read the current state
+  const state = yield* LobbyAccumulator.get
+
+  // Subscribe to state changes
+  const stateStream = LobbyAccumulator.stream
+})
 ```
 
 Atoms or signals in the UI layer can subscribe to the stream directly:

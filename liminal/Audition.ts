@@ -1,11 +1,10 @@
 import { Pipeable, Stream, Effect, Function } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
-import type { F } from "./F.ts"
-import type * as Method from "./Method.ts"
-
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
+import type { F } from "./F.ts"
+import type * as Method from "./Method.ts"
 
 const TypeId = "~liminal/Audition" as const
 
@@ -78,10 +77,10 @@ export const add: {
   > => {
     const f: F<
       AuditionSelf | ClientSelf,
-      Method.MethodDefinition.Merge<AuditionMethodDefinitions, AuditionMethodDefinitions>
+      Method.MethodDefinition.Merge<AuditionMethodDefinitions, ClientMethodDefinitions>
     > = (method) => (payload) =>
       audition
-        .f(method)(payload)
+        .f(method as never)(payload)
         .pipe(Effect.catchTag("AuditionError", () => client.f(method as never)(payload)))
 
     const events = audition.events.pipe(Stream.catchTag("AuditionError", () => client.events))
