@@ -10,6 +10,7 @@ export class Assets extends Binding.Service<Assets>()(
   (value): value is { fetch: typeof fetch } => "fetch" in value,
 ) {
   static readonly forward = Effect.gen(this, function* () {
+    console.log("FORWARDING!")
     const assets = yield* this
     const request = yield* NativeRequest
     const response = yield* Effect.promise(() => assets.fetch(request))
