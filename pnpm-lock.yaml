@@ -162,19 +162,12 @@ importers:
 
   docs:
     dependencies:
-      react:
-        specifier: ^19.2.4
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.2.4
-        version: 19.2.4(react@19.2.4)
-      vocs:
-        specifier: 'catalog:'
-        version: 1.4.1(@types/node@25.5.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.60.1)(typescript@5.9.3)
-    devDependencies:
       '@types/react':
         specifier: ^19.2.11
         version: 19.2.14
+      effect:
+        specifier: 3.19.18
+        version: 3.19.18
       liminal:
         specifier: workspace:*
         version: link:../liminal
@@ -184,9 +177,18 @@ importers:
       portless:
         specifier: 'catalog:'
         version: 0.9.6
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.4(react@19.2.4)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vocs:
+        specifier: 'catalog:'
+        version: 1.4.1(@types/node@25.5.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(rollup@4.60.1)(typescript@5.9.3)
 
   liminal:
     dependencies:
