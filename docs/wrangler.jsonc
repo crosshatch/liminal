@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "liminal-docs",
+  "main": "./liminal.ts",
+  "compatibility_date": "2026-04-08",
+  "keep_vars": true,
+  "assets": { "directory": "./public" },
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "placement": { "mode": "smart" },
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+  },
+  "routes": [
+    {
+      "pattern": "liminal.actor/*",
+      "zone_name": "liminal.actor",
+    },
+    {
+      "pattern": "www.liminal.actor/*",
+      "zone_name": "liminal.actor",
+    },
+  ],
+}
