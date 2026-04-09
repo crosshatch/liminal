@@ -471,8 +471,6 @@ export const layerSocket = <
                     case "Write":
                     case "Open":
                     case "OpenTimeout": {
-                      // TODO
-                      console.log(cause)
                       return yield* publish({ _tag: "TransportFailure", cause })
                     }
                     case "Close": {

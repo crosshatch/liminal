@@ -1,4 +1,4 @@
-import { Pipeable, Stream, Effect, Function, Console } from "effect"
+import { Pipeable, Stream, Effect, Function } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
 import type { F } from "./F.ts"
@@ -87,7 +87,11 @@ export const add: {
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () =>
         Effect.succeed(client.events).pipe(
-          Effect.tap(() => Console.log(`Auditioning ${client.key}`)),
+          Effect.tap(() =>
+            Effect.annotateLogs(Effect.logDebug("liminal.AuditionStarted"), {
+              client: client.key,
+            }),
+          ),
           Stream.unwrap,
         ),
       ),
