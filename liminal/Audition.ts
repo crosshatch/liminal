@@ -88,7 +88,7 @@ export const add: {
       Stream.catchTag("AuditionError", () =>
         Effect.succeed(client.events).pipe(
           Effect.tap(() =>
-            Effect.annotateLogs(Effect.logDebug("liminal.AuditionStarted"), {
+            Effect.annotateLogs(Effect.logDebug("liminal.AuditionStaged"), {
               client: client.key,
             }),
           ),

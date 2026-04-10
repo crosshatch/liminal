@@ -19,9 +19,10 @@ import {
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
+import type { MethodDefinition } from "./Method.ts"
+
 import { type ClientError, AuditionError, ConnectionError } from "./errors.ts"
 import { type F, type FError, UnresolvedError } from "./F.ts"
-import type { MethodDefinition } from "./Method.ts"
 import * as Protocol from "./Protocol.ts"
 
 export const TypeId = "~liminal/Client" as const
@@ -55,8 +56,6 @@ export interface TransportSession<
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError>
 
   readonly f: F<ClientSelf, MethodDefinitions>
-
-  readonly endEvents: Effect.Effect<void>
 }
 
 export type Service<
@@ -122,8 +121,6 @@ export interface Client<
   readonly schema: ClientSchema<MethodDefinitions, EventDefinitions>
 
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf>
-
-  readonly endEvents: Effect.Effect<void, never, ClientSelf>
 
   readonly f: F<ClientSelf, MethodDefinitions>
 
@@ -198,19 +195,11 @@ export const Service =
 
     const invalidate = tag.pipe(Effect.flatMap(RcRef.invalidate))
 
-    const endEvents = tag.pipe(
-      Effect.flatMap(RcRef.get),
-      Effect.flatMap(({ endEvents }) => endEvents),
-      Effect.scoped,
-      Effect.ignore,
-    )
-
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       schema: { call, event, actor },
       events,
-      endEvents,
       f,
       invalidate,
     })
@@ -327,8 +316,10 @@ const make = <
               )
         }).pipe(Stream.unwrapScoped)
 
+        yield* Effect.logDebug("liminal.Auditioned")
         yield* listen(
           Effect.fnUntraced(function* (message) {
+            yield* Effect.logDebug("liminal.ClientMessaged", message)
             switch (message._tag) {
               case "Audition.Success": {
                 yield* Deferred.succeed(audition, void 0)
@@ -387,13 +378,14 @@ const make = <
           Effect.ensuring(
             Effect.all(
               [
+                Effect.logDebug("liminal.ClientClosed", {
+                  unresolved: Record.keys(inflights).length,
+                }),
                 PubSub.shutdown(pubsub),
                 Effect.forEach(
                   Record.values(inflights),
                   (deferred) => Deferred.fail(deferred, finalError ?? UnresolvedError.make()),
-                  {
-                    concurrency: "unbounded",
-                  },
+                  { concurrency: "unbounded" },
                 ),
                 RcRef.invalidate(rcr),
               ],
@@ -419,9 +411,7 @@ const make = <
             return yield* Deferred.await(inflight)
           }, Effect.scoped)
 
-        const endEvents = publishTake(Take.end)
-
-        return { events, f, endEvents }
+        return { events, f }
       }),
     })
 
