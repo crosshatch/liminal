@@ -93,5 +93,5 @@ export const Service =
         return { ref, pubsub }
       }).pipe(Layer.scoped(tag))
 
-    return Object.assign(tag, { [TypeId]: TypeId, get, stream, reducer, layer })
+    return Object.assign(tag, { [TypeId]: TypeId, get, stream, reducer, waitFor, layer })
   }

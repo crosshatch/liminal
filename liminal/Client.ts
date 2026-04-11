@@ -9,6 +9,7 @@ import {
   PubSub,
   RcRef,
   Record,
+  pipe,
   Ref,
   Scope,
   Stream,
@@ -16,14 +17,18 @@ import {
   Schema as S,
   Array,
   Struct,
+  ParseResult,
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
 import type { MethodDefinition } from "./Method.ts"
 
+import * as Diagnostic from "./_util/Diagnostic.ts"
 import { type ClientError, AuditionError, ConnectionError } from "./errors.ts"
 import { type F, type FError, UnresolvedError } from "./F.ts"
 import * as Protocol from "./Protocol.ts"
+
+const { debug, span } = Diagnostic.module("Client")
 
 export const TypeId = "~liminal/Client" as const
 
@@ -213,7 +218,7 @@ export interface Transport<
     publish: (
       message: Protocol.Actor.Type<MethodDefinitions, EventDefinitions> | typeof Protocol.TransportFailure.Type,
     ) => Effect.Effect<void, never>,
-  ) => Effect.Effect<void, never, Scope.Scope>
+  ) => Effect.Effect<void, ParseResult.ParseError, Scope.Scope>
 
   readonly send: (v: Protocol.Call.Payload.Type<MethodDefinitions>) => Effect.Effect<void, ConnectionError, never>
 }
@@ -239,7 +244,7 @@ const make = <
       acquire: Effect.gen(function* () {
         const { listen, send } = yield* build
 
-        const audition = yield* Deferred.make<void, AuditionError>()
+        const audition = yield* Deferred.make<void>()
         const inflights: Record<string, Deferred.Deferred<_["Call"]["Success"], FError<MethodDefinitions>>> = {}
         let callId = 0
         let takeCount = 0
@@ -316,10 +321,10 @@ const make = <
               )
         }).pipe(Stream.unwrapScoped)
 
-        yield* Effect.logDebug("liminal.Auditioned")
+        yield* debug("Auditioned", { client: client.key })
         yield* listen(
           Effect.fnUntraced(function* (message) {
-            yield* Effect.logDebug("liminal.ClientMessaged", message)
+            yield* debug("ClientMessaged", { message })
             switch (message._tag) {
               case "Audition.Success": {
                 yield* Deferred.succeed(audition, void 0)
@@ -349,19 +354,16 @@ const make = <
                 }
                 break
               }
-              case "Audition.Failure": {
-                const { actual, expected } = message
-                finalError = AuditionError.make({ value: { actual, expected } })
-                yield* Deferred.fail(audition, finalError)
-                break
-              }
-              case "Disconnect":
-              case "TransportFailure": {
-                yield* Deferred.succeed(audition, void 0)
+              default: {
                 switch (message._tag) {
+                  case "Audition.Failure": {
+                    const { actual, expected } = message
+                    yield* publishTake(Take.fail((finalError = AuditionError.make({ value: { actual, expected } }))))
+                    break
+                  }
                   case "Disconnect": {
-                    finalError = UnresolvedError.make()
                     yield* publishTake(Take.end)
+                    finalError = UnresolvedError.make()
                     break
                   }
                   case "TransportFailure": {
@@ -370,7 +372,7 @@ const make = <
                     break
                   }
                 }
-                break
+                yield* Deferred.succeed(audition, void 0)
               }
             }
           }),
@@ -378,15 +380,11 @@ const make = <
           Effect.ensuring(
             Effect.all(
               [
-                Effect.logDebug("liminal.ClientClosed", {
-                  unresolved: Record.keys(inflights).length,
-                }),
+                debug("ClientClosed", { unresolved: Record.keys(inflights).length }),
                 PubSub.shutdown(pubsub),
-                Effect.forEach(
-                  Record.values(inflights),
-                  (deferred) => Deferred.fail(deferred, finalError ?? UnresolvedError.make()),
-                  { concurrency: "unbounded" },
-                ),
+                Effect.forEach(Record.values(inflights), (deferred) => Deferred.fail(deferred, finalError), {
+                  concurrency: "unbounded",
+                }),
                 RcRef.invalidate(rcr),
               ],
               { concurrency: "unbounded" },
@@ -398,18 +396,22 @@ const make = <
         yield* Deferred.await(audition)
 
         const f: F<ClientSelf, MethodDefinitions> = (_tag) =>
-          Effect.fnUntraced(function* (value) {
-            if (finalError) return yield* finalError
-            const id = callId++
-            const inflight = yield* Deferred.make<_["Call"]["Success"], FError<MethodDefinitions>>()
-            inflights[id] = inflight
-            yield* send({
-              _tag: "Call.Payload",
-              id,
-              payload: { _tag, value },
-            })
-            return yield* Deferred.await(inflight)
-          }, Effect.scoped)
+          Effect.fnUntraced(
+            function* (value) {
+              if (finalError) return yield* finalError
+              const id = callId++
+              const inflight = yield* Deferred.make<_["Call"]["Success"], FError<MethodDefinitions>>()
+              inflights[id] = inflight
+              yield* send({
+                _tag: "Call.Payload",
+                id,
+                payload: { _tag, value },
+              })
+              return yield* Deferred.await(inflight)
+            },
+            span("f"),
+            Effect.scoped,
+          )
 
         return { events, f }
       }),
@@ -443,16 +445,14 @@ export const layerSocket = <
       return {
         listen: Effect.fnUntraced(function* (publish) {
           yield* socket
-            .runRaw(
-              Effect.fnUntraced(function* (raw) {
-                const message = yield* S.decodeUnknown(S.parseJson(client.schema.actor))(
-                  raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                )
-                yield* publish(message)
-              }),
+            .runRaw((raw) =>
+              pipe(
+                raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
+                S.decodeUnknown(S.parseJson(client.schema.actor)),
+                Effect.andThen(publish),
+              ),
             )
             .pipe(
-              Effect.catchTag("ParseError", (cause) => publish({ _tag: "TransportFailure", cause })),
               Effect.catchTag(
                 "SocketError",
                 Effect.fnUntraced(function* (cause) {
@@ -461,6 +461,7 @@ export const layerSocket = <
                     case "Write":
                     case "Open":
                     case "OpenTimeout": {
+                      yield* debug("SocketTimeoutError", { cause })
                       return yield* publish({ _tag: "TransportFailure", cause })
                     }
                     case "Close": {
@@ -470,18 +471,12 @@ export const layerSocket = <
                           return yield* publish({ _tag: "Disconnect" })
                         }
                         case 4003: {
-                          const parsed = S.decodeUnknownOption(S.parseJson(Protocol.Audition.Failure))(closeReason)
-                          if (parsed._tag === "None") {
-                            return yield* publish({ _tag: "TransportFailure", cause })
-                          }
-                          const { actual, expected } = parsed.value
-                          return yield* publish({
-                            _tag: "Audition.Failure",
-                            actual,
-                            expected,
-                          })
+                          return yield* S.decodeUnknown(S.parseJson(Protocol.Audition.Failure))(closeReason).pipe(
+                            Effect.andThen(publish),
+                          )
                         }
                       }
+                      yield* debug("SocketCloseError", { cause })
                       return yield* publish({ _tag: "TransportFailure", cause })
                     }
                   }
