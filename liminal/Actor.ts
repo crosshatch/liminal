@@ -4,8 +4,9 @@ import type { FieldsRecord, Fields } from "./_types.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
-import * as Method from "./Method.ts"
 import type { Send } from "./Send.ts"
+
+import * as Method from "./Method.ts"
 
 export const TypeId = "~liminal/Actor" as const
 
@@ -61,7 +62,7 @@ export interface Actor<
 
   readonly sendAll: Send<ActorSelf, EventDefinitions>
 
-  readonly evict: Effect.Effect<void, never, ActorSelf>
+  readonly disconnectAll: Effect.Effect<void, never, ActorSelf>
 
   readonly handler: <K extends keyof MethodDefinitions, R>(
     tag: K,
@@ -85,20 +86,16 @@ export const Service =
   ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
     const tag = Context.Tag(id)<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>()
 
-    const sendAll: Send<ActorSelf, EventDefinitions> = Effect.fnUntraced(function* (key, payload) {
-      const { clients } = yield* tag
-      yield* Effect.forEach(clients, (client) => client.send(key, payload), {
-        concurrency: "unbounded",
-      })
-    })
+    const sendAll: Send<ActorSelf, EventDefinitions> = (key, payload) =>
+      tag.pipe(
+        Effect.flatMap(({ clients }) =>
+          Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
+        ),
+      )
 
-    // TODO: more eviction
-    const evict = Effect.gen(function* () {
-      const { clients } = yield* tag
-      for (const client of clients) {
-        yield* client.disconnect
-      }
-    })
+    const disconnectAll = tag.pipe(
+      Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
+    )
 
     const handler = <K extends keyof MethodDefinitions, R>(
       _tag: K,
@@ -112,7 +109,7 @@ export const Service =
         attachments: S.Struct(definition.attachments) as never,
       },
       sendAll,
-      evict,
+      disconnectAll,
       handler,
     })
   }
