@@ -186,11 +186,7 @@ export const Service =
       Protocol.Disconnect,
     )
 
-    const events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf> = tag.pipe(
-      Effect.flatMap(RcRef.get),
-      Effect.map(Struct.get("events")),
-      Stream.unwrapScoped,
-    )
+    const events = tag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrapScoped)
 
     const f: F<ClientSelf, MethodDefinitions> = (_tag) =>
       Effect.fnUntraced(function* (value) {
@@ -480,13 +476,17 @@ export const layerSocket = <
               Effect.catchTag("ParseError", Effect.die),
             )
         }, span("listen")),
-        send: Effect.fnUntraced(function* (v) {
-          const write = yield* socket.writer
-          const message = yield* S.encode(S.parseJson(client.schema.call.payload))(v).pipe(
-            Effect.mapError((cause) => ConnectionError.make({ cause })),
-          )
-          yield* write(message).pipe(Effect.catchTag("SocketError", (cause) => ConnectionError.make({ cause })))
-        }, span("send"), Effect.scoped),
+        send: Effect.fnUntraced(
+          function* (v) {
+            const write = yield* socket.writer
+            const message = yield* S.encode(S.parseJson(client.schema.call.payload))(v).pipe(
+              Effect.mapError((cause) => ConnectionError.make({ cause })),
+            )
+            yield* write(message).pipe(Effect.catchTag("SocketError", (cause) => ConnectionError.make({ cause })))
+          },
+          span("send"),
+          Effect.scoped,
+        ),
       }
     }),
     replay,

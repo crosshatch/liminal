@@ -6,8 +6,8 @@ import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
 import type { Send } from "./Send.ts"
 
-import * as Method from "./Method.ts"
 import * as Diagnostic from "./_util/Diagnostic.ts"
+import * as Method from "./Method.ts"
 
 const { span } = Diagnostic.module("Actor")
 
