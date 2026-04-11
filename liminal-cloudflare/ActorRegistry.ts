@@ -1,3 +1,5 @@
+import type { Fields, FieldsRecord } from "liminal/_types"
+
 import { HttpServerResponse } from "@effect/platform"
 import {
   Layer,
@@ -16,7 +18,7 @@ import {
 } from "effect"
 import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
-import type { Fields, FieldsRecord } from "liminal/_types"
+import * as Diagnostic from "liminal/_util/Diagnostic"
 import * as Mutex from "liminal/_util/Mutex"
 
 import * as Binding from "./Binding.ts"
@@ -24,6 +26,8 @@ import * as ClientDirectory from "./ClientDirectory.ts"
 import { close } from "./close.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
+
+const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
@@ -67,8 +71,6 @@ export interface ActorRegistryDefinition<
   readonly onConnect: Effect.Effect<void, never, ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope>
 
   readonly hibernation?: Duration.DurationInput | undefined
-
-  readonly disableLogging?: boolean | undefined
 }
 
 export interface ActorRegistry<
@@ -165,7 +167,7 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, preludeLayer, runLayer, handlers, binding, onConnect, disableLogging } = definition
+    const { hibernation, actor, preludeLayer, runLayer, handlers, binding, onConnect } = definition
     const {
       definition: {
         name: Name,
@@ -244,6 +246,7 @@ export const Service =
           })
           yield* onConnect.pipe(
             Effect.scoped,
+            span("onConnect"),
             Effect.provide([ActorLive, runLayer.pipe(Layer.provideMerge(ActorLive))]),
           )
           return new Response(null, {
@@ -251,7 +254,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(this.runtime.runPromise)
+        }).pipe(span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -266,9 +269,7 @@ export const Service =
           const message = yield* S.decodeUnknown(S.parseJson(schema.call.payload))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
-          if (!disableLogging) {
-            yield* Effect.log(message)
-          }
+          yield* debug("MessageReceived", { message })
           const { id, payload } = message
           const { _tag, value } = payload
           yield* handlers[_tag](value).pipe(
@@ -287,10 +288,11 @@ export const Service =
                   cause: { _tag, value },
                 }),
             }),
+            span("handler", { attributes: { _tag } }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
           )
-        }).pipe(Mutex.task, this.runtime.runFork)
+        }).pipe(Mutex.task, span("webSocketMessage"), this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
@@ -299,9 +301,9 @@ export const Service =
 
       webSocketError(socket: WebSocket, cause: unknown) {
         Effect.gen(this, function* () {
+          yield* debug("SocketErrored", { cause })
           yield* this.directory.unregister(socket)
-          yield* Effect.fail(cause)
-        }).pipe(this.runtime.runFork)
+        }).pipe(span("webSocketError", { attributes: { cause } }), this.runtime.runFork)
       }
     }
 
@@ -334,7 +336,7 @@ export const Service =
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
         Effect.map((v) => HttpServerResponse.raw(v)),
       )
-    })
+    }, span("upgrade"))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never
   }

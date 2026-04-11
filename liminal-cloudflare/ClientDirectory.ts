@@ -1,7 +1,11 @@
+import type { Fields, FieldsRecord } from "liminal/_types"
+
 import { Schema as S, Effect, Ref, Cause, ParseResult } from "effect"
 import { Method, Actor, ClientHandle } from "liminal"
-import type { Fields, FieldsRecord } from "liminal/_types"
+import * as Diagnostic from "liminal/_util/Diagnostic"
 import { phantom } from "liminal/_util/phantom"
+
+const { span } = Diagnostic.module("cloudflare.ClientDirectory")
 
 export interface ClientDirectory<ActorSelf, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
   readonly "": {
@@ -86,7 +90,7 @@ export const make = <
     sockets.set(socket, handle)
     handles.add(handle)
     return handle
-  })
+  }, span("register"))
 
   const unregister = (socket: WebSocket) =>
     Effect.sync(() => {
@@ -95,7 +99,7 @@ export const make = <
         sockets.delete(socket)
         handles.delete(handle)
       }
-    })
+    }).pipe(span("unregister"))
 
   return {
     ...phantom,

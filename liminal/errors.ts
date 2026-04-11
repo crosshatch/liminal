@@ -1,5 +1,7 @@
 import { Schema as S } from "effect"
 
+import type { MethodDefinition } from "./Method.ts"
+
 export class AuditionError extends S.TaggedError<AuditionError>()("AuditionError", {
   value: S.Struct({
     actual: S.String,
@@ -12,3 +14,9 @@ export class ConnectionError extends S.TaggedError<ConnectionError>()("Connectio
 }) {}
 
 export type ClientError = AuditionError | ConnectionError
+
+export class UnresolvedError extends S.TaggedError<UnresolvedError>()("UnresolvedError", {}) {}
+
+export type FError<MethodDefinitions extends Record<string, MethodDefinition.Any>> = [
+  MethodDefinitions[keyof MethodDefinitions]["failure"]["Type"] | ClientError | UnresolvedError,
+][0]

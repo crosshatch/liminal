@@ -1,11 +1,14 @@
-import { Pipeable, Stream, Effect, Function, Console } from "effect"
+import { Pipeable, Stream, Effect, Function } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
 import type { F } from "./F.ts"
 import type * as Method from "./Method.ts"
 
+import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
+
+const { debug, span } = Diagnostic.module("Audition")
 
 const TypeId = "~liminal/Audition" as const
 
@@ -82,12 +85,15 @@ export const add: {
     > = (method) => (payload) =>
       audition
         .f(method as never)(payload)
-        .pipe(Effect.catchTag("AuditionError", () => client.f(method as never)(payload)))
+        .pipe(
+          Effect.catchTag("AuditionError", () => client.f(method as never)(payload)),
+          span("f"),
+        )
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () =>
         Effect.succeed(client.events).pipe(
-          Effect.tap(() => Console.log(`Auditioning ${client.key}`)),
+          Effect.tap(() => debug("AuditionStaged", { client: client.key })),
           Stream.unwrap,
         ),
       ),
