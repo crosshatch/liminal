@@ -1,13 +1,7 @@
 import { Record, Effect, Schema as S } from "effect"
 
-import type { ClientError } from "./errors.ts"
+import type { FError } from "./errors.ts"
 import type { MethodDefinition } from "./Method.ts"
-
-export class UnresolvedError extends S.TaggedError<UnresolvedError>()("UnresolvedError", {}) {}
-
-export type FError<MethodDefinitions extends Record<string, MethodDefinition.Any>> = [
-  MethodDefinitions[keyof MethodDefinitions]["failure"]["Type"] | ClientError | UnresolvedError,
-][0]
 
 export type F<ClientSelf, MethodDefinitions extends Record<string, MethodDefinition.Any>> = <
   Method extends keyof MethodDefinitions,
