@@ -7,6 +7,9 @@ import type { MethodDefinition } from "./Method.ts"
 import type { Send } from "./Send.ts"
 
 import * as Method from "./Method.ts"
+import * as Diagnostic from "./_util/Diagnostic.ts"
+
+const { span } = Diagnostic.module("Actor")
 
 export const TypeId = "~liminal/Actor" as const
 
@@ -91,10 +94,12 @@ export const Service =
         Effect.flatMap(({ clients }) =>
           Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
         ),
+        span("sendAll"),
       )
 
     const disconnectAll = tag.pipe(
       Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
+      span("disconnectAll"),
     )
 
     const handler = <K extends keyof MethodDefinitions, R>(

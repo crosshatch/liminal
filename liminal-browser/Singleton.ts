@@ -1,9 +1,12 @@
+import type { FieldsRecord, Fields } from "liminal/_types"
+
 import { WorkerRunner } from "@effect/platform"
 import { Layer, Scope, Effect, Schema as S, PubSub, Ref, ExecutionStrategy, Exit, ParseResult, Stream } from "effect"
 import { Actor, ClientHandle, Method, Protocol } from "liminal"
-import type { FieldsRecord, Fields } from "liminal/_types"
+import * as Diagnostic from "liminal/_util/Diagnostic"
 
-// TODO: use fiber map?
+const { span } = Diagnostic.module("browser.Singleton")
+
 export const make = Effect.fnUntraced(function* <
   ActorSelf,
   ActorId extends string,
@@ -119,6 +122,7 @@ export const make = Effect.fnUntraced(function* <
                 cause: { _tag, value },
               }),
           }),
+          span("handler", { attributes: { _tag } }),
         )
       }).pipe(task)
     }).pipe(

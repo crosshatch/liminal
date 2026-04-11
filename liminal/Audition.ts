@@ -8,7 +8,7 @@ import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 
-const { debug } = Diagnostic.module("Audition")
+const { debug, span } = Diagnostic.module("Audition")
 
 const TypeId = "~liminal/Audition" as const
 
@@ -85,7 +85,10 @@ export const add: {
     > = (method) => (payload) =>
       audition
         .f(method as never)(payload)
-        .pipe(Effect.catchTag("AuditionError", () => client.f(method as never)(payload)))
+        .pipe(
+          Effect.catchTag("AuditionError", () => client.f(method as never)(payload)),
+          span("f"),
+        )
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () =>

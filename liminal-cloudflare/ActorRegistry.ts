@@ -254,7 +254,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(this.runtime.runPromise)
+        }).pipe(span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -292,7 +292,7 @@ export const Service =
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
           )
-        }).pipe(Mutex.task, this.runtime.runFork)
+        }).pipe(Mutex.task, span("webSocketMessage"), this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
@@ -336,7 +336,7 @@ export const Service =
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
         Effect.map((v) => HttpServerResponse.raw(v)),
       )
-    })
+    }, span("upgrade"))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never
   }

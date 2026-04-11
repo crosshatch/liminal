@@ -409,7 +409,7 @@ const make = <
           )
 
         return { events, f }
-      }),
+      }).pipe(span("acquire")),
     })
 
     return rcr
@@ -479,14 +479,14 @@ export const layerSocket = <
               ),
               Effect.catchTag("ParseError", Effect.die),
             )
-        }),
+        }, span("listen")),
         send: Effect.fnUntraced(function* (v) {
           const write = yield* socket.writer
           const message = yield* S.encode(S.parseJson(client.schema.call.payload))(v).pipe(
             Effect.mapError((cause) => ConnectionError.make({ cause })),
           )
           yield* write(message).pipe(Effect.catchTag("SocketError", (cause) => ConnectionError.make({ cause })))
-        }, Effect.scoped),
+        }, span("send"), Effect.scoped),
       }
     }),
     replay,
@@ -517,7 +517,10 @@ export const layerWorker = <
         .pipe(Effect.catchTag("WorkerError", (cause) => ConnectionError.make({ cause })))
 
       const send = (message: Protocol.Call.Payload.Type<MethodDefinitions>) =>
-        worker.executeEffect(message).pipe(Effect.catchTag("WorkerError", (cause) => ConnectionError.make({ cause })))
+        worker.executeEffect(message).pipe(
+          Effect.catchTag("WorkerError", (cause) => ConnectionError.make({ cause })),
+          span("send"),
+        )
 
       return {
         listen: Effect.fnUntraced(function* (publish) {
@@ -531,7 +534,7 @@ export const layerWorker = <
             Stream.takeUntil((message) => message._tag === "Disconnect" || message._tag === "Audition.Failure"),
             Stream.runForEach(publish),
           )
-        }),
+        }, span("listen")),
         send,
       }
     }),
