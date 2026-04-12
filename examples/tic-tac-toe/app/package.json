@@ -1,0 +1,36 @@
+{
+  "name": "tictactoe-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "portless tictactoe.liminal.actor --app-port 7779 -- vite dev --force",
+    "build": "vite build && tsc",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "@effect-atom/atom": "catalog:",
+    "@effect-atom/atom-react": "catalog:",
+    "@effect/ai": "catalog:",
+    "@effect/ai-openai": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/platform-browser": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "babel-plugin-react-compiler": "catalog:",
+    "effect": "catalog:",
+    "liminal": "workspace:*",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tictactoe": "workspace:*",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@liminal/examples",
+  "private": true,
+  "bugs": {
+    "url": "https://github.com/crosshatch/liminal/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crosshatch/liminal.git",
+    "directory": "examples"
+  },
+  "type": "module",
+  "dependencies": {
+    "@effect-atom/atom": "catalog:",
+    "@effect/ai": "catalog:",
+    "@effect/experimental": "catalog:",
+    "@effect/platform": "catalog:",
+    "effect": "catalog:",
+    "liminal-cloudflare": "workspace:*",
+    "liminal": "workspace:*"
+  }
+}

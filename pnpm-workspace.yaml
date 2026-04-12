@@ -1,5 +1,6 @@
 packages:
   - docs
+  - examples/*/*
   - liminal
   - liminal-browser
   - liminal-cloudflare
@@ -116,7 +117,7 @@ catalog:
   vite-plugin-mkcert: ^1.17.9
   vitest: 4.0.18
   web-bot-auth: ^0.1.1
-  wrangler: 4.67.0
+  wrangler: ^4.81.1
   zod: ^4.1.13
   clsx: ^2.1.1
   cmdk: ^1.1.1

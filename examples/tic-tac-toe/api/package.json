@@ -1,0 +1,22 @@
+{
+  "name": "tictactoe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "dependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@effect/platform": "catalog:",
+    "effect": "catalog:",
+    "liminal": "workspace:*",
+    "liminal-cloudflare": "workspace:*",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}
