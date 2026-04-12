@@ -206,7 +206,7 @@ export const Service =
 
         this.runtime = Effect.gen(this, function* () {
           this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap(S.decodeUnknown(Name)),
+            Effect.flatMap((v) => (typeof v === "string" ? S.decode(Name)(v) : Effect.succeed(undefined))),
           )
           for (const socket of this.state.getWebSockets()) {
             const attachments = yield* S.decodeUnknown(Attachments)(socket.deserializeAttachment())
