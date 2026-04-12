@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tic-tac-toe",
+  "main": "../api/main.ts",
+  "compatibility_date": "2026-02-05",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "keep_vars": true,
+  "observability": {
+    "enabled": true,
+  },
+  "placement": {
+    "mode": "smart",
+  },
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+  },
+  "routes": [
+    {
+      "pattern": "tictactoe.liminal.actor/*",
+      "zone_name": "liminal.actor",
+    },
+    {
+      "pattern": "www.tictactoe.liminal.actor/*",
+      "zone_name": "liminal.actor",
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "TIC_TAC_TOE",
+        "class_name": "TicTacToeRegistry",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["TicTacToeRegistry"],
+    },
+  ],
+  "vars": { "DEV": true },
+}
