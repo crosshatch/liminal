@@ -18,6 +18,8 @@ import {
   Array,
   Struct,
   Fiber,
+  ExecutionStrategy,
+  Exit,
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
@@ -53,7 +55,7 @@ interface EventTake<A, E> {
   readonly take: Take.Take<A, E>
 }
 
-export interface TransportSession<
+export interface Session<
   ClientSelf,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
   EventDefinitions extends FieldsRecord,
@@ -61,13 +63,15 @@ export interface TransportSession<
   readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError>
 
   readonly f: F<ClientSelf, MethodDefinitions>
+
+  readonly end: Effect.Effect<void>
 }
 
 export type Service<
   ClientSelf,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
   EventDefinitions extends FieldsRecord,
-> = RcRef.RcRef<TransportSession<ClientSelf, MethodDefinitions, EventDefinitions>, ClientError>
+> = RcRef.RcRef<Session<ClientSelf, MethodDefinitions, EventDefinitions>, ClientError>
 
 export interface Spec<
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
@@ -194,7 +198,16 @@ export const Service =
         return yield* f(_tag)(value)
       }, Effect.scoped)
 
-    const invalidate = tag.pipe(Effect.flatMap(RcRef.invalidate))
+    const invalidate = tag.pipe(
+      Effect.flatMap((rc) =>
+        RcRef.get(rc).pipe(
+          Effect.flatMap(({ end }) => end),
+          Effect.andThen(RcRef.invalidate(rc)),
+        ),
+      ),
+      Effect.scoped,
+      Effect.ignore,
+    )
 
     return Object.assign(tag, {
       [TypeId]: TypeId,
@@ -233,11 +246,10 @@ const make = <
   Effect.gen(function* () {
     type _ = Spec<MethodDefinitions, EventDefinitions>
 
-    const rcr: RcRef.RcRef<
-      TransportSession<ClientSelf, MethodDefinitions, EventDefinitions>,
-      ClientError
-    > = yield* RcRef.make({
+    const rcr: RcRef.RcRef<Session<ClientSelf, MethodDefinitions, EventDefinitions>, ClientError> = yield* RcRef.make({
       acquire: Effect.gen(function* () {
+        yield* debug("AcquisitionStarted")
+
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
@@ -277,18 +289,21 @@ const make = <
             yield* PubSub.publish(pubsub, eventTake)
           })
 
-        yield* debug("Auditioned", { client: client.key })
+        const outer = yield* Scope.Scope
+        const scope = yield* Scope.fork(outer, ExecutionStrategy.sequential)
+        const end = Scope.close(scope, Exit.void)
 
         const fiber = yield* listen(
           Effect.fnUntraced(function* (message) {
-            yield* debug("ClientMessaged", { message })
             switch (message._tag) {
               case "Audition.Success": {
+                yield* debug("AuditionSucceeded")
                 yield* Deferred.succeed(audition, void 0)
                 return
               }
               case "Event": {
                 const { event } = message
+                yield* debug("EventEmitted", { event })
                 yield* publishTake(Take.of(event), true)
                 return
               }
@@ -300,11 +315,15 @@ const make = <
                   delete inflights[id]
                   switch (message._tag) {
                     case "Call.Success": {
-                      yield* Deferred.succeed(deferred, message.value.value)
+                      const { _tag, value } = message.value
+                      yield* debug("CallSucceeded", { id, _tag, value })
+                      yield* Deferred.succeed(deferred, value)
                       return
                     }
                     case "Call.Failure": {
-                      yield* Deferred.fail(deferred, message.cause.value)
+                      const { _tag, value: cause } = message.cause
+                      yield* debug("CallFailed", { id, _tag, cause })
+                      yield* Deferred.fail(deferred, { cause })
                       return
                     }
                   }
@@ -313,13 +332,16 @@ const make = <
               }
               case "Audition.Failure": {
                 const { actual, expected } = message
+                yield* debug("AuditionFailed", { expected })
                 return yield* AuditionError.make({ value: { actual, expected } })
               }
               case "Disconnect": {
+                yield* debug("Disconnected")
                 return
               }
               case "TransportFailure": {
                 const { cause } = message
+                yield* debug("TransportFailed", { cause })
                 return yield* ConnectionError.make({ cause })
               }
             }
@@ -336,6 +358,7 @@ const make = <
             ),
           ),
           Effect.forkScoped,
+          Effect.provideService(Scope.Scope, scope),
         )
 
         const events = Effect.gen(function* () {
@@ -404,8 +427,8 @@ const make = <
             Effect.scoped,
           )
 
-        return { events, f }
-      }).pipe(span("acquire")),
+        return { events, f, end }
+      }).pipe(span("acquire", { attributes: { client: client.key } }), Effect.annotateLogs("client", client.key)),
     })
 
     return rcr

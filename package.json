@@ -7,16 +7,13 @@
     "watch": "tsc -b -w",
     "dev": "turbo run //#watch //#test dev",
     "test": "vitest run",
-    "clean": "repo-util clean --ignore repos",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "changeset": "changeset"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "@crosshatch/repo-util": "catalog:",
     "@effect/language-service": "catalog:",
-    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "^19.2.14",
