@@ -206,16 +206,15 @@ export const Service =
 
         this.runtime = Effect.gen(this, function* () {
           this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap((v) => (typeof v === "string" ? S.decode(Name)(v) : Effect.succeed(undefined))),
+            Effect.flatMap(S.decodeUnknown(Name)),
           )
           for (const socket of this.state.getWebSockets()) {
             const attachments = yield* S.decodeUnknown(Attachments)(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
           return Layer.mergeAll(
-            preludeLayer,
+            preludeLayer.pipe(Layer.provideMerge(Layer.setConfigProvider(ConfigProvider.fromJson(env)))),
             Intrinsic.layer,
-            Layer.setConfigProvider(ConfigProvider.fromJson(env)),
             Mutex.layer,
           )
         }).pipe(Layer.unwrapEffect, ManagedRuntime.make)
@@ -254,7 +253,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(span("fetch"), this.runtime.runPromise)
+        }).pipe(Effect.scoped, span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -292,7 +291,7 @@ export const Service =
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
           )
-        }).pipe(Mutex.task, span("webSocketMessage"), this.runtime.runFork)
+        }).pipe(Effect.scoped, Mutex.task, span("webSocketMessage"), this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
