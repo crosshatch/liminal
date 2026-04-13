@@ -1,13 +1,12 @@
 import { Context, Schema as S, Effect } from "effect"
 
 import type { FieldsRecord, Fields } from "./_types.ts"
+import * as Diagnostic from "./_util/Diagnostic.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
-import type { Send } from "./Send.ts"
-
-import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Method from "./Method.ts"
+import type { Send } from "./Send.ts"
 
 const { span } = Diagnostic.module("Actor")
 

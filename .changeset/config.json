@@ -2,16 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.3/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [
-    [
-      "*"
-    ]
-  ],
+  "fixed": [["*"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@liminal/docs"
-  ]
+  "ignore": ["@liminal/docs"]
 }

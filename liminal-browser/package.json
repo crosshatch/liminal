@@ -1,7 +1,6 @@
 {
   "name": "liminal-browser",
   "version": "0.17.1",
-
   "description": "Actors x Effects on Cloudflare",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"

@@ -1,5 +1,3 @@
-import type { Fields, FieldsRecord } from "liminal/_types"
-
 import { HttpServerResponse } from "@effect/platform"
 import {
   Layer,
@@ -18,6 +16,7 @@ import {
 } from "effect"
 import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
+import type { Fields, FieldsRecord } from "liminal/_types"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import * as Mutex from "liminal/_util/Mutex"
 

@@ -1,11 +1,11 @@
-import { fileURLToPath, URL } from "node:url";
+import { fileURLToPath, URL } from "node:url"
 
-import { cloudflare } from "@cloudflare/vite-plugin";
-import tailwind from "@tailwindcss/vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+import { cloudflare } from "@cloudflare/vite-plugin"
+import tailwind from "@tailwindcss/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
+import tsconfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig({
   envDir: "../..",
@@ -35,19 +35,13 @@ export default defineConfig({
     alias: {
       "@": fileURLToPath(new URL(".", import.meta.url)),
     },
-    dedupe: [
-      "react",
-      "react-dom",
-      "effect",
-      "@effect-atom/atom",
-      "@effect-atom/atom-react",
-    ],
+    dedupe: ["react", "react-dom", "effect", "@effect-atom/atom", "@effect-atom/atom-react"],
   },
   server: {
     allowedHosts: [".localhost"],
     fs: { strict: false },
     host: "127.0.0.1",
-    port: 4567,
+    port: 7780,
     strictPort: true,
   },
-});
+})

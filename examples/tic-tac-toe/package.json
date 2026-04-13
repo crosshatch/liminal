@@ -17,7 +17,7 @@
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
     "effect": "catalog:",
-    "liminal-cloudflare": "workspace:*",
-    "liminal": "workspace:*"
+    "liminal": "workspace:*",
+    "liminal-cloudflare": "workspace:*"
   }
 }
