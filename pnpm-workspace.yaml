@@ -71,7 +71,7 @@ catalog:
   vitest: 4.0.18
   vocs: ^1.4.1
   web-bot-auth: ^0.1.1
-  wrangler: 4.81.0
+  wrangler: 4.81.1
 
 overrides:
   "@effect/rpc": 0.73.2
