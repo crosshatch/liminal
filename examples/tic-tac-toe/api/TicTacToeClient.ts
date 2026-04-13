@@ -1,9 +1,9 @@
-import { Schema as S } from "effect";
-import { Client } from "liminal";
+import { Schema as S } from "effect"
+import { Client } from "liminal"
 
-export const Player = S.Literal("X", "O");
-export const Coordinate = S.Literal(0, 1, 2);
-export const Coordinates = S.Tuple(Coordinate, Coordinate);
+export const Player = S.Literal("X", "O")
+export const Coordinate = S.Literal(0, 1, 2)
+export const Coordinates = S.Tuple(Coordinate, Coordinate)
 
 export class OutOfTurnError extends S.TaggedError<OutOfTurnError>()("OutOfTurnError", {}) {}
 export class SlotTakenError extends S.TaggedError<SlotTakenError>()("SlotTakenError", {}) {}

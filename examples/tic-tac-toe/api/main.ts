@@ -1,9 +1,12 @@
-import { HttpLayerRouter, HttpServer, HttpServerResponse } from "@effect/platform";
-import { Layer, Effect } from "effect";
-import { Assets, Entry } from "liminal-cloudflare";
-import { TicTacToeRegistry } from "./ActorRegistry.ts";
+import { HttpLayerRouter, HttpServer, HttpServerResponse } from "@effect/platform"
+import { Layer, Effect } from "effect"
+import { Assets, Entry } from "liminal-cloudflare"
 
-export { TicTacToeRegistry };
+import { TicTacToeRegistry } from "./ActorRegistry.ts"
+import { Database } from "./Database.ts"
+import * as GameState from "./Games.ts"
+
+export { TicTacToeRegistry }
 
 const ApiLive = Layer.mergeAll(
   HttpLayerRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
@@ -11,9 +14,8 @@ const ApiLive = Layer.mergeAll(
     "GET",
     "/play",
     Effect.gen(function* () {
-      return yield* TicTacToeRegistry.upgrade("someId", {
-        player: "X",
-      });
+      const { gameId, player } = yield* GameState.assignGame
+      return yield* TicTacToeRegistry.upgrade(gameId, { player })
     }).pipe(Effect.orDie),
   ),
   HttpLayerRouter.cors({
@@ -22,13 +24,13 @@ const ApiLive = Layer.mergeAll(
     allowedOrigins: ["*"],
   }),
   HttpLayerRouter.add("*", "/*", Assets.forward),
-);
+)
 
 export default ApiLive.pipe(
   Layer.provide(HttpServer.layerContext),
   HttpLayerRouter.toHttpEffect,
   Effect.flatMap((v) => v),
-  Effect.provide(TicTacToeRegistry.layer),
+  Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
   Effect.catchAll(() => HttpServerResponse.empty({ status: 500 })),
   Entry.make(Layer.empty),
-);
+)

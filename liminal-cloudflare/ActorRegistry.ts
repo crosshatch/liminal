@@ -89,7 +89,7 @@ export interface ActorRegistry<
   PreludeE,
   RunROut,
   RunE,
-> extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace> {
+> extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace, never, never, never> {
   new (state: DurableObjectState<{}>): Context.TagClassShape<RegistryId, DurableObjectNamespace>
 
   readonly [TypeId]: typeof TypeId

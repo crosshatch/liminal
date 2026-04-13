@@ -1,22 +1,21 @@
-/** @effect-diagnostics unnecessaryEffectGen:skip-file */
-import { Effect, Layer } from "effect";
-import { handleMove } from "./handleMove";
-import { TicTacToeActor } from "./TicTacToeActor";
-import { ActorRegistry } from "liminal-cloudflare";
-import * as GameState from "./GameState.ts";
+import { Effect, Layer } from "effect"
+import { ActorRegistry } from "liminal-cloudflare"
+
+import { Database } from "./Database.ts"
+import { handleMove } from "./handleMove.ts"
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+const onConnect = Effect.gen(function* () {
+  const { clients } = yield* TicTacToeActor
+  const player = clients.size === 1 ? "X" : "O"
+  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
+})
 
 export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("examples/TicTacToeRegistry", {
   actor: TicTacToeActor,
   binding: "TicTacToe",
-  handlers: {
-    Move: handleMove,
-  },
-  onConnect: Effect.gen(function* () {
-    const { clients } = yield* TicTacToeActor;
-    yield* TicTacToeActor.sendAll("GameStarted", {
-      player: clients.size === 1 ? "X" : "O",
-    });
-  }).pipe(Effect.orDie),
-  preludeLayer: GameState.layer,
+  handlers: { Move: handleMove },
+  onConnect,
+  preludeLayer: Database.layer,
   runLayer: Layer.empty,
 }) {}

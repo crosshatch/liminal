@@ -6,17 +6,11 @@
     "target": "ES2022",
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "."
-  ],
-  "exclude": [
-    "dist"
-  ],
+  "include": ["."],
+  "exclude": ["dist"],
   "references": [
     {
       "path": "../../../liminal"

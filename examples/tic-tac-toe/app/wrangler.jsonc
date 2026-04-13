@@ -24,7 +24,7 @@
     {
       "pattern": "www.tictactoe.liminal.actor/*",
       "zone_name": "liminal.actor",
-    }
+    },
   ],
   "durable_objects": {
     "bindings": [
@@ -40,5 +40,14 @@
       "new_classes": ["TicTacToeRegistry"],
     },
   ],
-  "vars": { "DEV": true },
+  "vars": {
+    "DEV": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "TIC_TAC_TOE_D1",
+      "database_name": "tic-tac-toe",
+      "database_id": "4257ef71-66f7-498c-8a41-e4d9acebf667",
+    },
+  ],
 }

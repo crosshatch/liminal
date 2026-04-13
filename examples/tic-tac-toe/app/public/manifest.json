@@ -1,6 +1,6 @@
 {
-  "name": "LMNL IM",
-  "short_name": "lmnl.im",
+  "name": "Tic Tac Toe",
+  "short_name": "tictactoe.liminal.actor",
   "icons": [
     {
       "src": "favicon.ico",

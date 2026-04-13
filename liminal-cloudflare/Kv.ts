@@ -16,7 +16,10 @@ export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, Valu
   Self,
   Id,
   Binding_,
-  KVNamespace
+  KVNamespace,
+  never,
+  never,
+  never
 > {
   readonly [TypeId]: typeof TypeId
 
