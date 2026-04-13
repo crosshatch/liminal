@@ -12,7 +12,10 @@ export interface Hyperdrive<Self, Id extends string, Binding_ extends string> ex
   Self,
   Id,
   Binding_,
-  globalThis.Hyperdrive
+  globalThis.Hyperdrive,
+  never,
+  never,
+  never
 > {
   readonly [TypeId]: typeof TypeId
 

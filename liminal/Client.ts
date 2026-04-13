@@ -23,11 +23,10 @@ import {
 } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
-import type { MethodDefinition } from "./Method.ts"
-
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
+import type { MethodDefinition } from "./Method.ts"
 import * as Protocol from "./Protocol.ts"
 
 const { debug, span } = Diagnostic.module("Client")

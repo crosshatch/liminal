@@ -3,9 +3,9 @@
   "type": "module",
   "scripts": {
     "prepare": "ts-patch install -s",
-    "build": "tsc -b",
+    "build": "tsc -b && turbo run build",
     "watch": "tsc -b -w",
-    "dev": "turbo run //#watch //#test dev",
+    "dev": "turbo run dev //#watch",
     "test": "vitest run",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",

@@ -2,6 +2,7 @@
   "include": [],
   "references": [
     { "path": "./docs" },
+    { "path": "./examples/tic-tac-toe" },
     { "path": "./liminal" },
     { "path": "./liminal-browser" },
     { "path": "./liminal-cloudflare" }

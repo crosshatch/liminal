@@ -10,28 +10,33 @@ export class BindingNotFoundError extends Data.TaggedError("BindingNotFoundError
 
 export class BindingValidationError extends Data.TaggedError("BindingValidationError")<{}> {}
 
-export interface Binding<Self, Id extends string, Binding_ extends string, A> extends Context.Tag<Self, A> {
+export interface Binding<Self, Id extends string, Binding_ extends string, A, ROut, E, RIn> extends Context.Tag<
+  Self,
+  A
+> {
   new (_: never): Context.TagClassShape<Id, A>
 
   readonly [TypeId]: typeof TypeId
 
   readonly binding: Binding_
 
-  readonly layer: Layer.Layer<Self, BindingError>
+  readonly layer: Layer.Layer<Self | ROut, BindingError | E, RIn>
 }
 
 export const Service =
   <Self>() =>
-  <Id extends string, Binding_ extends string, A extends object>(
+  <Id extends string, Binding_ extends string, A extends object, ROut = never, E = never, RIn = never>(
     id: Id,
     binding: Binding_,
     f: (value: object) => value is A,
-  ): Binding<Self, Id, Binding_, A> => {
+    makeLayer: (resource: A) => Layer.Layer<ROut, E, RIn> = () => Layer.empty as never,
+  ): Binding<Self, Id, Binding_, A, ROut, E, RIn> => {
     const tag = Context.Tag(id)<Self, A>()
     const layer = Effect.fromNullable(unsafeEnv[binding]).pipe(
       Effect.catchTag("NoSuchElementException", () => new BindingNotFoundError()),
       Effect.filterOrFail(f, () => new BindingValidationError()),
-      Layer.effect(tag),
+      Effect.map((v) => Layer.mergeAll(makeLayer(v), Layer.succeed(tag, v))),
+      Layer.unwrapEffect,
     )
     return Object.assign(tag, { [TypeId]: TypeId, binding, layer })
   }

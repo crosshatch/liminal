@@ -1,7 +1,6 @@
 {
   "name": "liminal-cloudflare",
   "version": "0.17.1",
-
   "description": "Actors x Effects on Cloudflare",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
@@ -31,6 +30,8 @@
     "@effect/ai": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
+    "@effect/sql": "catalog:",
+    "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*"
   }
