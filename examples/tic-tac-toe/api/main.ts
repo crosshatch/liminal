@@ -14,7 +14,7 @@ const ApiLive = Layer.mergeAll(
     "GET",
     "/play",
     Effect.gen(function* () {
-      const { gameId, player } = yield* GameState.assignGame
+      const { gameId, player } = yield* GameState.init
       return yield* TicTacToeRegistry.upgrade(gameId, { player })
     }).pipe(Effect.orDie),
   ),

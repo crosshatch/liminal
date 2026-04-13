@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "portless tictactoe.liminal.actor --app-port 7779 -- vite dev --force",
-    "build": "vite build && tsc",
+    "build": "vite build",
     "serve": "vite preview"
   },
   "dependencies": {
