@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2020", "DOM"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -17,12 +17,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["."],
-  "references": [
-    {
-      "path": "../liminal"
-    },
-    {
-      "path": "../liminal-cloudflare"
-    }
-  ]
+  "references": [{ "path": "../liminal" }, { "path": "../liminal-cloudflare" }]
 }
