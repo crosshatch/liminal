@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "prepare": "ts-patch install -s",
-    "build": "turbo run build",
+    "build": "tsc -b && turbo run build",
     "watch": "tsc -b -w",
     "dev": "turbo run dev //#watch",
     "test": "vitest run",
