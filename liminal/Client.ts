@@ -184,16 +184,7 @@ export const Service =
       event: S.Union(Object.entries(definition.events).map(([_tag, fields]) => S.TaggedStruct(_tag, fields) as never)),
     })
 
-    const actor: S.Union<
-      [
-        typeof call.success,
-        typeof call.failure,
-        typeof event,
-        typeof Protocol.Audition.Success,
-        typeof Protocol.Audition.Failure,
-        typeof Protocol.Disconnect,
-      ]
-    > = S.Union([
+    const actor = S.Union([
       call.success,
       call.failure,
       event,
