@@ -6,7 +6,7 @@
   "experimentalSortImports": {},
   "experimentalTailwindcss": {
     "functions": ["cn"],
-    "stylesheet": "./kit/@crosshatch/ui/styles.css",
+    "stylesheet": "./examples/tic-tac-toe/app/app.css",
   },
   "proseWrap": "always",
 }
