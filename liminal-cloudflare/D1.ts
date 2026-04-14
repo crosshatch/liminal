@@ -1,6 +1,6 @@
-import { SqlClient } from "@effect/sql"
 import { D1Client } from "@effect/sql-d1"
-import { ConfigError } from "effect"
+import { Config } from "effect"
+import { SqlClient } from "effect/unstable/sql"
 
 import * as Binding from "./Binding.ts"
 
@@ -16,7 +16,7 @@ export interface D1<Self, Id extends string, Binding_ extends string> extends Bi
   Binding_,
   globalThis.D1Database,
   D1Client.D1Client | SqlClient.SqlClient,
-  ConfigError.ConfigError,
+  Config.ConfigError,
   never
 > {
   readonly [TypeId]: typeof TypeId

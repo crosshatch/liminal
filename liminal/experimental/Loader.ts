@@ -1,16 +1,16 @@
-import { Path, FileSystem } from "@effect/platform"
+import { Path, FileSystem } from "effect"
 import { Option, Layer, Effect, Data, Context } from "effect"
 
 export class LoaderError extends Data.TaggedError("LoaderError")<{
   readonly url: string
 }> {}
 
-export class Loader extends Context.Tag("liminal/Loader")<
+export class Loader extends Context.Service<
   Loader,
   {
     readonly load: (key: string) => Effect.Effect<Option.Option<string>, LoaderError>
   }
->() {}
+>()("liminal/Loader") {}
 
 export const layerFs = Layer.effect(
   Loader,

@@ -72,7 +72,7 @@ import { LobbyActor } from "../lobby/LobbyActor.ts"
 
 const UserId = S.String.pipe(S.brand("UserId"))
 
-export class CurrentUserId extends Context.Tag("CurrentUserId")<CurrentUserId, typeof UserId.Type>() {}
+export class CurrentUserId extends Context.Service<CurrentUserId, typeof UserId.Type>()("CurrentUserId") {}
 
 // Use the actor name as the ID.
 export const layerLobby = Effect.gen(function* () {

@@ -1,4 +1,4 @@
-import { Prompt } from "@effect/ai"
+import { Prompt } from "effect/unstable/ai"
 
 import { append } from "./append.ts"
 

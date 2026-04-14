@@ -12,7 +12,6 @@
   "dependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
-    "@effect/platform": "catalog:",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",

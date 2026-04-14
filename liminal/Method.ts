@@ -1,15 +1,15 @@
 import { Schema as S, Effect } from "effect"
 
-import type { Fields } from "./_types.ts"
-
-export interface MethodDefinition<P extends Fields, AA, AI, EA, EI> {
+export interface MethodDefinition<P extends S.Struct.Fields, AA, AI, EA, EI> {
   readonly payload: P
-  readonly success: S.Schema<AA, AI>
-  readonly failure: S.Schema<EA, EI>
+  readonly success: S.Codec<AA, AI>
+  readonly failure: S.Codec<EA, EI>
 }
 
 export declare namespace MethodDefinition {
-  export type Any = MethodDefinition<Fields, any, any, any, any> | MethodDefinition<Fields, any, any, never, never>
+  export type Any =
+    | MethodDefinition<S.Struct.Fields, any, any, any, any>
+    | MethodDefinition<S.Struct.Fields, any, any, never, never>
 
   export type Merge<T, U> = [T] extends [never]
     ? U
@@ -18,14 +18,14 @@ export declare namespace MethodDefinition {
       }
 }
 
-export const define = <const P extends Fields, AA, AI, EA, EI>({
+export const define = <const P extends S.Struct.Fields, AA, AI, EA, EI>({
   payload,
   success,
   failure,
 }: {
   readonly payload: P
-  readonly success: S.Schema<AA, AI>
-  readonly failure: S.Schema<EA, EI>
+  readonly success: S.Codec<AA, AI>
+  readonly failure: S.Codec<EA, EI>
 }): MethodDefinition<P, AA, AI, EA, EI> => ({ payload, success, failure })
 
 export type Handler<MethodDefinition extends MethodDefinition.Any, R> = (

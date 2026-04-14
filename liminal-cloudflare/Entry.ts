@@ -1,6 +1,6 @@
-import { HttpServerRequest, HttpServerResponse, HttpServerError } from "@effect/platform"
 import { env } from "cloudflare:workers"
 import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
+import { HttpServerRequest, HttpServerResponse, HttpServerError } from "effect/unstable/http"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 
 import { ExecutionContext } from "./ExecutionContext.ts"
@@ -19,7 +19,7 @@ export const makeFetch =
     >,
   ) => {
     const runtime = ManagedRuntime.make(
-      Layer.mergeAll(Intrinsic.layer, Layer.setConfigProvider(ConfigProvider.fromJson(env))),
+      Layer.mergeAll(Intrinsic.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
     )
     return (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> =>
       handler.pipe(

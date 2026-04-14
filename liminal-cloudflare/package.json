@@ -26,11 +26,6 @@
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@effect-atom/atom": "catalog:",
-    "@effect/ai": "catalog:",
-    "@effect/experimental": "catalog:",
-    "@effect/platform": "catalog:",
-    "@effect/sql": "catalog:",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*"

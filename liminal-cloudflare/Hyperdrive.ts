@@ -36,7 +36,7 @@ export const Service =
       (v): v is globalThis.Hyperdrive => "connectionString" in v,
     )
 
-    const connectionString = tag.pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
+    const connectionString = tag.asEffect().pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, connectionString })
   }

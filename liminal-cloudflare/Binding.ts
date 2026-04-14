@@ -1,6 +1,5 @@
+import { env } from "cloudflare:workers"
 import { Data, Context, Layer, Effect } from "effect"
-
-import { unsafeEnv } from "./unsafeEnv.ts"
 
 export const TypeId = "~liminal/cloudflare/Binding" as const
 
@@ -10,11 +9,11 @@ export class BindingNotFoundError extends Data.TaggedError("BindingNotFoundError
 
 export class BindingValidationError extends Data.TaggedError("BindingValidationError")<{}> {}
 
-export interface Binding<Self, Id extends string, Binding_ extends string, A, ROut, E, RIn> extends Context.Tag<
+export interface Binding<Self, Id extends string, Binding_ extends string, A, ROut, E, RIn> extends Context.Service<
   Self,
   A
 > {
-  new (_: never): Context.TagClassShape<Id, A>
+  new (_: never): Context.ServiceClass.Shape<Id, A>
 
   readonly [TypeId]: typeof TypeId
 
@@ -31,12 +30,12 @@ export const Service =
     f: (value: object) => value is A,
     makeLayer: (resource: A) => Layer.Layer<ROut, E, RIn> = () => Layer.empty as never,
   ): Binding<Self, Id, Binding_, A, ROut, E, RIn> => {
-    const tag = Context.Tag(id)<Self, A>()
-    const layer = Effect.fromNullable(unsafeEnv[binding]).pipe(
-      Effect.catchTag("NoSuchElementException", () => new BindingNotFoundError()),
+    const tag = Context.Service<Self, A>()(id)
+    const layer = Effect.fromNullishOr((env as never)[binding]).pipe(
+      Effect.catchTag("NoSuchElementError", () => new BindingNotFoundError().asEffect()),
       Effect.filterOrFail(f, () => new BindingValidationError()),
       Effect.map((v) => Layer.mergeAll(makeLayer(v), Layer.succeed(tag, v))),
-      Layer.unwrapEffect,
+      Layer.unwrap,
     )
     return Object.assign(tag, { [TypeId]: TypeId, binding, layer })
   }

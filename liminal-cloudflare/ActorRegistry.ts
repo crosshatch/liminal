@@ -1,10 +1,10 @@
-import { HttpServerResponse } from "@effect/platform"
+import type { FieldsRecord } from "liminal/_types"
+
 import {
   Layer,
   Effect,
   Scope,
   Schema as S,
-  ParseResult,
   Context,
   ManagedRuntime,
   ConfigProvider,
@@ -13,10 +13,12 @@ import {
   String,
   Array,
   Encoding,
+  Schema,
+  Option,
 } from "effect"
+import { HttpServerResponse } from "effect/unstable/http"
 import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
-import type { Fields, FieldsRecord } from "liminal/_types"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import * as Mutex from "liminal/_util/Mutex"
 
@@ -35,7 +37,7 @@ export interface ActorRegistryDefinition<
   ActorSelf,
   ActorId extends string,
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
@@ -69,7 +71,7 @@ export interface ActorRegistryDefinition<
 
   readonly onConnect: Effect.Effect<void, never, ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope>
 
-  readonly hibernation?: Duration.DurationInput | undefined
+  readonly hibernation?: Duration.Input | undefined
 }
 
 export interface ActorRegistry<
@@ -79,7 +81,7 @@ export interface ActorRegistry<
   ActorSelf,
   ActorId extends string,
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
@@ -89,7 +91,7 @@ export interface ActorRegistry<
   RunROut,
   RunE,
 > extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace, never, never, never> {
-  new (state: DurableObjectState<{}>): Context.TagClassShape<RegistryId, DurableObjectNamespace>
+  new (state: DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
   readonly [TypeId]: typeof TypeId
 
@@ -112,7 +114,7 @@ export interface ActorRegistry<
   readonly upgrade: (
     name: NameA,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, ParseResult.ParseError, RegistrySelf | NativeRequest>
+  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, Schema.SchemaError, RegistrySelf | NativeRequest>
 }
 
 export const Service =
@@ -123,7 +125,7 @@ export const Service =
     ActorSelf,
     ActorId extends string,
     NameA,
-    AttachmentFields extends Fields,
+    AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
     MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
@@ -175,13 +177,14 @@ export const Service =
       schema: { attachments: Attachments },
     } = actor
 
-    const Params = S.compose(
-      S.StringFromBase64Url,
-      S.parseJson(
-        S.Struct({
-          name: Name,
-          attachments: Attachments,
-        }),
+    const Params = S.StringFromBase64Url.pipe(
+      S.decodeTo(
+        S.fromJsonString(
+          S.Struct({
+            name: Name,
+            attachments: Attachments,
+          }),
+        ),
       ),
     )
 
@@ -200,42 +203,41 @@ export const Service =
 
         this.state = state
         if (hibernation) {
-          state.setHibernatableWebSocketEventTimeout(Duration.toMillis(hibernation))
+          const hibernationDuration = Duration.fromInput(hibernation)
+          if (Option.isSome(hibernationDuration)) {
+            state.setHibernatableWebSocketEventTimeout(Duration.toMillis(hibernationDuration.value))
+          }
         }
 
-        this.runtime = Effect.gen(this, function* () {
+        this.runtime = Effect.gen({ self: this }, function* () {
           this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap((v) => (typeof v === "string" ? S.decode(Name)(v) : Effect.succeed(undefined))),
+            Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
           )
           for (const socket of this.state.getWebSockets()) {
-            const attachments = yield* S.decodeUnknown(Attachments)(socket.deserializeAttachment())
+            const attachments = yield* S.decodeUnknownEffect(Attachments)(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
           return Layer.mergeAll(
-            preludeLayer.pipe(Layer.provideMerge(Layer.setConfigProvider(ConfigProvider.fromJson(env)))),
+            preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
             Intrinsic.layer,
             Mutex.layer,
           )
-        }).pipe(Layer.unwrapEffect, ManagedRuntime.make)
+        }).pipe(Layer.unwrap, ManagedRuntime.make)
       }
 
       #name?: NameA | undefined
       fetch(request: Request): Promise<Response> {
-        return Effect.gen(this, function* () {
+        return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
-          const { name, attachments } = yield* S.decodeUnknown(Params)(url.searchParams.get("__liminal"))
+          const { name, attachments } = yield* S.decodeUnknownEffect(Params)(url.searchParams.get("__liminal"))
           if (!this.#name) {
             this.#name = name
-            const encoded = yield* S.encode(Name)(name)
+            const encoded = yield* S.encodeEffect(Name)(name)
             yield* Effect.promise(() => this.state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
           this.state.acceptWebSocket(server)
-          server.send(
-            yield* S.encode(S.parseJson(Protocol.Audition.Success))({
-              _tag: "Audition.Success",
-            }),
-          )
+          server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.Audition.Success))({ _tag: "Audition.Success" }))
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -256,15 +258,15 @@ export const Service =
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
-        Effect.gen(this, function* () {
+        Effect.gen({ self: this }, function* () {
           const currentClient = yield* this.directory.get(socket)
-          const name = yield* Effect.fromNullable(this.#name)
+          const name = yield* Effect.fromNullishOr(this.#name)
           const layer = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknown(S.parseJson(schema.call.payload))(
+          const message = yield* S.decodeUnknownEffect(S.fromJsonString(schema.call.payload))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
@@ -274,13 +276,13 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encode(S.parseJson(schema.call.success))({
+                S.encodeEffect(S.fromJsonString(schema.call.success))({
                   _tag: "Call.Success",
                   id,
                   value: { _tag, value },
                 }),
               onFailure: (value) =>
-                S.encode(S.parseJson(schema.call.failure))({
+                S.encodeEffect(S.fromJsonString(schema.call.failure))({
                   _tag: "Call.Failure",
                   id,
                   cause: { _tag, value },
@@ -298,7 +300,7 @@ export const Service =
       }
 
       webSocketError(socket: WebSocket, cause: unknown) {
-        Effect.gen(this, function* () {
+        Effect.gen({ self: this }, function* () {
           yield* debug("SocketErrored", { cause })
           yield* this.directory.unregister(socket)
         }).pipe(span("webSocketError", { attributes: { cause } }), this.runtime.runFork)
@@ -307,20 +309,20 @@ export const Service =
 
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
       const namespace = yield* tag
-      const nameEncoded = yield* S.encode(Name)(name)
+      const nameEncoded = yield* S.encodeEffect(Name)(name)
       const stub = namespace.getByName(nameEncoded)
       const request = yield* NativeRequest
-      const protocols = yield* Effect.fromNullable(request.headers.get(SecWebSocketProtocol)).pipe(
+      const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
         Effect.map(flow(String.split(","), Array.map(String.trim))),
       )
       const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-      const requestClientId = yield* Effect.fromNullable(protocols[liminalTokenI + 1]).pipe(
-        Effect.flatMap(Encoding.decodeBase64UrlString),
+      const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+        Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        return yield* close(
+        return close(
           4003,
-          yield* S.encode(S.parseJson(Protocol.Audition.Failure))(
+          yield* S.encodeEffect(S.fromJsonString(Protocol.Audition.Failure))(
             Protocol.Audition.Failure.make({
               expected: clientId,
               actual: requestClientId,
@@ -329,7 +331,7 @@ export const Service =
         )
       }
       const url = new URL(request.url)
-      const params = yield* S.encode(Params)({ name, attachments })
+      const params = yield* S.encodeEffect(Params)({ name, attachments })
       url.searchParams.set("__liminal", params)
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
         Effect.map((v) => HttpServerResponse.raw(v)),

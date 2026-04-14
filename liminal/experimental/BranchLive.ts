@@ -1,5 +1,5 @@
-import { Chat } from "@effect/ai"
 import { Effect, Layer } from "effect"
+import { Chat } from "effect/unstable/ai"
 
 import { history } from "./L/history.ts"
 

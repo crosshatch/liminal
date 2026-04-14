@@ -1,5 +1,5 @@
-import { Prompt, LanguageModel } from "@effect/ai"
 import { Effect } from "effect"
+import { Prompt, LanguageModel } from "effect/unstable/ai"
 
 import { append } from "./append.ts"
 import { history } from "./history.ts"

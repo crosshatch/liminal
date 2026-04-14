@@ -1,5 +1,5 @@
-import { LanguageModel } from "@effect/ai"
 import { Effect, Stream } from "effect"
+import { LanguageModel } from "effect/unstable/ai"
 
 import { history } from "./history.ts"
 

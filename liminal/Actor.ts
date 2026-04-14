@@ -1,18 +1,24 @@
 import { Context, Schema as S, Effect } from "effect"
 
-import type { FieldsRecord, Fields } from "./_types.ts"
-import * as Diagnostic from "./_util/Diagnostic.ts"
+import type { FieldsRecord } from "./_types.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
-import * as Method from "./Method.ts"
 import type { Send } from "./Send.ts"
+
+import * as Diagnostic from "./_util/Diagnostic.ts"
+import * as Method from "./Method.ts"
 
 const { span } = Diagnostic.module("Actor")
 
 export const TypeId = "~liminal/Actor" as const
 
-export interface Service<ActorSelf, NameA, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
+export interface Service<
+  ActorSelf,
+  NameA,
+  AttachmentFields extends S.Struct.Fields,
+  EventDefinitions extends FieldsRecord,
+> {
   readonly name: NameA
 
   readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
@@ -22,13 +28,13 @@ export interface Service<ActorSelf, NameA, AttachmentFields extends Fields, Even
 
 export interface ActorDefinition<
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
   EventDefinitions extends FieldsRecord,
 > {
-  readonly name: S.Schema<NameA, string>
+  readonly name: S.Codec<NameA, string>
 
   readonly attachments: AttachmentFields
 
@@ -39,13 +45,13 @@ export interface Actor<
   ActorSelf,
   ActorId extends string,
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ActorClientSelf,
   ActorClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
   EventDefinitions extends FieldsRecord,
-> extends Context.Tag<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>> {
-  new (_: never): Context.TagClassShape<ActorId, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>
+> extends Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>> {
+  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>
 
   readonly [TypeId]: typeof TypeId
 
@@ -59,7 +65,7 @@ export interface Actor<
   >
 
   readonly schema: {
-    readonly attachments: S.Schema<S.Struct<AttachmentFields>["Type"], S.Struct<AttachmentFields>["Encoded"]>
+    readonly attachments: S.Codec<S.Struct<AttachmentFields>["Type"], S.Struct<AttachmentFields>["Encoded"]>
   }
 
   readonly sendAll: Send<ActorSelf, EventDefinitions>
@@ -77,7 +83,7 @@ export const Service =
   <
     ActorId extends string,
     NameA,
-    AttachmentFields extends Fields,
+    AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
     MethodDefinitions extends Record<string, MethodDefinition.Any>,
@@ -86,17 +92,17 @@ export const Service =
     id: ActorId,
     definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions>,
   ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
-    const tag = Context.Tag(id)<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>()
+    const tag = Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>()(id)
 
     const sendAll: Send<ActorSelf, EventDefinitions> = (key, payload) =>
-      tag.pipe(
+      tag.asEffect().pipe(
         Effect.flatMap(({ clients }) =>
           Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
         ),
         span("sendAll"),
       )
 
-    const disconnectAll = tag.pipe(
+    const disconnectAll = tag.asEffect().pipe(
       Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
       span("disconnectAll"),
     )

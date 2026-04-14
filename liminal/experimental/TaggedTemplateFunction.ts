@@ -6,11 +6,11 @@ export type TemplateStringsArrayLike = {
 
 type ExtractE<T> = [Extract<T, Effect.Effect<any, any, any>>] extends [never]
   ? never
-  : Effect.Effect.Error<Extract<T, Effect.Effect<any, any, any>>>
+  : Effect.Error<Extract<T, Effect.Effect<any, any, any>>>
 
 type ExtractR<T> = [Extract<T, Effect.Effect<any, any, any>>] extends [never]
   ? never
-  : Effect.Effect.Context<Extract<T, Effect.Effect<any, any, any>>>
+  : Effect.Services<Extract<T, Effect.Effect<any, any, any>>>
 
 export const raw = Effect.fnUntraced(function* <Substitutions extends Array<unknown>>(
   template: TemplateStringsArrayLike,

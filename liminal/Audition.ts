@@ -1,11 +1,12 @@
 import { Pipeable, Stream, Effect, Function } from "effect"
 
 import type { FieldsRecord } from "./_types.ts"
+import type { F } from "./F.ts"
+import type * as Method from "./Method.ts"
+
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
-import type { F } from "./F.ts"
-import type * as Method from "./Method.ts"
 
 const { debug, span } = Diagnostic.module("Audition")
 
@@ -25,8 +26,8 @@ export const empty: Audition<never, never, never> = {
   pipe() {
     return Pipeable.pipeArguments(this, arguments)
   },
-  events: Stream.fail(AuditionError.make()),
-  f: () => () => AuditionError.make(),
+  events: Stream.fail(new AuditionError()),
+  f: () => () => new AuditionError().asEffect(),
 }
 
 export const add: {

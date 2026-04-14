@@ -12,10 +12,6 @@
   },
   "type": "module",
   "dependencies": {
-    "@effect-atom/atom": "catalog:",
-    "@effect/ai": "catalog:",
-    "@effect/experimental": "catalog:",
-    "@effect/platform": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",
     "liminal-cloudflare": "workspace:*"

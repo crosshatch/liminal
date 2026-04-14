@@ -14,6 +14,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
     "@effect/language-service": "catalog:",
+    "effect": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "^19.2.14",
@@ -22,7 +23,6 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/expect": "catalog:",
     "@vitest/web-worker": "catalog:",
-    "fake-indexeddb": "catalog:",
     "happy-dom": "catalog:",
     "oxlint": "catalog:",
     "playwright": "catalog:",
