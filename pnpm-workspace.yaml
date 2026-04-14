@@ -48,7 +48,6 @@ catalog:
   typescript: ^6.0.2
   vaul: ^1.1.2
   vite-bundle-analyzer: ^1.3.6
-  vite-plugin-mkcert: ^1.17.9
   vite-tsconfig-paths: ^6.1.1
   vite: ^7.3.1
   vitest: 4.0.18
@@ -59,5 +58,5 @@ overrides:
   "@effect/sql-pg": 4.0.0-beta.48
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
-  react: ^19.2.4
   react-dom: ^19.2.4
+  react: ^19.2.4

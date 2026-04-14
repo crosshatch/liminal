@@ -6,7 +6,7 @@ node_modules/
 repomix-output.xml
 .DS_Store
 
-effect
+repos
 .wrangler/
 .direnv/
 dist/
