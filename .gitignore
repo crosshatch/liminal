@@ -6,7 +6,7 @@ node_modules/
 repomix-output.xml
 .DS_Store
 
-repos
+liminal-cloudflare/Generated.ts
 .wrangler/
 .direnv/
 dist/

@@ -1,0 +1,18 @@
+[submodule "repos/effect"]
+	path = repos/effect
+	url = git@github.com:Effect-TS/effect-smol.git
+[submodule "repos/router"]
+	path = repos/router
+	url = git@github.com:TanStack/router.git
+[submodule "repos/workers-sdk"]
+	path = repos/workers-sdk
+	url = git@github.com:cloudflare/workers-sdk.git
+[submodule "repos/agents"]
+	path = repos/agents
+	url = git@github.com:cloudflare/agents.git
+[submodule "repos/oxc"]
+	path = repos/oxc
+	url = git@github.com:oxc-project/oxc.git
+[submodule "repos/vite"]
+	path = repos/vite
+	url = git@github.com:vitejs/vite.git
