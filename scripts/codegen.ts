@@ -14,7 +14,7 @@ Effect.gen(function* () {
     format: "httpclient",
   })
   const fs = yield* FileSystem.FileSystem
-  const dest = new URL("../liminal-cloudflare/Generated.ts", import.meta.url).pathname
+  const dest = new URL("../liminal-cloudflare/cloudflare.gen.ts", import.meta.url).pathname
   yield* fs.writeFileString(dest, generated)
   const { stdout } = yield* ChildProcess.make`oxfmt`
   yield* stdout.pipe(Stream.runDrain)
