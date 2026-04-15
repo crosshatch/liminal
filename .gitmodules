@@ -16,3 +16,6 @@
 [submodule "repos/vite"]
 	path = repos/vite
 	url = git@github.com:vitejs/vite.git
+[submodule "repos/konfik"]
+	path = repos/konfik
+	url = git@github.com:crosshatch/konfik.git
