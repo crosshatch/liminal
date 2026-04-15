@@ -48,92 +48,84 @@ export const make = Effect.fnUntraced(function* <
   const task = semaphore.withPermits(1)
   const outer = yield* Scope.make()
 
-  const platform = yield* WorkerRunner.WorkerRunnerPlatform
-  const runner = yield* platform.start<typeof schema.actor.Type, unknown>()
+  return Effect.gen(function* () {
+    const inner = yield* Scope.fork(outer, "sequential")
+    const attachmentsRef = yield* Ref.make(attachments)
+    const pubsub = yield* Effect.acquireRelease(PubSub.unbounded<typeof schema.actor.Type>(), PubSub.shutdown).pipe(
+      Scope.provide(inner),
+    )
+    const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
+      send: (_tag, payload) =>
+        PubSub.publish(pubsub, {
+          _tag: "Event",
+          event: { _tag, ...payload },
+        }).pipe(Effect.asVoid),
+      attachments: Ref.get(attachmentsRef),
+      save: (attachments) => Ref.set(attachmentsRef, attachments),
+      disconnect: Effect.gen(function* () {
+        yield* Scope.close(inner, Exit.void)
+        handles.delete(handle)
+      }),
+    })
+    handles.add(handle)
 
-  const connections = new Map<
-    number,
-    {
-      pubsub: PubSub.PubSub<typeof schema.actor.Type>
-      handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
-    }
-  >()
+    const platform = yield* WorkerRunner.WorkerRunnerPlatform
+    const runner = yield* platform.start<typeof schema.actor.Type, unknown>()
 
-  yield* runner.run<
-    void,
-    S.SchemaError | E,
-    Exclude<Effect.Services<ReturnType<Handlers[keyof Handlers]>>, ActorSelf> | R
-  >((portId, raw) => {
-    if (typeof raw === "string") {
-      const expected = actor.definition.client.key
-      if (raw !== expected) {
-        return runner.send(
-          portId,
-          Protocol.Audition.Failure.make({
-            actual: raw,
-            expected,
-          }),
-        )
-      }
-      return Effect.gen(function* () {
-        const inner = yield* Scope.fork(outer, "sequential")
-        const attachmentsRef = yield* Ref.make(attachments)
-        const pubsub = yield* Effect.acquireRelease(PubSub.unbounded<typeof schema.actor.Type>(), PubSub.shutdown).pipe(
-          Scope.provide(inner),
-        )
-        const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
-          send: (_tag, payload) =>
-            PubSub.publish(pubsub, {
-              _tag: "Event",
-              event: { _tag, ...payload },
-            }).pipe(Effect.asVoid),
-          attachments: Ref.get(attachmentsRef),
-          save: (attachments) => Ref.set(attachmentsRef, attachments),
-          disconnect: Effect.gen(function* () {
-            yield* Scope.close(inner, Exit.void)
-            handles.delete(handle)
-            connections.delete(portId)
-          }),
+    yield* runner.run<
+      void,
+      S.SchemaError | E,
+      Exclude<Effect.Services<ReturnType<Handlers[keyof Handlers]>> | R, ActorSelf>
+    >((portId, raw) => {
+      if (typeof raw === "string") {
+        const expected = actor.definition.client.key
+        if (raw !== expected) {
+          return runner.send(
+            portId,
+            Protocol.Audition.Failure.make({
+              actual: raw,
+              expected,
+            }),
+          )
+        }
+        return Effect.gen(function* () {
+          yield* runner.send(portId, Protocol.Audition.Success.make({}))
+          const subscription = yield* PubSub.subscribe(pubsub).pipe(Scope.provide(inner))
+          yield* task(onConnect).pipe(Effect.provideService(actor, { name, clients: handles, currentClient: handle }))
+          yield* Stream.fromSubscription(subscription).pipe(
+            Stream.runForEach((message) => runner.send(portId, message)),
+          )
         })
-        handles.add(handle)
-        connections.set(portId, { pubsub, handle })
-        yield* runner.send(portId, Protocol.Audition.Success.make({}))
-        yield* task(onConnect).pipe(Effect.provideService(actor, { name, clients: handles, currentClient: handle }))
-        const subscription = yield* PubSub.subscribe(pubsub).pipe(Scope.provide(inner))
-        yield* Stream.fromSubscription(subscription).pipe(Stream.runForEach((message) => runner.send(portId, message)))
-      })
-    }
+      }
 
-    const connection = connections.get(portId)
-    if (!connection) return
-
-    return Effect.gen(function* () {
-      const message = yield* S.decodeUnknownEffect(S.toType(schema.call.payload))(raw)
-      const { id, payload } = message
-      const { _tag, value } = payload
-      const handler = handlers[_tag]
-      yield* handler(value).pipe(
-        Effect.provideService(actor, {
-          name,
-          clients: handles,
-          currentClient: connection.handle,
-        }),
-        Effect.matchEffect({
-          onSuccess: (value) =>
-            PubSub.publish(connection.pubsub, {
-              _tag: "Call.Success" as const,
-              id,
-              value: { _tag, value },
-            }),
-          onFailure: (value) =>
-            PubSub.publish(connection.pubsub, {
-              _tag: "Call.Failure" as const,
-              id,
-              cause: { _tag, value },
-            }),
-        }),
-        span("handler", { attributes: { _tag } }),
-      )
-    }).pipe(task)
+      return Effect.gen(function* () {
+        const message = yield* S.decodeUnknownEffect(S.toType(schema.call.payload))(raw)
+        const { id, payload } = message
+        const { _tag, value } = payload
+        const handler = handlers[_tag]
+        yield* handler(value).pipe(
+          Effect.provideService(actor, {
+            name,
+            clients: handles,
+            currentClient: handle,
+          }),
+          Effect.matchEffect({
+            onSuccess: (value) =>
+              PubSub.publish(pubsub, {
+                _tag: "Call.Success" as const,
+                id,
+                value: { _tag, value },
+              }),
+            onFailure: (value) =>
+              PubSub.publish(pubsub, {
+                _tag: "Call.Failure" as const,
+                id,
+                cause: { _tag, value },
+              }),
+          }),
+          span("handler", { attributes: { _tag } }),
+        )
+      }).pipe(task)
+    })
   })
 })
