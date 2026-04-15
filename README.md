@@ -1,10 +1,19 @@
-# Liminal
+# Liminal Actors
 
-> Note: Liminal is unstable. Use at your peril.
+**Liminal** is an Effect actor framework optimized for Cloudflare durable objects over hibernatable websocket.
 
-Effect x Actors
+- Automatic attachment serialization and deserialization between hibernations.
+- Type-safe Effectful client derivation.
+- Reactivity via Effect atom and `Accumulator` API.
 
-Currently supports:
+## Documentation
 
-- Cloudflare durable objects over hibernatable web socket.
-- Browser contexts over message port.
+The documentation is available at [liminal.actor](https://liminal.actor).
+
+## Contributing
+
+To contribute, please read our [contributing guideline](./.github/CONTRIBUTING.md).
+
+## License
+
+This library is licensed under [the Apache 2.0 License](https://github.com/crosshatch/konfik/blob/main/LICENSE).
