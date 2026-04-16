@@ -129,6 +129,9 @@ importers:
       '@effect/language-service':
         specifier: 'catalog:'
         version: 0.85.1
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1)
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-beta.50(effect@4.0.0-beta.50)(vitest@4.1.4)
