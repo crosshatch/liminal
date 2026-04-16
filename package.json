@@ -2,15 +2,16 @@
   "name": "liminal-root",
   "type": "module",
   "scripts": {
-    "prepare": "ts-patch install -s",
-    "check": "tsc -b",
     "build": "tsc -b && turbo run build",
-    "watch": "tsc -b -w",
+    "changeset": "changeset",
+    "check": "tsc -b",
+    "clean": "node ./repos/konfik/main.ts clean --ignore '**/repos/**/*'",
     "dev": "turbo run dev //#watch",
-    "test": "vitest run",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "changeset": "changeset"
+    "prepare": "ts-patch install -s",
+    "test": "vitest run",
+    "watch": "tsc -b -w"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
