@@ -4,9 +4,9 @@
 
 - Client attachments automatically persist across hibernations.
 - Effect schemas serve as the source of truth for your actor state, methods and events.
-- Effect atoms accumulate state, reduced from actor events.
-- Gracefully handle actor polymorphism. When a client is routed to an incompatible actor, it fails with a recoverable
-  `AuditionError`.
+- Effect atoms accumulate state by reducing actor events.
+- When a client is routed to an incompatible actor, it fails with a recoverable `AuditionError`. This enables graceful
+  client fallback (single-hop actor polymorphism).
 - Liminal is instrumented with debug logging and OTEL-compatible span tracing.
 
 ## Contributing
