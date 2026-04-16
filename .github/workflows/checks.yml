@@ -17,6 +17,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/configure_environment
+      - uses: ./repos/konfik/.github/actions/configure_environment
       - run: pnpm build
       # - run: pnpm test
