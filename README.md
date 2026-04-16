@@ -2,7 +2,7 @@
 
 **Liminal** is an Effect actor framework optimized for Cloudflare durable objects over hibernatable websocket.
 
-- Client attachments are automatically persist across hibernations.
+- Client attachments automatically persist across hibernations.
 - Effect schemas serve as the source of truth for your actor state, methods and events.
 - Effect atoms accumulate state, reduced from actor events.
 - Gracefully handle actor polymorphism. When a client is routed to an incompatible actor, it fails with a recoverable
