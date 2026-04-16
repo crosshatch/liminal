@@ -5,7 +5,7 @@
     "build": "tsc -b && turbo run build",
     "changeset": "changeset",
     "check": "tsc -b",
-    "clean": "node ./repos/konfik/main.ts clean --ignore '**/repos/**/*'",
+    "clean": "node ./repos/konfik/main.ts clean --ignore '**/repos'",
     "dev": "turbo run dev //#watch",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
