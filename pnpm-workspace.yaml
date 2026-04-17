@@ -65,3 +65,8 @@ overrides:
   "@types/react-dom": ^19.2.3
   react: ^19.2.4
   react-dom: ^19.2.4
+
+patchedDependencies:
+  drizzle-orm@1.0.0-beta.21: repos/konfik/patches/drizzle-orm@1.0.0-beta.21.patch
+  miniflare@4.20260415.0: repos/konfik/patches/miniflare@4.20260415.0.patch
+  vocs@1.4.1: repos/konfik/patches/vocs@1.4.1.patch
