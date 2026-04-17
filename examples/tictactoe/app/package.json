@@ -12,6 +12,7 @@
     "@cloudflare/vite-plugin": "catalog:",
     "@effect/atom-react": "catalog:",
     "@effect/platform-browser": "catalog:",
+    "@liminal-examples/tictactoe": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/router-plugin": "catalog:",
@@ -23,7 +24,6 @@
     "liminal": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tictactoe": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:"
   }
