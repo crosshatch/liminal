@@ -1,0 +1,1 @@
+./repos/konfik/AGENTS.md

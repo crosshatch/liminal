@@ -1,11 +1,11 @@
-import { Pipeable, Stream, Effect, Function } from "effect"
+import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
 
-import type { FieldsRecord } from "./_types.ts"
+import type { F } from "./F.ts"
+import type * as Method from "./Method.ts"
+
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
-import type { F } from "./F.ts"
-import type * as Method from "./Method.ts"
 
 const { debug, span } = Diagnostic.module("Audition")
 
@@ -25,8 +25,8 @@ export const empty: Audition<never, never, never> = {
   pipe() {
     return Pipeable.pipeArguments(this, arguments)
   },
-  events: Stream.fail(AuditionError.make()),
-  f: () => () => AuditionError.make(),
+  events: Stream.fail(new AuditionError()),
+  f: () => () => new AuditionError().asEffect(),
 }
 
 export const add: {
@@ -34,7 +34,7 @@ export const add: {
     ClientSelf,
     ClientId extends string,
     ClientMethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    ClientEventDefinitions extends FieldsRecord,
+    ClientEventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     client: Client.Client<ClientSelf, ClientId, ClientMethodDefinitions, ClientEventDefinitions>,
   ): <AuditionSelf, AuditionMethodDefinitions extends Record<string, Method.MethodDefinition.Any>, AuditionEvent>(
@@ -42,7 +42,7 @@ export const add: {
   ) => Audition<
     AuditionSelf | ClientSelf,
     Method.MethodDefinition.Merge<AuditionMethodDefinitions, ClientMethodDefinitions>,
-    AuditionEvent | FieldsRecord.TaggedMember.Type<ClientEventDefinitions>
+    AuditionEvent | ReturnType<typeof S.TaggedUnion<ClientEventDefinitions>>["Type"]
   >
   <
     AuditionClientSelf,
@@ -51,14 +51,14 @@ export const add: {
     ClientSelf,
     ClientId extends string,
     ClientMethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    ClientEventDefinitions extends FieldsRecord,
+    ClientEventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     audition: Audition<AuditionClientSelf, AuditionMethodDefinitions, AuditionEvent>,
     client: Client.Client<ClientSelf, ClientId, ClientMethodDefinitions, ClientEventDefinitions>,
   ): Audition<
     AuditionClientSelf | ClientSelf,
     Method.MethodDefinition.Merge<AuditionMethodDefinitions, ClientMethodDefinitions>,
-    AuditionEvent | FieldsRecord.TaggedMember.Type<ClientEventDefinitions>
+    AuditionEvent | ReturnType<typeof S.TaggedUnion<ClientEventDefinitions>>["Type"]
   >
 } = Function.dual(
   2,
@@ -69,14 +69,14 @@ export const add: {
     ClientSelf,
     ClientId extends string,
     ClientMethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    ClientEventDefinitions extends FieldsRecord,
+    ClientEventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     audition: Audition<AuditionSelf, AuditionMethodDefinitions, AuditionEvent>,
     client: Client.Client<ClientSelf, ClientId, ClientMethodDefinitions, ClientEventDefinitions>,
   ): Audition<
     AuditionSelf | ClientSelf,
     Method.MethodDefinition.Merge<AuditionMethodDefinitions, ClientMethodDefinitions>,
-    AuditionEvent | FieldsRecord.TaggedMember.Type<ClientEventDefinitions>
+    AuditionEvent | ReturnType<typeof S.TaggedUnion<ClientEventDefinitions>>["Type"]
   > => {
     const f: F<
       AuditionSelf | ClientSelf,

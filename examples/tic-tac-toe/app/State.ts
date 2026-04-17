@@ -1,15 +1,16 @@
 import { Effect, Stream, Option, flow, Match } from "effect"
 import { Accumulator } from "liminal"
+import { TicTacToeClient, Player } from "tictactoe/TicTacToeClient"
 
-import { TicTacToeClient, Player } from "../api/TicTacToeClient.ts"
+type Item = Stream.Success<typeof TicTacToeClient.events>
 
-type Item = Stream.Stream.Success<typeof TicTacToeClient.events>
+export class GameState extends Accumulator.Service<
+  GameState,
+  {
+    readonly name: typeof Player.Type
+  }
+>()("examples/GameState") {}
 
-interface State {
-  readonly name: typeof Player.Type
-}
-
-export class GameState extends Accumulator.Service<GameState, State>()("examples/GameState") {}
 const reducer = GameState.reducer<Item>()
 
 const GameStarted = reducer(

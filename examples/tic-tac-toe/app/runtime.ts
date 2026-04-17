@@ -1,9 +1,9 @@
-import { Atom } from "@effect-atom/atom-react"
 import { BrowserSocket } from "@effect/platform-browser"
 import { Layer } from "effect"
+import { Atom } from "effect/unstable/reactivity"
 import { Client } from "liminal"
+import { TicTacToeClient } from "tictactoe/TicTacToeClient"
 
-import { TicTacToeClient } from "../api/TicTacToeClient.ts"
 import * as State from "./State"
 
 export const runtime = Atom.runtime(

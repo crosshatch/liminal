@@ -1,4 +1,4 @@
-import { Deferred, Types, Option, Ref, PubSub, Stream, Effect, Context, Layer } from "effect"
+import { Deferred, Types, Option, Ref, PubSub, Stream, Effect, Context, Layer, Semaphore } from "effect"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
 
@@ -24,8 +24,8 @@ export type Reduce<State, Item, K extends Types.Tags<Item> = Types.Tags<Item>, E
   item: Types.ExtractTag<Item, K>,
 ) => (accumulator: State) => Effect.Effect<State, E, R>
 
-export interface Accumulator<Self, Id extends string, State> extends Context.Tag<Self, Service<State>> {
-  new (_: never): Context.TagClassShape<Id, Service<State>>
+export interface Accumulator<Self, Id extends string, State> extends Context.Service<Self, Service<State>> {
+  new (_: never): Context.ServiceClass.Shape<Id, Service<State>>
 
   readonly [TypeId]: typeof TypeId
 
@@ -46,14 +46,14 @@ export interface Accumulator<Self, Id extends string, State> extends Context.Tag
 export const Service =
   <Self, State>() =>
   <Id extends string>(id: Id): Accumulator<Self, Id, State> => {
-    const tag = Context.Tag(id)<Self, Service<State>>()
+    const tag = Context.Service<Self, Service<State>>()(id)
 
-    const get = tag.pipe(
+    const get = tag.asEffect().pipe(
       Effect.map(({ ref }) => ref),
       Effect.flatMap(Ref.get),
     )
 
-    const stream = tag.pipe(
+    const stream = tag.asEffect().pipe(
       Effect.map(({ pubsub }) => Stream.fromPubSub(pubsub)),
       Stream.unwrap,
     )
@@ -69,7 +69,7 @@ export const Service =
       reduce,
     }: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3>): Layer.Layer<Self, E | E2 | E3, R | R2 | R3> =>
       Effect.gen(function* () {
-        const semaphore = yield* Effect.makeSemaphore(1)
+        const semaphore = yield* Semaphore.make(1)
         const deferred = yield* Deferred.make<State>()
         const pubsub = yield* PubSub.unbounded<State>({ replay: 1 })
         yield* source.pipe(
@@ -87,7 +87,7 @@ export const Service =
               const current = yield* Ref.get(ref)
               const reduced = yield* reduce(item)(current)
               yield* Ref.set(ref, reduced)
-              yield* pubsub.publish(reduced)
+              yield* PubSub.publish(pubsub, reduced)
               yield* debug("ReducedState", { item, previous: current, current: reduced })
             }, semaphore.withPermits(1)),
           ),
@@ -95,9 +95,9 @@ export const Service =
         )
         const initial_ = yield* Deferred.await(deferred)
         const ref = yield* Ref.make(initial_)
-        yield* pubsub.publish(initial_)
+        yield* PubSub.publish(pubsub, initial_)
         return { ref, pubsub }
-      }).pipe(Layer.scoped(tag))
+      }).pipe(Layer.effect(tag))
 
     return Object.assign(tag, { [TypeId]: TypeId, get, stream, reducer, layer })
   }

@@ -1,7 +1,8 @@
 import { Effect, Types } from "effect"
 
-import { Database } from "./Database.ts"
 import type { Player } from "./TicTacToeClient.ts"
+
+import { Database } from "./Database.ts"
 
 export type Board = Types.TupleOf<3, Types.TupleOf<3, typeof Player.Type | undefined>>
 

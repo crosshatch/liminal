@@ -1,4 +1,4 @@
-import { ParseResult, Effect, Schema as S, Option } from "effect"
+import { Effect, Schema as S, Option } from "effect"
 
 import * as Binding from "./Binding.ts"
 
@@ -7,9 +7,9 @@ const TypeId = "~liminal/cloudflare/Kv" as const
 export interface KvDefinition<Binding_ extends string, KeyA, ValueA, ValueI> {
   readonly binding: Binding_
 
-  readonly key: S.Schema<KeyA, string>
+  readonly key: S.Codec<KeyA, string>
 
-  readonly value: S.Schema<ValueA, ValueI>
+  readonly value: S.Codec<ValueA, ValueI>
 }
 
 export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, ValueA, ValueI> extends Binding.Binding<
@@ -25,11 +25,11 @@ export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, Valu
 
   readonly definition: KvDefinition<Binding_, KeyA, ValueA, ValueI>
 
-  readonly put: (key: KeyA, value: ValueA) => Effect.Effect<void, ParseResult.ParseError, Self>
+  readonly put: (key: KeyA, value: ValueA) => Effect.Effect<void, S.SchemaError, Self>
 
-  readonly get: (key: KeyA) => Effect.Effect<Option.Option<ValueA>, ParseResult.ParseError, Self>
+  readonly get: (key: KeyA) => Effect.Effect<Option.Option<ValueA>, S.SchemaError, Self>
 
-  readonly remove: (key: KeyA) => Effect.Effect<void, ParseResult.ParseError, Self>
+  readonly remove: (key: KeyA) => Effect.Effect<void, S.SchemaError, Self>
 }
 
 export const Service =
@@ -45,9 +45,9 @@ export const Service =
     )
 
     const { key, value } = definition
-    const encodeKey = S.encode(key)
-    const encodeValue = S.encode(S.parseJson(value))
-    const decodeValue = S.decodeUnknown(S.parseJson(value))
+    const encodeKey = S.encodeEffect(key)
+    const encodeValue = S.encodeEffect(S.fromJsonString(value))
+    const decodeValue = S.decodeUnknownEffect(S.fromJsonString(value))
 
     const put = Effect.fnUntraced(function* (key: KeyA, value: ValueA) {
       const kv = yield* tag

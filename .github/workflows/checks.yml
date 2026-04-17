@@ -17,6 +17,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/configure_environment
+      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 repos/konfik"
+      - uses: ./repos/konfik/.github/actions/configure_environment
       - run: pnpm build
       # - run: pnpm test

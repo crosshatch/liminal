@@ -1,5 +1,5 @@
 {
-  "name": "tictactoe-app",
+  "name": "@liminal-examples/tictactoe-app",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,7 @@
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "catalog:",
-    "@effect-atom/atom": "catalog:",
-    "@effect-atom/atom-react": "catalog:",
-    "@effect/platform": "catalog:",
+    "@effect/atom-react": "catalog:",
     "@effect/platform-browser": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-router": "catalog:",
@@ -23,12 +21,10 @@
     "babel-plugin-react-compiler": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",
-    "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tictactoe": "workspace:*",
     "vite": "catalog:",
-    "vite-tsconfig-paths": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -1,12 +1,15 @@
-import { Schema as S, Effect, Ref, Cause, ParseResult } from "effect"
+import { Schema as S, Effect, Ref, Cause } from "effect"
 import { Method, Actor, ClientHandle } from "liminal"
-import type { Fields, FieldsRecord } from "liminal/_types"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { phantom } from "liminal/_util/phantom"
 
 const { span } = Diagnostic.module("cloudflare.ClientDirectory")
 
-export interface ClientDirectory<ActorSelf, AttachmentFields extends Fields, EventDefinitions extends FieldsRecord> {
+export interface ClientDirectory<
+  ActorSelf,
+  AttachmentFields extends S.Struct.Fields,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
+> {
   readonly "": {
     readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
   }
@@ -15,12 +18,10 @@ export interface ClientDirectory<ActorSelf, AttachmentFields extends Fields, Eve
 
   readonly register: (
     socket: WebSocket,
-    attachments: {
-      readonly [K in keyof S.Struct.Type<AttachmentFields>]: S.Struct.Type<AttachmentFields>[K]
-    },
-  ) => Effect.Effect<this[""]["Handle"], ParseResult.ParseError, never>
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<this[""]["Handle"], S.SchemaError, never>
 
-  readonly get: (socket: WebSocket) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementException, never>
+  readonly get: (socket: WebSocket) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError, never>
 
   readonly unregister: (socket: WebSocket) => Effect.Effect<void>
 }
@@ -29,11 +30,11 @@ export const make = <
   ActorSelf,
   ActorId extends string,
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 >(
   actor: Actor.Actor<
     ActorSelf,
@@ -60,25 +61,25 @@ export const make = <
   const sockets = new Map<WebSocket, Handle>()
   const handles = new Set<Handle>()
 
-  const get = (socket: WebSocket) => Effect.fromNullable(sockets.get(socket))
+  const get = (socket: WebSocket) => Effect.fromNullishOr(sockets.get(socket))
 
   const register = Effect.fnUntraced(function* (
     socket: WebSocket,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ): Effect.fn.Return<Handle, ParseResult.ParseError> {
-    const encoded = yield* S.encode(schema.attachments)(attachments)
+  ): Effect.fn.Return<Handle, S.SchemaError> {
+    const encoded = yield* S.encodeEffect(schema.attachments)(attachments)
     socket.serializeAttachment(encoded)
     const attachmentsRef = yield* Ref.make(attachments)
     const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
       attachments: Ref.get(attachmentsRef),
       save: Effect.fnUntraced(function* (value) {
         yield* Ref.set(attachmentsRef, value)
-        socket.serializeAttachment(yield* S.encode(schema.attachments)(value))
+        socket.serializeAttachment(yield* S.encodeEffect(schema.attachments)(value))
       }),
       send: (_tag, payload) =>
-        S.encode(S.parseJson(event))({
+        S.encodeEffect(S.fromJsonString(event))({
           _tag: "Event",
-          event: { _tag, ...payload },
+          event: { _tag, ...payload } as never,
         }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
       disconnect: Effect.sync(() => {
         socket.close(1000)

@@ -1,0 +1,12 @@
+{
+  "name": "@liminal/scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@effect/openapi-generator": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "swagger2openapi": "catalog:",
+    "yaml": "catalog:"
+  }
+}

@@ -1,8 +1,9 @@
-import { HttpClient, FetchHttpClient } from "@effect/platform"
 import { Layer } from "effect"
+import { HttpClient, FetchHttpClient } from "effect/unstable/http"
+
+import type { BindingError } from "./Binding.ts"
 
 import { Assets } from "./Assets.ts"
-import type { BindingError } from "./Binding.ts"
 
 export type Intrinsic = Assets | HttpClient.HttpClient
 

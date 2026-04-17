@@ -1,7 +1,6 @@
-import { WorkerRunner } from "@effect/platform"
-import { Layer, Scope, Effect, Schema as S, PubSub, Ref, ExecutionStrategy, Exit, ParseResult, Stream } from "effect"
+import { Scope, Effect, Schema as S, PubSub, Ref, Exit, Stream, Semaphore } from "effect"
+import { WorkerRunner } from "effect/unstable/workers"
 import { Actor, ClientHandle, Method, Protocol } from "liminal"
-import type { FieldsRecord, Fields } from "liminal/_types"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 
 const { span } = Diagnostic.module("browser.Singleton")
@@ -10,11 +9,11 @@ export const make = Effect.fnUntraced(function* <
   ActorSelf,
   ActorId extends string,
   NameA,
-  AttachmentFields extends Fields,
+  AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
   Handlers extends Method.Handlers<MethodDefinitions, any>,
   A,
   E,
@@ -43,25 +42,22 @@ export const make = Effect.fnUntraced(function* <
 }) {
   const { schema } = actor.definition.client
   const handles = new Set<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>>()
-  const semaphore = yield* Effect.makeSemaphore(1)
+  const semaphore = yield* Semaphore.make(1)
   const task = semaphore.withPermits(1)
   const outer = yield* Scope.make()
 
   return Effect.gen(function* () {
-    const inner = yield* Scope.fork(outer, ExecutionStrategy.sequential)
+    const inner = yield* Scope.fork(outer, "sequential")
     const attachmentsRef = yield* Ref.make(attachments)
-    const pubsub = yield* PubSub.unbounded<typeof schema.actor.Type>().pipe(
-      Effect.acquireRelease(PubSub.shutdown),
-      Scope.extend(inner),
+    const pubsub = yield* Effect.acquireRelease(PubSub.unbounded<typeof schema.actor.Type>(), PubSub.shutdown).pipe(
+      Scope.provide(inner),
     )
     const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
       send: (_tag, payload) =>
-        pubsub
-          .publish({
-            _tag: "Event",
-            event: { _tag, ...payload },
-          })
-          .pipe(Effect.asVoid),
+        PubSub.publish(pubsub, {
+          _tag: "Event",
+          event: { _tag, ...payload } as never,
+        }).pipe(Effect.asVoid),
       attachments: Ref.get(attachmentsRef),
       save: (attachments) => Ref.set(attachmentsRef, attachments),
       disconnect: Effect.gen(function* () {
@@ -70,69 +66,64 @@ export const make = Effect.fnUntraced(function* <
       }),
     })
     handles.add(handle)
-    yield* WorkerRunner.make<
-      unknown,
-      ParseResult.ParseError | E,
-      Exclude<Effect.Effect.Context<ReturnType<Handlers[keyof Handlers]>>, ActorSelf> | R,
-      typeof schema.actor.Type | void
-    >((raw) => {
+
+    const platform = yield* WorkerRunner.WorkerRunnerPlatform
+    const runner = yield* platform.start<typeof schema.actor.Type, unknown>()
+
+    yield* runner.run<
+      void,
+      S.SchemaError | E,
+      Exclude<Effect.Services<ReturnType<Handlers[keyof Handlers]>> | R, ActorSelf>
+    >((portId, raw) => {
       if (typeof raw === "string") {
         const expected = actor.definition.client.key
         if (raw !== expected) {
-          return Stream.succeed(
-            Protocol.Audition.Failure.make({
-              _tag: "Audition.Failure",
-              actual: raw,
-              expected,
+          return runner.send(
+            portId,
+            Protocol.AuditionFailure.make({
+              routed: raw,
+              client: expected,
             }),
           )
         }
-        return Stream.succeed(
-          Protocol.Audition.Success.make({
-            _tag: "Audition.Success",
-          }),
-        ).pipe(
-          Stream.concat(
-            PubSub.subscribe(pubsub).pipe(
-              Effect.tap(() => task(onConnect)),
-              Effect.map(Stream.fromQueue),
-              Stream.unwrapScoped,
-            ),
-          ),
-        )
+        return Effect.gen(function* () {
+          yield* runner.send(portId, Protocol.AuditionSuccess.make({}))
+          const subscription = yield* PubSub.subscribe(pubsub).pipe(Scope.provide(inner))
+          yield* task(onConnect).pipe(Effect.provideService(actor, { name, clients: handles, currentClient: handle }))
+          yield* Stream.fromSubscription(subscription).pipe(
+            Stream.runForEach((message) => runner.send(portId, message)),
+          )
+        })
       }
+
       return Effect.gen(function* () {
-        const message = yield* S.validate(schema.call.payload)(raw)
+        const message = yield* S.decodeUnknownEffect(S.toType(schema.f.payload))(raw)
         const { id, payload } = message
-        const { _tag, value } = payload
-        const handler = handlers[_tag]
+        const { _tag, value } = payload as never
+        const handler = handlers[_tag]!
         yield* handler(value).pipe(
+          Effect.provideService(actor, {
+            name,
+            clients: handles,
+            currentClient: handle,
+          }),
           Effect.matchEffect({
             onSuccess: (value) =>
-              pubsub.offer({
-                _tag: "Call.Success" as const,
+              PubSub.publish(pubsub, {
+                _tag: "FSuccess" as const,
                 id,
-                value: { _tag, value },
+                success: { _tag, value } as never,
               }),
             onFailure: (value) =>
-              pubsub.offer({
-                _tag: "Call.Failure" as const,
+              PubSub.publish(pubsub, {
+                _tag: "FFailure" as const,
                 id,
-                cause: { _tag, value },
+                failure: { _tag, value } as never,
               }),
           }),
           span("handler", { attributes: { _tag } }),
         )
       }).pipe(task)
-    }).pipe(
-      Effect.provide(
-        Layer.succeed(actor, {
-          name,
-          clients: handles,
-          currentClient: handle,
-        }),
-      ),
-      Scope.extend(inner),
-    )
+    })
   })
 })

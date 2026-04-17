@@ -2,14 +2,14 @@ import { Effect, Function, Layer } from "effect"
 
 import { branch } from "./branch.ts"
 
-type LayerRecord = Record<string, Layer.Layer.Any>
+type LayerRecord = Record<string, Layer.Any>
 
 export type MatrixEffect<A, E, R, Layers extends LayerRecord> = Effect.Effect<
   {
     readonly [K in keyof Layers]: A
   },
-  E | Layer.Layer.Error<Layers[keyof Layers]>,
-  R | Layer.Layer.Context<Layers[keyof Layers]>
+  E | Layer.Error<Layers[keyof Layers]>,
+  R | Layer.Services<Layers[keyof Layers]>
 >
 
 export const matrix: {
