@@ -1,5 +1,13 @@
 # liminal-browser
 
+## 0.17.4
+
+### Patch Changes
+
+- 566bb30: Fix json transcoding. Implement R2-based Effect KV layer.
+- Updated dependencies [566bb30]
+  - liminal@0.17.4
+
 ## 0.17.3
 
 ### Patch Changes
