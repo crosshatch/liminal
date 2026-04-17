@@ -23,9 +23,9 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
   },
   methods: {
     Move: {
-      payload: {
+      payload: S.Struct({
         position: Coordinates,
-      },
+      }),
       failure: S.Never,
       success: S.Void,
     },

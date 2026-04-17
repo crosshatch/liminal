@@ -26,7 +26,6 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
-import type { FieldsRecord } from "./_types.ts"
 import type { MethodDefinition } from "./Method.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
@@ -40,7 +39,7 @@ export const TypeId = "~liminal/Client" as const
 
 export interface ClientDefinition<
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly methods: MethodDefinitions
 
@@ -62,9 +61,9 @@ interface EventTake<A, E> {
 export interface Session<
   ClientSelf,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
-  readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError>
+  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<EventDefinitions>>["Type"], ClientError>
 
   readonly f: F<ClientSelf, MethodDefinitions>
 
@@ -74,56 +73,14 @@ export interface Session<
 export type Service<
   ClientSelf,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > = RcRef.RcRef<Session<ClientSelf, MethodDefinitions, EventDefinitions>, ClientError>
-
-export interface Spec<
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
-> {
-  Call: {
-    Payload: Protocol.Call.Payload.Type<MethodDefinitions>
-    Success: Protocol.Call.Success.Type<MethodDefinitions>
-    Failure: Protocol.Call.Failure.Type<MethodDefinitions>
-  }
-  Event: FieldsRecord.TaggedMember.Type<EventDefinitions>
-  Actor: Protocol.Actor.Type<MethodDefinitions, EventDefinitions>
-}
-
-export interface ClientSchema<
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
-> {
-  readonly call: {
-    readonly payload: S.Codec<
-      Protocol.Call.Payload.Type<MethodDefinitions>,
-      Protocol.Call.Payload.Encoded<MethodDefinitions>
-    >
-
-    readonly success: S.Codec<
-      Protocol.Call.Success.Type<MethodDefinitions>,
-      Protocol.Call.Success.Encoded<MethodDefinitions>
-    >
-
-    readonly failure: S.Codec<
-      Protocol.Call.Failure.Type<MethodDefinitions>,
-      Protocol.Call.Failure.Encoded<MethodDefinitions>
-    >
-  }
-
-  readonly event: S.Codec<Protocol.Event.Type<EventDefinitions>, Protocol.Event.Encoded<EventDefinitions>>
-
-  readonly actor: S.Codec<
-    Protocol.Actor.Type<MethodDefinitions, EventDefinitions>,
-    Protocol.Actor.Encoded<MethodDefinitions, EventDefinitions>
-  >
-}
 
 export interface Client<
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > extends Context.Service<ClientSelf, Service<ClientSelf, MethodDefinitions, EventDefinitions>> {
   new (_: never): Context.ServiceClass.Shape<ClientId, Service<ClientSelf, MethodDefinitions, EventDefinitions>>
 
@@ -131,9 +88,9 @@ export interface Client<
 
   readonly definition: ClientDefinition<MethodDefinitions, EventDefinitions>
 
-  readonly schema: ClientSchema<MethodDefinitions, EventDefinitions>
+  readonly schema: Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>
 
-  readonly events: Stream.Stream<FieldsRecord.TaggedMember.Type<EventDefinitions>, ClientError, ClientSelf>
+  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<EventDefinitions>>["Type"], ClientError, ClientSelf>
 
   readonly f: F<ClientSelf, MethodDefinitions>
 
@@ -145,53 +102,12 @@ export const Service =
   <
     ClientId extends string,
     MethodDefinitions extends Record<string, MethodDefinition.Any>,
-    EventDefinitions extends FieldsRecord,
+    EventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     id: ClientId,
     definition: ClientDefinition<MethodDefinitions, EventDefinitions>,
   ): Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
     const tag = Context.Service<ClientSelf, Service<ClientSelf, MethodDefinitions, EventDefinitions>>()(id)
-
-    const call: ClientSchema<MethodDefinitions, EventDefinitions>["call"] = {
-      payload: S.TaggedStruct("Call.Payload", {
-        id: S.Int,
-        payload: S.Union(
-          Record.toEntries(definition.methods).map(
-            // TODO: remove never once `payload` / `S.Struct.Fields` typed without requirements
-            ([_tag, { payload }]) => S.TaggedStruct(_tag, { value: S.Struct(payload) }) as never,
-          ),
-        ),
-      }),
-      success: S.TaggedStruct("Call.Success", {
-        id: S.Int,
-        value: S.Union(
-          Record.toEntries(definition.methods).map(([_tag, { success: value }]) => S.TaggedStruct(_tag, { value })),
-        ),
-      }),
-      failure: S.TaggedStruct("Call.Failure", {
-        id: S.Int,
-        cause: S.Union(
-          Record.toEntries(definition.methods).map(([_tag, { failure: value }]) => S.TaggedStruct(_tag, { value })),
-        ),
-      }),
-    }
-
-    const event: S.Codec<
-      Protocol.Event.Type<EventDefinitions>,
-      Protocol.Event.Encoded<EventDefinitions>
-    > = S.TaggedStruct("Event", {
-      // TODO: revisit as never
-      event: S.Union(Object.entries(definition.events).map(([_tag, fields]) => S.TaggedStruct(_tag, fields) as never)),
-    })
-
-    const actor = S.Union([
-      call.success,
-      call.failure,
-      event,
-      Protocol.Audition.Success,
-      Protocol.Audition.Failure,
-      Protocol.Disconnect,
-    ])
 
     const events = tag.asEffect().pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
 
@@ -215,7 +131,7 @@ export const Service =
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      schema: { call, event, actor },
+      schema: Protocol.ProtocolSchemas(definition.methods, definition.events),
       events,
       f,
       invalidate,
@@ -224,22 +140,34 @@ export const Service =
 
 export interface Transport<
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly listen: (
     publish: (
-      message: Protocol.Actor.Type<MethodDefinitions, EventDefinitions> | typeof Protocol.TransportFailure.Type,
+      message:
+        | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["actor"]["Type"]
+        | typeof Protocol.TransportFailure.Type,
     ) => Effect.Effect<void, ClientError>,
-  ) => Effect.Effect<void, ClientError, Scope.Scope>
+  ) => Effect.Effect<
+    void,
+    ClientError,
+    Scope.Scope | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["actor"]["DecodingServices"]
+  >
 
-  readonly send: (v: Protocol.Call.Payload.Type<MethodDefinitions>) => Effect.Effect<void, ConnectionError, never>
+  readonly send: (
+    message: Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["f"]["payload"]["Type"],
+  ) => Effect.Effect<
+    void,
+    ConnectionError,
+    Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["f"]["payload"]["EncodingServices"]
+  >
 }
 
 const make = <
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
   R,
 >(
   client: Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions>,
@@ -247,32 +175,33 @@ const make = <
   replay?: ReplayConfig | undefined,
 ) =>
   Effect.gen(function* () {
-    type _ = Spec<MethodDefinitions, EventDefinitions>
-
     const rcr: RcRef.RcRef<Session<ClientSelf, MethodDefinitions, EventDefinitions>, ClientError> = yield* RcRef.make({
       acquire: Effect.gen(function* () {
+        type _ = typeof client.schema
+        type Event = ReturnType<typeof S.TaggedUnion<EventDefinitions>>["Type"]
+
         yield* debug("AcquisitionStarted")
 
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
 
-        const inflights: Record<string, Deferred.Deferred<_["Call"]["Success"], FError<MethodDefinitions>>> = {}
+        const inflights: Record<string, Deferred.Deferred<_["f"]["success"]["Type"], FError<MethodDefinitions>>> = {}
         let callId = 0
         let takeCount = 0
-        const pubsub = yield* PubSub.unbounded<EventTake<_["Event"], ClientError>>()
+        const pubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
 
         const replayState = yield* Ref.make<{
           readonly startupOpen: boolean
-          readonly buffer: ReadonlyArray<EventTake<_["Event"], ClientError>>
+          readonly buffer: ReadonlyArray<EventTake<Event, ClientError>>
         }>({
           startupOpen: true,
           buffer: [],
         })
 
-        const publishTake = (take: Take.Take<_["Event"], ClientError>, replayable?: boolean | undefined) =>
+        const publishTake = (take: Take.Take<Event, ClientError>, replayable?: boolean | undefined) =>
           Effect.gen(function* () {
-            const eventTake: EventTake<_["Event"], ClientError> = {
+            const eventTake: EventTake<Event, ClientError> = {
               seq: takeCount++,
               take,
             }
@@ -299,7 +228,7 @@ const make = <
         const fiber = yield* listen(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
-              case "Audition.Success": {
+              case "AuditionSuccess": {
                 yield* debug("AuditionSucceeded")
                 yield* Deferred.succeed(audition, void 0)
                 return
@@ -307,36 +236,36 @@ const make = <
               case "Event": {
                 const { event } = message
                 yield* debug("EventEmitted", { event })
-                yield* publishTake([event], true)
+                yield* publishTake([event as never], true)
                 return
               }
-              case "Call.Success":
-              case "Call.Failure": {
+              case "FSuccess":
+              case "FFailure": {
                 const { id } = message
                 const deferred = inflights[id]
                 if (deferred) {
                   delete inflights[id]
                   switch (message._tag) {
-                    case "Call.Success": {
-                      const { _tag, value } = message.value
+                    case "FSuccess": {
+                      const { _tag, value } = message.success as never
                       yield* debug("CallSucceeded", { id, _tag, value })
                       yield* Deferred.succeed(deferred, value)
                       return
                     }
-                    case "Call.Failure": {
-                      const { _tag, value: cause } = message.cause
-                      yield* debug("CallFailed", { id, _tag, cause })
-                      yield* Deferred.fail(deferred, { cause })
+                    case "FFailure": {
+                      const { _tag, value } = message.failure as never
+                      yield* debug("CallFailed", { id, _tag, value })
+                      yield* Deferred.fail(deferred, value)
                       return
                     }
                   }
                 }
                 return
               }
-              case "Audition.Failure": {
-                const { actual, expected } = message
-                yield* debug("AuditionFailed", { expected })
-                return yield* new AuditionError({ value: { actual, expected } })
+              case "AuditionFailure": {
+                const { client, routed } = message
+                yield* debug("AuditionFailed", { client, routed })
+                return yield* new AuditionError({ value: { client, routed } })
               }
               case "Disconnect": {
                 yield* debug("Disconnected")
@@ -406,6 +335,8 @@ const make = <
 
         yield* Deferred.await(audition)
 
+        const encodingServices = yield* Effect.context<_["f"]["payload"]["EncodingServices"]>()
+
         const f: F<ClientSelf, MethodDefinitions> = (_tag) =>
           Effect.fnUntraced(
             function* (value) {
@@ -423,12 +354,12 @@ const make = <
                 })
               }
               const id = callId++
-              const inflight = yield* Deferred.make<_["Call"]["Success"], FError<MethodDefinitions>>()
+              const inflight = yield* Deferred.make<_["f"]["success"]["Type"], FError<MethodDefinitions>>()
               inflights[id] = inflight
               yield* send({
-                _tag: "Call.Payload",
+                _tag: "FPayload",
                 id,
-                payload: { _tag, value },
+                payload: { _tag, value } as never,
               })
               return yield* Effect.raceFirst(
                 Deferred.await(inflight),
@@ -437,6 +368,7 @@ const make = <
             },
             span("f"),
             Effect.scoped,
+            Effect.provide(encodingServices),
           )
 
         return { events, f, end }
@@ -450,7 +382,7 @@ export const layerSocket = <
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 >({
   client,
   url,
@@ -461,7 +393,13 @@ export const layerSocket = <
   readonly url?: string | undefined
   readonly protocols?: string | Array<string> | undefined
   readonly replay?: ReplayConfig | undefined
-}): Layer.Layer<ClientSelf, never, Socket.WebSocketConstructor> =>
+}): Layer.Layer<
+  ClientSelf,
+  never,
+  | Socket.WebSocketConstructor
+  | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["actor"]["DecodingServices"]
+  | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["f"]["payload"]["EncodingServices"]
+> =>
   make<ClientSelf, ClientId, MethodDefinitions, EventDefinitions, Socket.WebSocketConstructor>(
     client,
     Effect.gen(function* () {
@@ -497,7 +435,7 @@ export const layerSocket = <
                           return yield* publish({ _tag: "Disconnect" })
                         }
                         case 4003: {
-                          return yield* S.decodeUnknownEffect(S.fromJsonString(Protocol.Audition.Failure))(
+                          return yield* S.decodeUnknownEffect(S.fromJsonString(Protocol.AuditionFailure))(
                             closeReason,
                           ).pipe(Effect.andThen(publish))
                         }
@@ -514,7 +452,7 @@ export const layerSocket = <
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
-            const message = yield* S.encodeEffect(S.fromJsonString(client.schema.call.payload))(v).pipe(
+            const message = yield* S.encodeEffect(S.fromJsonString(client.schema.f.payload))(v).pipe(
               Effect.mapError((cause) => new ConnectionError({ cause })),
             )
             yield* write(message).pipe(
@@ -533,26 +471,32 @@ export const layerWorker = <
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 >({
   client,
   replay,
 }: {
   readonly client: Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions>
   readonly replay?: ReplayConfig | undefined
-}): Layer.Layer<ClientSelf, never, Worker.WorkerPlatform | Worker.Spawner> =>
+}): Layer.Layer<
+  ClientSelf,
+  never,
+  | Worker.WorkerPlatform
+  | Worker.Spawner
+  | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["actor"]["DecodingServices"]
+  | Protocol.ProtocolSchemas<MethodDefinitions, EventDefinitions>["f"]["payload"]["EncodingServices"]
+> =>
   make<ClientSelf, ClientId, MethodDefinitions, EventDefinitions, Worker.WorkerPlatform | Worker.Spawner>(
     client,
     Effect.gen(function* () {
+      type T = typeof client.schema
+
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
-        .spawn<
-          Protocol.Actor.Type<MethodDefinitions, EventDefinitions>,
-          Protocol.Call.Payload.Type<MethodDefinitions> | string
-        >(0)
+        .spawn<T["actor"]["Type"], T["f"]["payload"]["Type"] | string>(0)
         .pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
 
-      const send = (message: Protocol.Call.Payload.Type<MethodDefinitions>) =>
+      const send = (message: T["f"]["payload"]["Type"]) =>
         backing.send(message).pipe(
           Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
           span("send"),
@@ -565,7 +509,7 @@ export const layerWorker = <
             backing.run(
               Effect.fnUntraced(function* (message) {
                 yield* publish(message)
-                if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
+                if (message._tag === "Disconnect" || message._tag === "AuditionFailure") {
                   yield* Deferred.succeed(stop, void 0)
                 }
               }),

@@ -10,7 +10,7 @@ catalogs:
       specifier: ^2.30.0
       version: 2.30.0
     '@cloudflare/vite-plugin':
-      specifier: ^1.32.2
+      specifier: ^1.32.3
       version: 1.32.3
     '@cloudflare/vitest-pool-workers':
       specifier: ^0.14.7

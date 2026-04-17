@@ -1,6 +1,5 @@
 import { Context, Schema as S, Effect } from "effect"
 
-import type { FieldsRecord } from "./_types.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { MethodDefinition } from "./Method.ts"
@@ -17,7 +16,7 @@ export interface Service<
   ActorSelf,
   NameA,
   AttachmentFields extends S.Struct.Fields,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly name: NameA
 
@@ -32,7 +31,7 @@ export interface ActorDefinition<
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly name: S.Codec<NameA, string>
 
@@ -49,7 +48,7 @@ export interface Actor<
   ActorClientSelf,
   ActorClientId extends string,
   MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > extends Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>> {
   new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>
 
@@ -87,7 +86,7 @@ export const Service =
     ClientSelf,
     ClientId extends string,
     MethodDefinitions extends Record<string, MethodDefinition.Any>,
-    EventDefinitions extends FieldsRecord,
+    EventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     id: ActorId,
     definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions>,

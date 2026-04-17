@@ -1,6 +1,5 @@
 import { Schema as S, Effect } from "effect"
 
-import type { FieldsRecord } from "./_types.ts"
 import type { Send } from "./Send.ts"
 
 const TypeId = "~liminal/ClientHandle" as const
@@ -8,7 +7,7 @@ const TypeId = "~liminal/ClientHandle" as const
 export interface ClientHandle<
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly [TypeId]: typeof TypeId
 
@@ -16,12 +15,18 @@ export interface ClientHandle<
 
   readonly attachments: Effect.Effect<S.Struct<AttachmentFields>["Type"]>
 
-  readonly save: (attachments: S.Struct<AttachmentFields>["Type"]) => Effect.Effect<void, S.SchemaError>
+  readonly save: (
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<void, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
   readonly disconnect: Effect.Effect<void, never, ActorSelf>
 }
 
-export const make = <ActorSelf, AttachmentFields extends S.Struct.Fields, EventDefinitions extends FieldsRecord>({
+export const make = <
+  ActorSelf,
+  AttachmentFields extends S.Struct.Fields,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
+>({
   send,
   attachments,
   save,
@@ -31,7 +36,9 @@ export const make = <ActorSelf, AttachmentFields extends S.Struct.Fields, EventD
 
   readonly attachments: Effect.Effect<S.Struct<AttachmentFields>["Type"]>
 
-  readonly save: (attachments: S.Struct<AttachmentFields>["Type"]) => Effect.Effect<void, S.SchemaError>
+  readonly save: (
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<void, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
   readonly disconnect: Effect.Effect<void, never, ActorSelf>
 }): ClientHandle<ActorSelf, AttachmentFields, EventDefinitions> => ({

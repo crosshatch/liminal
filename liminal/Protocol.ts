@@ -1,142 +1,120 @@
-import { Schema as S } from "effect"
+import { Schema as S, Record } from "effect"
 
-import type { FieldsRecord } from "./_types.ts"
 import type { MethodDefinition } from "./Method.ts"
 
-export declare namespace Call {
-  export namespace Payload {
-    export type Type<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Payload"
+export const AuditionSuccess = S.TaggedStruct("AuditionSuccess", {})
 
-      readonly id: number
+export const AuditionFailure = S.TaggedStruct("AuditionFailure", {
+  client: S.String,
+  routed: S.String,
+})
 
-      readonly payload: {
-        [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: S.Struct<MethodDefinitions[K]["payload"]>["Type"]
-        }
-      }[keyof MethodDefinitions]
-    }
+export interface ProtocolSchemas<
+  MethodDefinitions extends Record<string, MethodDefinition.Any>,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
+> {
+  readonly f: {
+    readonly payload: S.TaggedStruct<
+      "FPayload",
+      {
+        readonly id: S.Int
+        readonly payload: S.TaggedUnion<{
+          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
+            K,
+            { readonly value: MethodDefinitions[K]["payload"] }
+          >
+        }>
+      }
+    >
 
-    export type Encoded<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Payload"
+    readonly success: S.TaggedStruct<
+      "FSuccess",
+      {
+        readonly id: S.Int
+        readonly success: S.TaggedUnion<{
+          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
+            K,
+            { readonly value: MethodDefinitions[K]["success"] }
+          >
+        }>
+      }
+    >
 
-      readonly id: number
-
-      readonly payload: {
-        [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: S.Struct<MethodDefinitions[K]["payload"]>["Encoded"]
-        }
-      }[keyof MethodDefinitions]
-    }
+    readonly failure: S.TaggedStruct<
+      "FFailure",
+      {
+        readonly id: S.Int
+        readonly failure: S.TaggedUnion<{
+          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
+            K,
+            { readonly value: MethodDefinitions[K]["failure"] }
+          >
+        }>
+      }
+    >
   }
 
-  export namespace Success {
-    export type Type<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Success"
-
-      readonly id: number
-
-      readonly value: {
-        readonly [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: MethodDefinitions[K]["success"]["Type"]
-        }
-      }[keyof MethodDefinitions]
+  readonly event: S.TaggedStruct<
+    "Event",
+    {
+      readonly event: S.TaggedUnion<{
+        readonly [K in keyof EventDefinitions & string]: S.TaggedStruct<K, EventDefinitions[K]>
+      }>
     }
+  >
 
-    export type Encoded<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Success"
-
-      readonly id: number
-
-      readonly value: {
-        readonly [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: MethodDefinitions[K]["success"]["Encoded"]
-        }
-      }[keyof MethodDefinitions]
-    }
-  }
-
-  export namespace Failure {
-    export type Type<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Failure"
-
-      readonly id: number
-
-      readonly cause: {
-        readonly [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: MethodDefinitions[K]["failure"]["Type"]
-        }
-      }[keyof MethodDefinitions]
-    }
-
-    export type Encoded<MethodDefinitions extends Record<string, MethodDefinition.Any>> = {
-      readonly _tag: "Call.Failure"
-
-      readonly id: number
-
-      readonly cause: {
-        readonly [K in keyof MethodDefinitions]: {
-          readonly _tag: K
-          readonly value: MethodDefinitions[K]["failure"]["Encoded"]
-        }
-      }[keyof MethodDefinitions]
-    }
-  }
-}
-
-export declare namespace Event {
-  export type Type<EventDefinitions extends FieldsRecord> = {
-    readonly _tag: "Event"
-
-    readonly event: FieldsRecord.TaggedMember.Type<EventDefinitions>
-  }
-
-  export type Encoded<EventDefinitions extends FieldsRecord> = {
-    readonly _tag: "Event"
-
-    readonly event: FieldsRecord.TaggedMember.Encoded<EventDefinitions>
-  }
-}
-
-export const Audition = {
-  Success: S.TaggedStruct("Audition.Success", {}),
-  Failure: S.TaggedStruct("Audition.Failure", {
-    expected: S.String,
-    actual: S.String,
-  }),
+  readonly actor: S.Union<
+    [
+      typeof AuditionSuccess,
+      typeof AuditionFailure,
+      this["f"]["success"],
+      this["f"]["failure"],
+      this["event"],
+      typeof Disconnect,
+    ]
+  >
 }
 
 export const Disconnect = S.TaggedStruct("Disconnect", {})
 
-export const TransportFailure = S.TaggedStruct("TransportFailure", {
-  cause: S.Unknown,
-})
+export const TransportFailure = S.TaggedStruct("TransportFailure", { cause: S.Unknown })
 
-export declare namespace Actor {
-  export type Type<
-    MethodDefinitions extends Record<string, MethodDefinition.Any>,
-    EventDefinitions extends FieldsRecord,
-  > =
-    | typeof Audition.Success.Type
-    | typeof Audition.Failure.Type
-    | Call.Success.Type<MethodDefinitions>
-    | Call.Failure.Type<MethodDefinitions>
-    | Event.Type<EventDefinitions>
-    | typeof Disconnect.Type
+export const ProtocolSchemas = <
+  MethodDefinitions extends Record<string, MethodDefinition.Any>,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
+>(
+  methods: MethodDefinitions,
+  events: EventDefinitions,
+): ProtocolSchemas<MethodDefinitions, EventDefinitions> => {
+  type T = ProtocolSchemas<MethodDefinitions, EventDefinitions>
 
-  export type Encoded<
-    MethodDefinitions extends Record<string, MethodDefinition.Any>,
-    EventDefinitions extends FieldsRecord,
-  > =
-    | typeof Audition.Success.Encoded
-    | typeof Audition.Failure.Encoded
-    | Call.Success.Encoded<MethodDefinitions>
-    | Call.Failure.Encoded<MethodDefinitions>
-    | Event.Encoded<EventDefinitions>
-    | typeof Disconnect.Encoded
+  const f: T["f"] = {
+    payload: S.TaggedStruct("FPayload", {
+      id: S.Int,
+      payload: S.TaggedUnion(Record.map(methods, ({ payload: value }) => ({ value }))),
+    }) as never,
+    success: S.TaggedStruct("FSuccess", {
+      id: S.Int,
+      success: S.TaggedUnion(Record.map(methods, ({ success: value }) => ({ value }))),
+    }) as never,
+    failure: S.TaggedStruct("FFailure", {
+      id: S.Int,
+      failure: S.TaggedUnion(Record.map(methods, ({ failure: value }) => ({ value }))),
+    }) as never,
+  }
+
+  const event: T["event"] = S.TaggedStruct("Event", {
+    event: S.TaggedUnion(Record.map(events, (fields) => ({ value: S.Struct(fields) }))),
+  }) as never
+
+  const actor: T["actor"] = S.Union([
+    AuditionSuccess,
+    AuditionFailure,
+    f.success,
+    f.failure,
+    event,
+    Disconnect,
+  ]) as never
+
+  return { f, event, actor }
 }

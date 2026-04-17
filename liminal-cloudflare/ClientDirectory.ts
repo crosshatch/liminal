@@ -81,7 +81,7 @@ export const make = <
       send: (_tag, payload) =>
         S.encodeEffect(S.fromJsonString(event))({
           _tag: "Event",
-          event: { _tag, ...payload },
+          event: { _tag, ...payload } as never,
         }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
       disconnect: Effect.sync(() => {
         socket.close(1000)

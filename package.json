@@ -2,7 +2,7 @@
   "name": "liminal-root",
   "type": "module",
   "scripts": {
-    "build": "tsc -b && turbo run build",
+    "build": "tsc -b",
     "changeset": "changeset",
     "check": "tsc -b",
     "clean": "node ./repos/konfik/main.ts clean --ignore '**/repos'",

@@ -32,6 +32,12 @@ const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
+type SchemaServices<M extends Record<string, Method.MethodDefinition.Any>, E extends FieldsRecord> =
+  | Protocol.ProtocolSchemas<M, E>["f"]["payload"]["DecodingServices"]
+  | Protocol.ProtocolSchemas<M, E>["f"]["success"]["EncodingServices"]
+  | Protocol.ProtocolSchemas<M, E>["f"]["failure"]["EncodingServices"]
+  | Protocol.ProtocolSchemas<M, E>["event"]["EncodingServices"]
+
 export interface ActorRegistryDefinition<
   Binding_ extends string,
   ActorSelf,
@@ -60,7 +66,7 @@ export interface ActorRegistryDefinition<
     EventDefinitions
   >
 
-  readonly preludeLayer: Layer.Layer<PreludeROut, PreludeE>
+  readonly preludeLayer: Layer.Layer<PreludeROut | SchemaServices<MethodDefinitions, EventDefinitions>, PreludeE>
 
   readonly runLayer: Layer.Layer<RunROut, RunE, ActorSelf | PreludeROut>
 
@@ -237,7 +243,7 @@ export const Service =
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
           this.state.acceptWebSocket(server)
-          server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.Audition.Success))({ _tag: "Audition.Success" }))
+          server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionSuccess))({ _tag: "AuditionSuccess" }))
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -266,26 +272,26 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknownEffect(S.fromJsonString(schema.call.payload))(
+          const message = yield* S.decodeUnknownEffect(S.fromJsonString(schema.f.payload))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
           const { id, payload } = message
-          const { _tag, value } = payload
-          yield* handlers[_tag](value).pipe(
+          const { _tag, value } = payload as never
+          yield* handlers[_tag]!(value).pipe(
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encodeEffect(S.fromJsonString(schema.call.success))({
-                  _tag: "Call.Success",
+                S.encodeEffect(S.fromJsonString(schema.f.success))({
+                  _tag: "FSuccess",
                   id,
-                  value: { _tag, value },
+                  success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                S.encodeEffect(S.fromJsonString(schema.call.failure))({
-                  _tag: "Call.Failure",
+                S.encodeEffect(S.fromJsonString(schema.f.failure))({
+                  _tag: "FFailure",
                   id,
-                  cause: { _tag, value },
+                  failure: { _tag, value } as never,
                 }),
             }),
             span("handler", { attributes: { _tag } }),
@@ -322,10 +328,10 @@ export const Service =
       if (requestClientId !== clientId) {
         return close(
           4003,
-          yield* S.encodeEffect(S.fromJsonString(Protocol.Audition.Failure))(
-            Protocol.Audition.Failure.make({
-              expected: clientId,
-              actual: requestClientId,
+          yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionFailure))(
+            Protocol.AuditionFailure.make({
+              client: clientId,
+              routed: requestClientId,
             }),
           ),
         )

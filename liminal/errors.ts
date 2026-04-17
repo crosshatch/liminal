@@ -4,8 +4,8 @@ import type { MethodDefinition } from "./Method.ts"
 
 export class AuditionError extends S.TaggedErrorClass<AuditionError>()("AuditionError", {
   value: S.Struct({
-    actual: S.String,
-    expected: S.String,
+    client: S.String,
+    routed: S.String,
   }).pipe(S.optional),
 }) {}
 
