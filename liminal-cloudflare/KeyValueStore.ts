@@ -1,77 +1,107 @@
-export {}
+import { Effect, Layer } from "effect"
+import { KeyValueStore } from "effect/unstable/persistence"
 
-// import { Effect, Layer } from "effect"
-// import { KeyValueStore } from "effect/unstable/persistence/KeyValueStore"
+export const layerR2 = ({ r2, root }: { readonly r2: R2Bucket; readonly root?: string | undefined }) => {
+  const prefix = root === undefined ? "" : root.endsWith("/") ? root : `${root}/`
+  const toKey = (key: string) => `${prefix}${key}`
+  const lsOptions = (cursor: string | undefined): R2ListOptions =>
+    cursor
+      ? prefix
+        ? { cursor, limit: 1000, prefix }
+        : { cursor, limit: 1000 }
+      : prefix
+        ? { limit: 1000, prefix }
+        : { limit: 1000 }
 
-// export const layerR2 = (r2: R2Bucket) =>
-//   Layer.succeed(
-//     KeyValueStore,
-//     KeyValueStore.of({
-//       "~effect/persistence/KeyValueStore": "~effect/persistence/KeyValueStore",
-//       /**
-//        * Returns the value of the specified key if it exists.
-//        */
-//       // readonly get: (key: string) => Effect.Effect<string | undefined, KeyValueStoreError>
-//       get: Effect.fnUntraced(function* (key) {}),
-
-//       /**
-//        * Returns the value of the specified key if it exists.
-//        */
-//       // readonly getUint8Array: (key: string) => Effect.Effect<Uint8Array | undefined, KeyValueStoreError>
-//       getUint8Array: Effect.fnUntraced(function* (key) {}),
-
-//       /**
-//        * Sets the value of the specified key.
-//        */
-//       // readonly set: (key: string, value: string | Uint8Array) => Effect.Effect<void, KeyValueStoreError>
-//       set: Effect.fnUntraced(function* (key, value) {}),
-
-//       /**
-//        * Removes the specified key.
-//        */
-//       // readonly remove: (key: string) => Effect.Effect<void, KeyValueStoreError>
-//       remove: Effect.fnUntraced(function* (key) {}),
-
-//       /**
-//        * Removes all entries.
-//        */
-//       // readonly clear: Effect.Effect<void, KeyValueStoreError>
-//       clear: Effect.gen(function* () {}),
-
-//       /**
-//        * Returns the number of entries.
-//        */
-//       // readonly size: Effect.Effect<number, KeyValueStoreError>
-//       size: Effect.gen(function* () {}),
-
-//       /**
-//        * Updates the value of the specified key if it exists.
-//        */
-//       // readonly modify: (
-//       //   key: string,
-//       //   f: (value: string) => string
-//       // ) => Effect.Effect<string | undefined, KeyValueStoreError>
-//       modify: Effect.fnUntraced(function* (key, f) {}),
-
-//       /**
-//        * Updates the value of the specified key if it exists.
-//        */
-//       // readonly modifyUint8Array: (
-//       //   key: string,
-//       //   f: (value: Uint8Array) => Uint8Array
-//       // ) => Effect.Effect<Uint8Array | undefined, KeyValueStoreError>
-//       modifyUint8Array: Effect.fnUntraced(function* (key, f) {}),
-
-//       /**
-//        * Returns true if the KeyValueStore contains the specified key.
-//        */
-//       // readonly has: (key: string) => Effect.Effect<boolean, KeyValueStoreError>
-//       has: Effect.fnUntraced(function* (key) {}),
-
-//       /**
-//        * Checks if the KeyValueStore contains any entries.
-//        */
-//       // readonly isEmpty: Effect.Effect<boolean, KeyValueStoreError>
-//       isEmpty: Effect.gen(function* () {}),
-//     }),
-//   )
+  return Layer.succeed(
+    KeyValueStore.KeyValueStore,
+    KeyValueStore.make({
+      get: (key) =>
+        Effect.tryPromise({
+          try: async () => {
+            const object = await r2.get(toKey(key))
+            return object === null ? undefined : await object.text()
+          },
+          catch: (cause) =>
+            new KeyValueStore.KeyValueStoreError({
+              method: "get",
+              key,
+              message: `Unable to get item with key ${key}`,
+              cause,
+            }),
+        }),
+      getUint8Array: (key) =>
+        Effect.tryPromise({
+          try: async () => {
+            const object = await r2.get(toKey(key))
+            return object === null ? undefined : new Uint8Array(await object.arrayBuffer())
+          },
+          catch: (cause) =>
+            new KeyValueStore.KeyValueStoreError({
+              method: "getUint8Array",
+              key,
+              message: `Unable to get item with key ${key}`,
+              cause,
+            }),
+        }),
+      set: (key, value) =>
+        Effect.tryPromise({
+          try: () => r2.put(toKey(key), value),
+          catch: (cause) =>
+            new KeyValueStore.KeyValueStoreError({
+              method: "set",
+              key,
+              message: `Unable to set item with key ${key}`,
+              cause,
+            }),
+        }).pipe(Effect.asVoid),
+      remove: (key) =>
+        Effect.tryPromise({
+          try: () => r2.delete(toKey(key)),
+          catch: (cause) =>
+            new KeyValueStore.KeyValueStoreError({
+              method: "remove",
+              key,
+              message: `Unable to remove item with key ${key}`,
+              cause,
+            }),
+        }),
+      clear: Effect.tryPromise({
+        try: async () => {
+          let cursor: string | undefined
+          do {
+            const listed = await r2.list(lsOptions(cursor))
+            if (listed.objects.length > 0) {
+              await r2.delete(listed.objects.map((o) => o.key))
+            }
+            cursor = listed.truncated ? listed.cursor : undefined
+          } while (cursor)
+        },
+        catch: (cause) =>
+          new KeyValueStore.KeyValueStoreError({
+            method: "clear",
+            message: `Unable to clear storage`,
+            cause,
+          }),
+      }),
+      size: Effect.tryPromise({
+        try: async () => {
+          let total = 0
+          let cursor: string | undefined
+          do {
+            const listed = await r2.list(lsOptions(cursor))
+            total += listed.objects.length
+            cursor = listed.truncated ? listed.cursor : undefined
+          } while (cursor)
+          return total
+        },
+        catch: (cause) =>
+          new KeyValueStore.KeyValueStoreError({
+            method: "size",
+            message: `Unable to get size`,
+            cause,
+          }),
+      }),
+    }),
+  )
+}

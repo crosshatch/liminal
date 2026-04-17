@@ -10,15 +10,19 @@ If you are building anything larger than a toy screen, this is the most importan
 An accumulator is a tagged service parameterized by its state type.
 
 ```ts
+import { Stream } from "effect"
 import { Accumulator } from "liminal"
 
-import type { LobbyEvent } from "./LobbyClient.ts"
+import { TicTacToeClient, Player } from "./TicTacToeClient.ts"
 
-interface LobbyState {
-  readonly currentRoomId: string | undefined
-}
+type Item = Stream.Success<typeof TicTacToeClient.events>
 
-export class LobbyAccumulator extends Accumulator.Service<LobbyAccumulator, LobbyState>()("LobbyAccumulator") {}
+export class GameState extends Accumulator.Service<
+  GameState,
+  {
+    readonly name: typeof Player.Type
+  }
+>()("examples/GameState") {}
 ```
 
 The state is a plain TypeScript type. There is no schema config — you control the shape directly.
@@ -30,16 +34,12 @@ The `initial` function inspects each event until it finds one that produces the 
 ```ts
 import { Effect, Option } from "effect"
 
-const initial = (event: LobbyEvent) => {
-  if (event._tag === "LobbySnapshot") {
-    return Effect.succeed(
-      Option.some<LobbyState>({
-        currentRoomId: event.currentRoomId,
-      }),
-    )
+const initial = Effect.fn(function* (item: Item) {
+  if (item._tag === "GameStarted") {
+    return Option.some({ name: item.player })
   }
-  return Effect.succeed(Option.none())
-}
+  return Option.none()
+})
 ```
 
 Until `initial` returns `Some`, the accumulator is not yet active and no reductions occur.
@@ -49,12 +49,12 @@ Until `initial` returns `Some`, the accumulator is not yet active and no reducti
 The `reduce` function folds each subsequent event into the current state.
 
 ```ts
-const reduce = (event: LobbyEvent) => (state: LobbyState) => {
+const reduce = (event: Item) => (state: { readonly name: typeof Player.Type }) => {
   switch (event._tag) {
-    case "RoomJoined":
-      return Effect.succeed({ ...state, currentRoomId: event.roomId })
-    case "SessionEnded":
-      return Effect.succeed({ ...state, currentRoomId: undefined })
+    case "MoveMade":
+      return Effect.succeed(state)
+    case "GameEnded":
+      return Effect.succeed(state)
     default:
       return Effect.succeed(state)
   }
@@ -66,28 +66,42 @@ const reduce = (event: LobbyEvent) => (state: LobbyState) => {
 The `reducer` helper narrows the event type to a single tag, which is useful when composing reducers.
 
 ```ts
-const RoomJoined = LobbyAccumulator.reducer<LobbyEvent>()(
-  "RoomJoined",
-  ({ roomId }) =>
-    (state) =>
-      Effect.succeed({ ...state, currentRoomId: roomId }),
-)
+const reducer = GameState.reducer<Item>()
 
-const SessionEnded = LobbyAccumulator.reducer<LobbyEvent>()(
-  "SessionEnded",
-  () => (state) => Effect.succeed({ ...state, currentRoomId: undefined }),
+const GameStarted = reducer(
+  "GameStarted",
+  ({ player }) =>
+    () =>
+      Effect.succeed({ name: player }),
 )
+const MoveMade = reducer("MoveMade", () => (state) => Effect.succeed(state))
+const GameEnded = reducer("GameEnded", () => (state) => Effect.succeed(state))
 ```
 
 Each call returns the reducer function unchanged — the value is in the type narrowing, not runtime behavior.
+
+Compose them into a single `reduce` function with `Match.tagsExhaustive`:
+
+```ts
+import { flow, Match } from "effect"
+
+const reduce = flow(
+  Match.value,
+  Match.tagsExhaustive({
+    GameStarted,
+    MoveMade,
+    GameEnded,
+  }),
+)
+```
 
 ## Build the accumulator layer
 
 Combine the source stream, initial function, and reduce function into a layer.
 
 ```ts
-export const LobbyAccumulatorLive = LobbyAccumulator.layer({
-  source: LobbyClient.events,
+export const layer = GameState.layer({
+  source: TicTacToeClient.events,
   initial,
   reduce,
 })
@@ -95,8 +109,8 @@ export const LobbyAccumulatorLive = LobbyAccumulator.layer({
 
 That layer starts the reduction loop and exposes:
 
-- `LobbyAccumulator.get` — an `Effect` that reads the current state
-- `LobbyAccumulator.stream` — a `Stream` of state changes
+- `GameState.get` — an `Effect` that reads the current state
+- `GameState.stream` — a `Stream` of state changes
 
 ## Consume state
 
@@ -107,52 +121,43 @@ Effect.gen(function* () {
   // ...
 
   // Read the current state
-  const state = yield* LobbyAccumulator.get
+  const state = yield* GameState.get
 
   // Subscribe to state changes
-  const stateStream = LobbyAccumulator.stream
+  const stateStream = GameState.stream
 })
 ```
 
-Atoms or signals in the UI layer can subscribe to the stream directly:
+Atoms can subscribe to the stream directly:
 
 ```ts
-export const lobbyStateAtom = atomRuntime.atom(LobbyAccumulator.stream)
+import { Atom } from "effect/unstable/reactivity"
+
+import { runtime } from "./runtime"
+import { GameState } from "./State"
+
+export const stateAtom = runtime.atom(GameState.stream)
 ```
 
 ## Snapshot-on-connect plus delta events
 
 The accumulator design depends on a deliberate event pattern:
 
-1. `onConnect` sends a snapshot event such as `LobbySnapshot` or `SessionStarted`
-2. later handlers emit delta events such as `RoomJoined` or `SessionEnded`
+1. `onConnect` sends a snapshot event such as `GameStarted` or `RoomSnapshot`
+2. later handlers emit delta events such as `MoveMade` or `GameEnded`
 3. `initial` extracts state from the snapshot, then `reduce` folds deltas
 
 That is why `onConnect` is so important. Without a snapshot event, a reconnecting UI would need a separate imperative
 fetch path.
 
-## Real multi-client pattern
+## Combining with `Audition`
 
-Larger apps combine `Audition` and `Accumulator` together.
-
-An app-wide accumulator listens to both lobby and chat events:
-
-```ts
-interface AppState {
-  readonly roomId: string | undefined
-  readonly userId: string | undefined
-  readonly members: Array<{
-    readonly userId: string
-    readonly displayName: string
-  }>
-}
-
-export class AppAccumulator extends Accumulator.Service<AppAccumulator, AppState>()("AppAccumulator") {}
-```
-
-And its live layer uses the merged event stream, with `initial` extracting the first snapshot:
+Larger apps combine `Audition` and `Accumulator` together. An app-wide accumulator listens to the merged event stream of
+multiple clients, and `initial` extracts the first snapshot from any of them.
 
 ```ts
+import { Stream } from "effect"
+
 const source = audition.events.pipe(Stream.forever)
 
 const AppAccumulatorLive = AppAccumulator.layer({
@@ -160,7 +165,7 @@ const AppAccumulatorLive = AppAccumulator.layer({
   initial: (event) => {
     if (event._tag === "SessionStarted") {
       return Effect.succeed(
-        Option.some<AppState>({
+        Option.some({
           roomId: event.roomId,
           userId: event.userId,
           members: event.members,
@@ -172,8 +177,6 @@ const AppAccumulatorLive = AppAccumulator.layer({
   reduce,
 })
 ```
-
-The important part is that the first snapshot event becomes the accumulator's initial value.
 
 ## When to use `Accumulator`
 

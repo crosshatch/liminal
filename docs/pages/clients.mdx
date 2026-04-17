@@ -15,45 +15,40 @@ A client is just a named set of methods and events.
 ```ts
 import { Schema as S } from "effect"
 import { Client } from "liminal"
-import { SendMessage } from "./methods/SendMessage.ts"
-import { PinMessage } from "./methods/PinMessage.ts"
 
-export class ChatClient extends Client.Service<ChatClient>()("ChatClient", {
+export const Player = S.Literals(["X", "O"])
+export const Coordinate = S.Literals([0, 1, 2])
+export const Coordinates = S.Tuple([Coordinate, Coordinate])
+
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
   methods: {
-    SendMessage,
-    PinMessage,
+    Move: {
+      payload: S.Struct({
+        position: Coordinates,
+      }),
+      success: S.Void,
+      failure: S.Never,
+    },
   },
   events: {
-    RoomSnapshot: {
-      members: S.Array(
-        S.Struct({
-          userId: S.String,
-          displayName: S.String,
-        }),
-      ),
-      recentMessages: S.Array(
-        S.Struct({
-          userId: S.String,
-          content: S.String,
-          timestamp: S.Date,
-        }),
-      ),
+    GameStarted: {
+      player: Player,
     },
-    MessageReceived: {
-      userId: S.String,
-      content: S.String,
-      timestamp: S.Date,
+    MoveMade: {
+      player: Player,
+      position: Coordinates,
     },
-    UserJoined: {
-      userId: S.String,
-      displayName: S.String,
-    },
-    UserLeft: {
-      userId: S.String,
+    GameEnded: {
+      winner: S.optional(Player),
     },
   },
 }) {}
 ```
+
+A few things to note:
+
+- `methods` is a record of `{ payload, success, failure }`, where each is a schema (e.g. `S.Struct(...)`, `S.Void`, `S.Never`).
+- `events` is a record of plain struct fields. Liminal tags them automatically with `_tag`.
 
 ## Define methods with `Method.define(...)`
 
@@ -64,9 +59,9 @@ import { Schema as S } from "effect"
 import { Method } from "liminal"
 
 export const SendMessage = Method.define({
-  payload: {
+  payload: S.Struct({
     content: S.String,
-  },
+  }),
   success: S.Struct({
     messageId: S.String,
     timestamp: S.Date,
@@ -108,18 +103,18 @@ Method calls are keyed by method name.
 Effect.gen(function* () {
   // ...
 
-  yield* ChatClient.f("SendMessage")({ content: "Hello, world!" })
-
-  yield* ChatClient.f("PinMessage")({ messageId })
+  yield* TicTacToeClient.f("Move")({
+    position: [1, 1],
+  })
 })
 ```
 
 The effect error type is wider than just the method's domain failure. A call can fail with:
 
 - the method's typed `failure` schema
-- `ConnectionError` if the transport fails.
-- `AuditionError` if the client connects to an actor that does not match its client type.
-- `UnresolvedError` if the underlying transport dies before the call resolves.
+- `ConnectionError` if the transport fails
+- `AuditionError` if the client connects to an actor that does not match its client type
+- `UnresolvedError` if the underlying transport dies before the call resolves
 
 ## Consume events from `Client.events`
 
@@ -127,24 +122,20 @@ Events arrive as a tagged union keyed by `_tag`.
 
 ```ts
 Effect.gen(function* () {
-  yield* ChatClient.events.pipe(
+  yield* TicTacToeClient.events.pipe(
     Stream.runForEach(
       Effect.fn(function* (event) {
         switch (event._tag) {
-          case "RoomSnapshot": {
-            const { members, recentMessages } = event
+          case "GameStarted": {
+            const { player } = event
             break
           }
-          case "MessageReceived": {
-            const { userId, content, timestamp } = event
+          case "MoveMade": {
+            const { player, position } = event
             break
           }
-          case "UserJoined": {
-            const { userId, displayName } = event
-            break
-          }
-          case "UserLeft": {
-            const { userId } = event
+          case "GameEnded": {
+            const { winner } = event
             break
           }
         }
@@ -167,9 +158,9 @@ Liminal ships two client transports:
 ```ts
 import { Client } from "liminal"
 
-const ChatClientLive = Client.layerSocket({
-  client: ChatClient,
-  url: "/chat",
+const TicTacToeClientLive = Client.layerSocket({
+  client: TicTacToeClient,
+  url: "/play",
 })
 
 const NotificationClientLive = Client.layerWorker({
@@ -185,14 +176,17 @@ Both transports support the same method and event surface. They also share the s
 - `protocols` — one or more WebSocket sub-protocols (`string | Array<string>`). Liminal always includes its own internal
   protocols; these are appended.
 
+`layerSocket` requires a `Socket.WebSocketConstructor` in the environment. In the browser, that typically comes from
+`BrowserSocket.layerWebSocketConstructor` in `@effect/platform-browser`.
+
 ## Replay is event-only
 
 Replay only affects `client.events`.
 
 ```ts
 Client.layerSocket({
-  client: ChatClient,
-  url: "/chat",
+  client: TicTacToeClient,
+  url: "/play",
   replay: {
     mode: "startup",
     limit: 16,
@@ -208,10 +202,12 @@ Important details:
 - `limit` caps buffer size. When omitted, the buffer is unbounded.
 - Method successes and failures are never replayed.
 
-## Lifecycle helpers
+## Invalidate the session
 
-Two additional properties are available on every client:
+`Client.invalidate` tears down the underlying transport session, causing it to be re-acquired on next use.
 
-- `Client.endEvents` — signals to the event stream that no more events will arrive. Useful when you want to cleanly shut
-  down event processing.
-- `Client.invalidate` — invalidates the underlying transport session, causing it to be re-acquired on next use.
+```ts
+Effect.gen(function* () {
+  yield* TicTacToeClient.invalidate
+})
+```

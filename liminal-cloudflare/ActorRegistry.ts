@@ -12,6 +12,7 @@ import {
   Array,
   Encoding,
   Schema,
+  References,
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
@@ -184,10 +185,12 @@ export const Service =
     const Params = S.StringFromBase64Url.pipe(
       S.decodeTo(
         S.fromJsonString(
-          S.Struct({
-            name: Name,
-            attachments: Attachments,
-          }),
+          S.toCodecJson(
+            S.Struct({
+              name: Name,
+              attachments: Attachments,
+            }),
+          ),
         ),
       ),
     )
@@ -226,7 +229,12 @@ export const Service =
             Intrinsic.layer,
             Mutex.layer,
           )
-        }).pipe(Layer.unwrap, Layer.tapError(Effect.logDebug), ManagedRuntime.make)
+        }).pipe(
+          Layer.unwrap,
+          Layer.tapError(Effect.logDebug),
+          Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All")),
+          ManagedRuntime.make,
+        )
       }
 
       #name?: NameA | undefined
@@ -270,7 +278,7 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknownEffect(S.fromJsonString(schema.f.payload))(
+          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(schema.f.payload)))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
@@ -280,13 +288,13 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encodeEffect(S.fromJsonString(schema.f.success))({
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.success)))({
                   _tag: "FSuccess",
                   id,
                   success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                S.encodeEffect(S.fromJsonString(schema.f.failure))({
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.failure)))({
                   _tag: "FFailure",
                   id,
                   failure: { _tag, value } as never,

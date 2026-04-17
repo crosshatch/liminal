@@ -19,19 +19,22 @@ An actor ties together three things:
 ```ts
 import { Schema as S } from "effect"
 import { Actor } from "liminal"
-import { ChatClient } from "./ChatClient.ts"
 
-const RoomId = S.String.pipe(S.brand("RoomId"))
-const UserId = S.String.pipe(S.brand("UserId"))
+import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
 
-export class ChatActor extends Actor.Service<ChatActor>()("Chat", {
-  client: ChatClient,
-  name: RoomId,
-  attachments: {
-    userId: UserId,
-  },
+export class TicTacToeActor extends Actor.Service<TicTacToeActor>()("examples/TicTacToeActor", {
+  client: TicTacToeClient,
+  name: S.String,
+  attachments: { player: Player },
 }) {}
 ```
+
+The three fields map onto distinct runtime concerns:
+
+- `client` points at the `Client.Service(...)` definition the actor implements.
+- `name` is a schema for the actor instance's unique identifier. Use `S.String` for an opaque id, or a branded schema
+  such as `S.String.pipe(S.brand("GameId"))` if you want the id type to be distinct.
+- `attachments` is a struct-fields record for per-connected-client state.
 
 ## Name versus attachments
 
@@ -40,11 +43,11 @@ Keep the split clear:
 - `name` is an actor instance's unique identifier.
 - `attachments` are per-client state.
 
-In a chat room actor, the name could be the room id, while attachments would be used to identify which user is behind
-each connected socket.
+For tic-tac-toe, the name is the game id and attachments record which player (`X` or `O`) the connected socket is
+playing as.
 
-This is one of the most useful modeling decisions; we allow multiple clients connect to the same actor while keeping
-client-specific contexts isolated from one another.
+This split lets multiple clients connect to the same actor while keeping client-specific context isolated from one
+another.
 
 ## Read actor context in handlers
 
@@ -54,9 +57,9 @@ client-specific contexts isolated from one another.
 Effect.gen(function* () {
   // ...
 
-  const { name, clients, currentClient } = yield* ChatActor
+  const { name, clients, currentClient } = yield* TicTacToeActor
 
-  const { userId } = yield* currentClient.attachments
+  const { player } = yield* currentClient.attachments
 })
 ```
 
@@ -64,17 +67,13 @@ Effect.gen(function* () {
 
 ```ts
 import { Effect } from "effect"
-import { ChatActor } from "../ChatActor.ts"
-import { Db } from "../../context/Db.ts"
+
+import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 export const onConnect = Effect.gen(function* () {
-  const { name: roomId, currentClient } = yield* ChatActor
-
-  const db = yield* Db
-
-  const snapshot = yield* loadRoomSnapshot(db, { roomId })
-
-  yield* currentClient.send("RoomSnapshot", snapshot)
+  const { clients } = yield* TicTacToeActor
+  const player = clients.size === 1 ? "X" : "O"
+  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
 })
 ```
 
@@ -94,40 +93,48 @@ The simplest handler pattern is actor-bound.
 ```ts
 import { Effect } from "effect"
 
-import { ChatActor } from "../ChatActor.ts"
-import { Db } from "../../context/Db.ts"
+import { setBoard, getBoard } from "./Games.ts"
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+import { OutOfTurnError, SlotTakenError } from "./TicTacToeClient.ts"
 
-export default ChatActor.handler(
-  "SendMessage",
-  Effect.fn(function* ({ content }) {
-    const { name: roomId, currentClient } = yield* ChatActor
+export const handleMove = TicTacToeActor.handler(
+  "Move",
+  Effect.fn(function* ({ position }) {
+    const { currentClient, name: gameId } = yield* TicTacToeActor
+    const { board, turn } = yield* getBoard(gameId)
+    const { player } = yield* currentClient.attachments
 
-    const { userId } = yield* currentClient.attachments
+    if (turn !== player) {
+      return yield* new OutOfTurnError()
+    }
+    if (board[position[0]][position[1]] !== undefined) {
+      return yield* new SlotTakenError()
+    }
 
-    const db = yield* Db
+    yield* TicTacToeActor.sendAll("MoveMade", { player, position })
 
-    const { timestamp, messageId } = yield* insertMessage(db, { roomId, userId, content })
-
-    yield* ChatActor.sendAll("MessageReceived", { userId, content, timestamp })
-
-    return { messageId, timestamp }
+    board[position[0]][position[1]] = player
+    yield* setBoard({ board, turn: turn === "X" ? "O" : "X" })
   }),
 )
 ```
+
+`Actor.handler("Method", ...)` is a typed pass-through. It returns the handler unchanged at runtime but narrows the
+handler's payload, success, and failure types to the named method.
 
 ## Broadcast, target, disconnect
 
 Client handles support the core per-socket operations:
 
-- `yield* sender.attachments`
-- `yield* sender.send(...)`
-- `yield* sender.save(...)`
-- `yield* sender.disconnect`
+- `yield* sender.attachments` — read per-socket state
+- `yield* sender.send(...)` — emit an event to one client
+- `yield* sender.save(...)` — persist updated attachment state for that client
+- `yield* sender.disconnect` — close that client's socket
 
 Actors add the whole-actor operations:
 
-- `yield* ChatActor.sendAll(...)`
-- `yield* ChatActor.evict`
+- `yield* TicTacToeActor.sendAll(...)` — broadcast to every connected client
+- `yield* TicTacToeActor.disconnectAll` — disconnect every connected client
 
 Broadcast example:
 
@@ -135,34 +142,34 @@ Broadcast example:
 Effect.gen(function* () {
   // ...
 
-  yield* ChatActor.sendAll("UserJoined", { userId, displayName })
+  yield* TicTacToeActor.sendAll("GameEnded", { winner: player })
 })
 ```
 
-Selective disconnect example (kicking specific users):
+Selective disconnect example (kicking specific players):
 
 ```ts
 Effect.gen(function* () {
   // ...
 
-  const { clients } = yield* ChatActor
+  const { clients } = yield* TicTacToeActor
 
   for (const client of clients) {
-    const { userId } = yield* client.attachments
-    if (bannedUserIds.has(userId)) {
+    const { player } = yield* client.attachments
+    if (bannedPlayers.has(player)) {
       yield* client.disconnect
     }
   }
 })
 ```
 
-Whole-actor eviction example (closing a room):
+Whole-actor disconnect example (closing a game):
 
 ```ts
 Effect.gen(function* () {
   // ...
 
-  yield* ChatActor.evict
+  yield* TicTacToeActor.disconnectAll
 })
 ```
 
@@ -172,15 +179,17 @@ Effect.gen(function* () {
 
 That is useful for values like:
 
-- The caller's user id.
-- The caller's role in a game.
-- Per-socket cursors or last-seen sequence numbers.
+- the caller's user id
+- the caller's role in a game
+- per-socket cursors or last-seen sequence numbers
 
-Do not use attachments as whole-actor storage. Persist shared state elsewhere.
+Do not use attachments as whole-actor storage. Persist shared state elsewhere (D1, Durable Object storage, Postgres via
+Hyperdrive, and so on).
 
 ## Use `runLayer` for request-local services
 
 Many handlers want convenient access to values derived from actor context.
 
-Use `runLayer` to derive services like `CurrentUserId` or `Authorization` from the actor name and current client
-attachments.
+Use `runLayer` (on the Cloudflare `ActorRegistry`) to derive services like `CurrentUserId` or `Authorization` from the
+actor name and current client attachments. See
+[Cloudflare Registry and Routing](./cloudflare/registry-and-routing.mdx) for the full pattern.
