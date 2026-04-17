@@ -1,5 +1,11 @@
 # liminal
 
+## 0.17.2
+
+### Patch Changes
+
+- 366c080: Migrate to Effect v4.
+
 ## 0.17.1
 
 ### Patch Changes
