@@ -412,7 +412,7 @@ export const layerSocket = <
             .runRaw((raw) =>
               pipe(
                 raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                S.decodeUnknownEffect(S.fromJsonString(client.schema.actor)),
+                S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(client.schema.actor))),
                 Effect.andThen(publish),
               ),
             )
@@ -452,7 +452,7 @@ export const layerSocket = <
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
-            const message = yield* S.encodeEffect(S.fromJsonString(client.schema.f.payload))(v).pipe(
+            const message = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(client.schema.f.payload)))(v).pipe(
               Effect.mapError((cause) => new ConnectionError({ cause })),
             )
             yield* write(message).pipe(

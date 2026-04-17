@@ -77,7 +77,7 @@ export const make = <
         socket.serializeAttachment(yield* S.encodeEffect(schema.attachments)(value))
       }),
       send: (_tag, payload) => {
-        return S.encodeEffect(S.fromJsonString(event))({
+        return S.encodeEffect(S.fromJsonString(S.toCodecJson(event)))({
           _tag: "Event",
           event: { _tag, ...payload } as never,
         }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v))))

@@ -46,8 +46,8 @@ export const Service =
 
     const { key, value } = definition
     const encodeKey = S.encodeEffect(key)
-    const encodeValue = S.encodeEffect(S.fromJsonString(value))
-    const decodeValue = S.decodeUnknownEffect(S.fromJsonString(value))
+    const encodeValue = S.encodeEffect(S.fromJsonString(S.toCodecJson(value)))
+    const decodeValue = S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(value)))
 
     const put = Effect.fnUntraced(function* (key: KeyA, value: ValueA) {
       const kv = yield* tag
