@@ -17,6 +17,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: recursive
       - uses: ./repos/konfik/.github/actions/configure_environment
       - run: pnpm build
       # - run: pnpm test
