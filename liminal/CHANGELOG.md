@@ -1,5 +1,11 @@
 # liminal
 
+## 0.17.3
+
+### Patch Changes
+
+- 2d7b56d: Fix broken event encoding.
+
 ## 0.17.2
 
 ### Patch Changes
