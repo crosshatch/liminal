@@ -30,7 +30,7 @@ export const Service =
     const tag = Binding.Service<Self>()(
       id,
       definition.binding,
-      (v): v is globalThis.D1Database => "exec" in v,
+      (v): v is D1Database => "exec" in v,
       (db) => D1Client.layer({ db }),
     )
 

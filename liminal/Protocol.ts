@@ -104,7 +104,7 @@ export const ProtocolSchemas = <
   }
 
   const event: T["event"] = S.TaggedStruct("Event", {
-    event: S.TaggedUnion(Record.map(events, (fields) => ({ value: S.Struct(fields) }))),
+    event: S.TaggedUnion(events),
   }) as never
 
   const actor: T["actor"] = S.Union([
