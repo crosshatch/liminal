@@ -1,5 +1,5 @@
 {
-  "name": "tictactoe",
+  "name": "@liminal-examples/ticktacktoe",
   "version": "0.0.0",
   "private": true,
   "type": "module",

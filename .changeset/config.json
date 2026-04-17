@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@liminal/docs", "ticktactoe", "tictactoe-app"]
+  "ignore": ["@liminal/docs", "@liminal-examples/*"]
 }
