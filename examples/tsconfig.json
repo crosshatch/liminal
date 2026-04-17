@@ -1,0 +1,4 @@
+{
+  "include": [],
+  "references": [{ "path": "./tic-tac-toe" }]
+}
