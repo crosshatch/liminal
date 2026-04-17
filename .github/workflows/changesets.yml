@@ -14,8 +14,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: recursive
+      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 repos/konfik"
       - uses: ./repos/konfik/.github/actions/configure_environment
       - run: pnpm run build
       - uses: changesets/action@v1
