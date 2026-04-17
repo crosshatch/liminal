@@ -119,6 +119,14 @@ overrides:
   react: ^19.2.4
   react-dom: ^19.2.4
 
+patchedDependencies:
+  miniflare@4.20260415.0:
+    hash: 75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b
+    path: repos/konfik/patches/miniflare@4.20260415.0.patch
+  vocs@1.4.1:
+    hash: 9d5f90effe2c11945d1c58d556442ae982714328ef92da34fbcf9c3584c56ece
+    path: repos/konfik/patches/vocs@1.4.1.patch
+
 importers:
 
   .:
@@ -212,9 +220,9 @@ importers:
         version: 6.0.2
       vocs:
         specifier: 'catalog:'
-        version: 1.4.1(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/node@25.6.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(rollup@4.60.1)(tsx@4.21.0)(typescript@6.0.2)
+        version: 1.4.1(patch_hash=9d5f90effe2c11945d1c58d556442ae982714328ef92da34fbcf9c3584c56ece)(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/node@25.6.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(rollup@4.60.1)(tsx@4.21.0)(typescript@6.0.2)
 
-  examples/tic-tac-toe/api:
+  examples/tictactoe/api:
     dependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
@@ -241,7 +249,7 @@ importers:
         specifier: 'catalog:'
         version: 4.83.0(@cloudflare/workers-types@4.20260416.2)
 
-  examples/tic-tac-toe/app:
+  examples/tictactoe/app:
     dependencies:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
@@ -252,6 +260,9 @@ importers:
       '@effect/platform-browser':
         specifier: 'catalog:'
         version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+      '@liminal-examples/tictactoe':
+        specifier: workspace:*
+        version: link:../api
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.2.2(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
@@ -285,9 +296,6 @@ importers:
       react-dom:
         specifier: ^19.2.4
         version: 19.2.5(react@19.2.5)
-      tictactoe:
-        specifier: workspace:*
-        version: link:../api
       vite:
         specifier: 'catalog:'
         version: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
@@ -6126,7 +6134,7 @@ snapshots:
   '@cloudflare/vite-plugin@1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
-      miniflare: 4.20260415.0
+      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
       unenv: 2.0.0-rc.24
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
       wrangler: 4.83.0(@cloudflare/workers-types@4.20260416.2)
@@ -6142,7 +6150,7 @@ snapshots:
       '@vitest/snapshot': 4.1.4
       cjs-module-lexer: 1.4.3
       esbuild: 0.27.3
-      miniflare: 4.20260415.0
+      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
       vitest: 4.1.4(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
       wrangler: 4.83.0(@cloudflare/workers-types@4.20260416.2)
       zod: 3.25.76
@@ -8259,11 +8267,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vanilla-extract/compiler@0.7.0(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)':
+  '@vanilla-extract/compiler@0.7.0(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)':
     dependencies:
       '@vanilla-extract/css': 1.20.1
       '@vanilla-extract/integration': 8.0.10
-      vite: 7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
       vite-node: 6.0.0(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@types/node'
@@ -8272,7 +8280,6 @@ snapshots:
       - esbuild
       - jiti
       - less
-      - lightningcss
       - sass
       - sass-embedded
       - stylus
@@ -8320,9 +8327,9 @@ snapshots:
 
   '@vanilla-extract/private@1.0.9': {}
 
-  '@vanilla-extract/vite-plugin@5.2.2(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(yaml@2.8.3)':
+  '@vanilla-extract/vite-plugin@5.2.2(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(yaml@2.8.3)':
     dependencies:
-      '@vanilla-extract/compiler': 0.7.0(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
+      '@vanilla-extract/compiler': 0.7.0(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
       '@vanilla-extract/integration': 8.0.10
       vite: 7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
@@ -8332,7 +8339,6 @@ snapshots:
       - esbuild
       - jiti
       - less
-      - lightningcss
       - sass
       - sass-embedded
       - stylus
@@ -10290,7 +10296,7 @@ snapshots:
 
   mini-svg-data-uri@1.4.4: {}
 
-  miniflare@4.20260415.0:
+  miniflare@4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       sharp: 0.34.5
@@ -11504,7 +11510,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vocs@1.4.1(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/node@25.6.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(rollup@4.60.1)(tsx@4.21.0)(typescript@6.0.2):
+  vocs@1.4.1(patch_hash=9d5f90effe2c11945d1c58d556442ae982714328ef92da34fbcf9c3584c56ece)(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/node@25.6.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(rollup@4.60.1)(tsx@4.21.0)(typescript@6.0.2):
     dependencies:
       '@floating-ui/react': 0.27.19(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@hono/node-server': 1.19.14(hono@4.12.14)
@@ -11526,7 +11532,7 @@ snapshots:
       '@tailwindcss/vite': 4.1.15(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
       '@vanilla-extract/css': 1.20.1
       '@vanilla-extract/dynamic': 2.1.5
-      '@vanilla-extract/vite-plugin': 5.2.2(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(yaml@2.8.3)
+      '@vanilla-extract/vite-plugin': 5.2.2(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(yaml@2.8.3)
       '@vitejs/plugin-react': 5.2.0(vite@7.3.2(@types/node@25.6.0)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
       autoprefixer: 10.5.0(postcss@8.5.10)
       cac: 6.7.14
@@ -11660,7 +11666,7 @@ snapshots:
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
       blake3-wasm: 2.1.5
       esbuild: 0.27.3
-      miniflare: 4.20260415.0
+      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20260415.1

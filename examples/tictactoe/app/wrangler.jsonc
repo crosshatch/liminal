@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tic-tac-toe",
+  "name": "tictactoe",
   "main": "../api/main.ts",
   "compatibility_date": "2026-02-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -46,7 +46,7 @@
   "d1_databases": [
     {
       "binding": "TIC_TAC_TOE_D1",
-      "database_name": "tic-tac-toe",
+      "database_name": "tictactoe",
       "database_id": "4257ef71-66f7-498c-8a41-e4d9acebf667",
     },
   ],

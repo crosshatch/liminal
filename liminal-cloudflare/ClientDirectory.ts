@@ -76,11 +76,12 @@ export const make = <
         yield* Ref.set(attachmentsRef, value)
         socket.serializeAttachment(yield* S.encodeEffect(schema.attachments)(value))
       }),
-      send: (_tag, payload) =>
-        S.encodeEffect(S.fromJsonString(event))({
+      send: (_tag, payload) => {
+        return S.encodeEffect(S.fromJsonString(event))({
           _tag: "Event",
           event: { _tag, ...payload } as never,
-        }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
+        }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v))))
+      },
       disconnect: Effect.sync(() => {
         socket.close(1000)
         sockets.delete(socket)
