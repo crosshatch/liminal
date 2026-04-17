@@ -1,5 +1,3 @@
-import type { FieldsRecord } from "liminal/_types"
-
 import { Schema as S, Effect, Ref, Cause } from "effect"
 import { Method, Actor, ClientHandle } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
@@ -10,7 +8,7 @@ const { span } = Diagnostic.module("cloudflare.ClientDirectory")
 export interface ClientDirectory<
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 > {
   readonly "": {
     readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
@@ -36,7 +34,7 @@ export const make = <
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
 >(
   actor: Actor.Actor<
     ActorSelf,

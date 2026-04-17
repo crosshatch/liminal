@@ -1,5 +1,3 @@
-import type { FieldsRecord } from "liminal/_types"
-
 import { Scope, Effect, Schema as S, PubSub, Ref, Exit, Stream, Semaphore } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import { Actor, ClientHandle, Method, Protocol } from "liminal"
@@ -15,7 +13,7 @@ export const make = Effect.fnUntraced(function* <
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
   Handlers extends Method.Handlers<MethodDefinitions, any>,
   A,
   E,

@@ -1,5 +1,3 @@
-import type { FieldsRecord } from "liminal/_types"
-
 import {
   Layer,
   Effect,
@@ -32,7 +30,7 @@ const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
-type SchemaServices<M extends Record<string, Method.MethodDefinition.Any>, E extends FieldsRecord> =
+type SchemaServices<M extends Record<string, Method.MethodDefinition.Any>, E extends Record<string, S.Struct.Fields>> =
   | Protocol.ProtocolSchemas<M, E>["f"]["payload"]["DecodingServices"]
   | Protocol.ProtocolSchemas<M, E>["f"]["success"]["EncodingServices"]
   | Protocol.ProtocolSchemas<M, E>["f"]["failure"]["EncodingServices"]
@@ -47,7 +45,7 @@ export interface ActorRegistryDefinition<
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
   PreludeROut,
   PreludeE,
   RunROut,
@@ -91,7 +89,7 @@ export interface ActorRegistry<
   ClientSelf,
   ClientId extends string,
   MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends FieldsRecord,
+  EventDefinitions extends Record<string, S.Struct.Fields>,
   PreludeROut,
   PreludeE,
   RunROut,
@@ -135,7 +133,7 @@ export const Service =
     ClientSelf,
     ClientId extends string,
     MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    EventDefinitions extends FieldsRecord,
+    EventDefinitions extends Record<string, S.Struct.Fields>,
     PreludeROut,
     PreludeE,
     RunROut,
