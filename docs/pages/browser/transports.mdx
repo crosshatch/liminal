@@ -15,6 +15,7 @@ through the same client protocol.
 Use sockets when the actor lives on the server.
 
 ```ts
+import { BrowserSocket } from "@effect/platform-browser"
 import { Layer } from "effect"
 import { Client } from "liminal"
 
@@ -27,10 +28,12 @@ const ClientsLive = Layer.mergeAll(
     client: ChatClient,
     url: "/session",
   }),
-)
+).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor))
 ```
 
-`layerSocket(...)` requires a `Socket.WebSocketConstructor` in the environment.
+`layerSocket(...)` requires a `Socket.WebSocketConstructor` in the environment. In the browser that comes from
+`BrowserSocket.layerWebSocketConstructor`; on the server (for example, in tests) you can use
+`NodeSocket.layerWebSocketConstructor` from `@effect/platform-node`.
 
 ## `Client.layerWorker(...)`
 
@@ -45,5 +48,37 @@ const NotificationLive = NotificationAccumulatorLive.pipe(
 )
 ```
 
-`layerWorker(...)` needs a `Worker.PlatformWorker` and `Worker.Spawner` in the environment. The exact provider depends
-on whether you are using a real worker, a platform bridge, or a message port.
+`layerWorker(...)` needs a `Worker.WorkerPlatform` and `Worker.Spawner` in the environment (both from
+`effect/unstable/workers`). The exact provider depends on whether you are spawning a real worker, bridging through a
+platform adapter, or forwarding a `MessagePort`.
+
+## Host an actor in the browser with `Singleton.make(...)`
+
+`Singleton.make(...)` from `liminal-browser` runs an actor inside the current JavaScript realm. It wires up the same
+client protocol, event stream, and method handlers, but without any network layer — the caller talks to a local
+pubsub-backed transport instead.
+
+This is useful for:
+
+- single-player or offline-first experiences that share code with the networked path
+- web-worker-hosted actors that own local state (notifications, caches, background sync)
+- tests that want to exercise handlers without a server
+
+```ts
+import { Effect } from "effect"
+import { Singleton } from "liminal-browser"
+
+import { handlers } from "./handlers.ts"
+import { NotificationActor } from "./NotificationActor.ts"
+import { onConnect } from "./onConnect.ts"
+
+const notifications = Singleton.make({
+  actor: NotificationActor,
+  name: "singleton",
+  attachments: {},
+  handlers,
+  onConnect,
+})
+```
+
+Pair it with `Client.layerWorker(...)` on the consuming side to reach the singleton through the normal client surface.

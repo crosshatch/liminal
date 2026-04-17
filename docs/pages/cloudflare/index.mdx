@@ -8,7 +8,7 @@ We'll implement a trimmed-down Tic-Tac-Toe example:
 - Define an actor with per-client attachments.
 - Implement one handler and one `onConnect` hook.
 - Register the actor within a Cloudflare Durable Object namespace.
-- Upgrade the client from an Effect HTTP layer router route.
+- Upgrade the client from an HTTP route.
 - Consume the client from a browser with `Client.layerSocket(...)`.
 
 For larger apps, split methods, events, handlers, and lifecycle files into separate modules. The next guides cover that
@@ -19,36 +19,37 @@ structure in more detail.
 Start with the protocol the browser and actor will share.
 
 ```ts
+// TicTacToeClient.ts
 import { Schema as S } from "effect"
 import { Client } from "liminal"
 
-export const Player = S.Literal("X", "O")
+export const Player = S.Literals(["X", "O"])
+export const Coordinate = S.Literals([0, 1, 2])
+export const Coordinates = S.Tuple([Coordinate, Coordinate])
 
-export const Position = S.Struct({
-  row: S.Literal(0, 1, 2),
-  col: S.Literal(0, 1, 2),
-})
+export class OutOfTurnError extends S.TaggedErrorClass<OutOfTurnError>()("OutOfTurnError", {}) {}
+export class SlotTakenError extends S.TaggedErrorClass<SlotTakenError>()("SlotTakenError", {}) {}
 
-export class TicTacToeClient extends Client.Service<TicTacToeClient>()("TicTacToeClient", {
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
   methods: {
-    MakeMove: {
-      payload: {
-        position: Position,
-      },
+    Move: {
+      payload: S.Struct({
+        position: Coordinates,
+      }),
       success: S.Void,
       failure: S.Never,
     },
   },
   events: {
     GameStarted: {
-      first: Player,
+      player: Player,
     },
     MoveMade: {
       player: Player,
-      position: Position,
+      position: Coordinates,
     },
     GameEnded: {
-      winner: S.NullOr(Player),
+      winner: S.optional(Player),
     },
   },
 }) {}
@@ -59,214 +60,246 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("TicTacTo
 The actor ties a durable name to that client protocol and defines the per-client attachment state.
 
 ```ts
+// TicTacToeActor.ts
 import { Schema as S } from "effect"
 import { Actor } from "liminal"
+
 import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
 
-export const GameId = S.String.pipe(S.brand("Game"))
-
-export class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
-  name: GameId,
+export class TicTacToeActor extends Actor.Service<TicTacToeActor>()("examples/TicTacToeActor", {
   client: TicTacToeClient,
-  attachments: {
-    player: Player,
-  },
+  name: S.String,
+  attachments: { player: Player },
 }) {}
 ```
 
 The important split is:
 
-- `name` is the unique identifier for the actor within an actor namespace.
+- `name` is the unique identifier for the actor within its registry. Use `S.String` or a branded string schema.
 - `attachments` are per-connected-client state.
 
-For Tic-Tac-Toe, one actor can represent one game, while attachments can distinguish player `X` from player `O`.
+For Tic-Tac-Toe, one actor represents one game, while attachments distinguish player `X` from player `O`.
 
-## Send initial state from `onConnect`
+## Send initial events from `onConnect`
 
-In practice, `onConnect` is the lifecycle hook where you may want to send an initial snapshot event that lets a client
-hydrate itself.
+`onConnect` is the lifecycle hook where you send a snapshot event to newly joined clients — or, as here, signal that the
+game has started once both players are present.
 
 ```ts
 import { Effect } from "effect"
-import { GameStore } from "./GameStore.ts"
+
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 export const onConnect = Effect.gen(function* () {
-  const store = yield* GameStore
-
-  const { name: gameId, currentClient } = yield* TicTacToeActor
-
-  const game = yield* store.load(gameId)
-
-  if (game.started) {
-    yield* currentClient.send("GameStarted", { first: game.first })
-  }
+  const { clients } = yield* TicTacToeActor
+  const player = clients.size === 1 ? "X" : "O"
+  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
 })
 ```
 
-That pattern keeps the event stream as the single source of truth for the UI: connect, receive the latest snapshot
-event, then keep consuming delta events, with which you reduce your local snapshot.
+Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas —
+see [Accumulator](../accumulator.mdx).
 
 ## Implement method handlers
 
 Handlers run inside actor context.
 
 ```ts
+// handleMove.ts
 import { Effect } from "effect"
-import { GameStore } from "./GameStore.ts"
-import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-export const handleMakeMove = TicTacToeActor.handler(
-  "MakeMove",
+import { setBoard, getBoard } from "./Games.ts"
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+import { OutOfTurnError, SlotTakenError } from "./TicTacToeClient.ts"
+
+export const handleMove = TicTacToeActor.handler(
+  "Move",
   Effect.fn(function* ({ position }) {
-    const store = yield* GameStore
-    const { name: gameId, currentClient } = yield* TicTacToeActor
+    const { currentClient, name: gameId } = yield* TicTacToeActor
+    const { board, turn } = yield* getBoard(gameId)
     const { player } = yield* currentClient.attachments
 
-    const { ended, winner } = yield* store.saveMove({ gameId, player, position })
+    if (turn !== player) {
+      return yield* new OutOfTurnError()
+    }
+    if (board[position[0]][position[1]] !== undefined) {
+      return yield* new SlotTakenError()
+    }
 
     yield* TicTacToeActor.sendAll("MoveMade", { player, position })
 
-    if (ended) {
-      yield* TicTacToeActor.sendAll("GameEnded", { winner })
-      yield* TicTacToeActor.evict
-    }
+    board[position[0]][position[1]] = player
+    yield* setBoard({ board, turn: turn === "X" ? "O" : "X" })
   }),
 )
 ```
 
-The main server-side APIs are:
+The main server-side APIs used here are:
 
 - `yield* TicTacToeActor` for actor context like `name`, `clients`, and `currentClient`
 - `yield* client.attachments` to read per-socket state
 - `yield* client.send(...)` for one-client events
 - `yield* TicTacToeActor.sendAll(...)` for broadcasts
-- `yield* client.disconnect` or `yield* TicTacToeActor.evict` for disconnects
+- `yield* client.disconnect` or `yield* TicTacToeActor.disconnectAll` for disconnects
+
+## Back the actor with durable state
+
+Actors are not a database. For anything that must survive hibernation or eviction, persist state externally. The
+tic-tac-toe example uses Cloudflare D1 through `liminal-cloudflare`'s `D1.Service(...)` wrapper:
+
+```ts
+// Database.ts
+import { D1 } from "liminal-cloudflare"
+
+export class Database extends D1.Service<Database>()("Database", {
+  binding: "TIC_TAC_TOE_D1",
+}) {}
+```
+
+Wrap your schema access in plain Effects that depend on `Database`:
+
+```ts
+// Games.ts
+import { Effect } from "effect"
+
+import { Database } from "./Database.ts"
+
+export const getBoard = (gameId: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    // read + decode rows from D1
+    // ...
+  })
+
+export const setBoard = (config: { readonly turn: "X" | "O"; readonly board: Board }) =>
+  Effect.gen(function* () {
+    const db = yield* Database
+    // write the updated board
+    // ...
+  })
+```
 
 ## Register the actor with `ActorRegistry`
 
 `ActorRegistry` is the Cloudflare Durable Object wrapper around your actor.
 
 ```ts
-import { Layer } from "effect"
+// ActorRegistry.ts
+import { Effect, Layer } from "effect"
 import { ActorRegistry } from "liminal-cloudflare"
-import { GameStoreLive } from "./GameStore.ts"
-import { TicTacToeActor } from "./TicTacToeActor.ts"
-import { handleMakeMove } from "./handlers.ts"
-import { onConnect } from "./onConnect.ts"
 
-export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("TicTacToeRegistry", {
-  binding: "TIC_TAC_TOE",
+import { Database } from "./Database.ts"
+import { handleMove } from "./handleMove.ts"
+import { onConnect } from "./onConnect.ts"
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("examples/TicTacToeRegistry", {
   actor: TicTacToeActor,
-  preludeLayer: GameStoreLive,
-  runLayer: Layer.empty,
+  binding: "TicTacToe",
+  handlers: { Move: handleMove },
   onConnect,
-  handlers: {
-    MakeMove: handleMakeMove,
-  },
+  preludeLayer: Database.layer,
+  runLayer: Layer.empty,
 }) {}
 ```
 
 The shape maps cleanly onto runtime concerns:
 
 - `binding` is the Durable Object binding name from Wrangler.
-- `preludeLayer` is long-lived infrastructure.
-- `runLayer` is short-lived, request-local context.
+- `actor` is the Liminal actor definition.
+- `preludeLayer` is long-lived infrastructure (databases, config, asset bindings).
+- `runLayer` is short-lived, request-local context derived from actor context.
 - `handlers` is the method implementation table.
+- `onConnect` runs for every newly upgraded socket.
 
-## Upgrade from an Effect HTTP route
+## Upgrade from an HTTP route
 
-Your HTTP route picks the actor name and initial attachments, then calls `upgrade(...)`.
-
-```ts
-import { HttpApiBuilder } from "@effect/platform"
-import { Effect } from "effect"
-import { Api } from "./Api.ts"
-import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
-
-export const TicTacToeApiLive = HttpApiBuilder.group(Api, "ticTacToe", (_) =>
-  Effect.succeed(
-    _.handleRaw(
-      "connect",
-      Effect.fn(function* () {
-        const gameId = "game-42"
-        const player = "X"
-        return yield* TicTacToeRegistry.upgrade(gameId, { player })
-      }),
-    ),
-  ),
-)
-```
-
-Every request that upgrades with the same actor name lands in the same Durable Object instance.
-
-## Expose the Worker entrypoint
-
-Cloudflare needs a default `fetch` export and a named export for the Durable Object class.
+An HTTP route picks the actor name and initial attachments, then calls `upgrade(...)`.
 
 ```ts
-import { HttpLayerRouter, HttpServer, HttpServerResponse } from "@effect/platform"
+// main.ts
 import { Effect, Layer } from "effect"
-import { Entry } from "liminal-cloudflare"
+import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
+import { Assets, Entry } from "liminal-cloudflare"
 
-import { GameStoreLive } from "./GameStore.ts"
-import { TicTacToeApiLive } from "./TicTacToeApiLive.ts"
-import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
+import { TicTacToeRegistry } from "./ActorRegistry.ts"
+import { Database } from "./Database.ts"
+import * as GameState from "./Games.ts"
 
 export { TicTacToeRegistry }
 
-export default TicTacToeApiLive.pipe(
-  Layer.provide([HttpServer.layerContext, TicTacToeRegistry.layer]),
-  HttpLayerRouter.toHttpEffect,
-  Effect.flatMap((handler) => handler),
-  Effect.catchAll(() => HttpServerResponse.empty({ status: 500 })),
-  Entry.make(GameStoreLive),
+const ApiLive = Layer.mergeAll(
+  HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
+  HttpRouter.add(
+    "GET",
+    "/play",
+    Effect.gen(function* () {
+      const { gameId, player } = yield* GameState.init
+      return yield* TicTacToeRegistry.upgrade(gameId, { player })
+    }).pipe(Effect.orDie),
+  ),
+  HttpRouter.cors({
+    allowedHeaders: ["*"],
+    allowedMethods: ["*"],
+    allowedOrigins: ["*"],
+  }),
+  HttpRouter.add("*", "/*", Assets.forward),
+)
+
+export default ApiLive.pipe(
+  Layer.provide(HttpServer.layerServices),
+  HttpRouter.toHttpEffect,
+  Effect.flatMap((v) => v),
+  Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
+  Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
+  Entry.make(Layer.empty),
 )
 ```
+
+A few things worth pointing out:
+
+- `HttpRouter.add(method, path, effect)` mounts a single route.
+- `HttpRouter.cors(...)` wires up CORS for every route in the router.
+- `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
+- `Entry.make(Layer.empty)` produces the Worker `fetch` export plus the Durable Object class re-export.
+- Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client
 
 `Client.layerSocket(...)` turns the protocol into a live service over WebSocket.
 
 ```ts
-import { Socket } from "@effect/platform"
-import { Effect, Layer, Stream } from "effect"
+import { BrowserSocket } from "@effect/platform-browser"
+import { Layer, Stream, Effect } from "effect"
 import { Client } from "liminal"
 
 import { TicTacToeClient } from "./TicTacToeClient.ts"
 
 const TicTacToeClientLive = Client.layerSocket({
   client: TicTacToeClient,
-  url: "/tic-tac-toe/connect",
-})
+  url: "/play",
+  replay: { mode: "startup" },
+}).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor))
 
 Effect.gen(function* () {
   yield* TicTacToeClient.events.pipe(
     Stream.runForEach(
       Effect.fn(function* (event) {
         switch (event._tag) {
-          case "GameStarted": {
+          case "GameStarted":
             break
-          }
-          case "MoveMade": {
+          case "MoveMade":
             break
-          }
-          case "GameEnded": {
+          case "GameEnded":
             break
-          }
         }
       }),
     ),
     Effect.forkScoped,
   )
 
-  yield* TicTacToeClient.f("MakeMove")({
-    position: {
-      row: 2,
-      col: 1,
-    },
-  })
-}).pipe(Effect.provide(TicTacToeClientLive.pipe(Layer.provide(Socket.layerWebSocketConstructorGlobal))))
+  yield* TicTacToeClient.f("Move")({ position: [2, 1] })
+}).pipe(Effect.provide(TicTacToeClientLive))
 ```
 
 ## Keep durable state durable
@@ -274,5 +307,5 @@ Effect.gen(function* () {
 Liminal preserves actor identity and connected sockets across hibernation-friendly Durable Object lifecycles, but it
 does not make your whole domain model durable.
 
-Keep the real game state in storage such as D1, Postgres, or Durable Object storage. Use attachments only for per-client
-session state.
+Keep the real game state in storage such as D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments
+only for per-client session state.

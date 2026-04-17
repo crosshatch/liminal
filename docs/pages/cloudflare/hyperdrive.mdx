@@ -33,7 +33,7 @@ const connectionString = AppHyperdrive.connectionString
 Internally, that is just:
 
 ```ts
-tag.pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
+tag.asEffect().pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
 ```
 
 So the wrapper is a thin typed shell over the raw Hyperdrive binding.
