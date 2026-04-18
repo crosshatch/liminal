@@ -10,7 +10,7 @@ export interface R2<Self, Id extends string, Binding_ extends string> extends Bi
   Self,
   Id,
   Binding_,
-  globalThis.R2Bucket,
+  R2Bucket,
   never,
   never,
   never
