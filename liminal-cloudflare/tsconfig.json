@@ -1,5 +1,5 @@
 {
-  "extends": "../repos/konfik/tsconfig.base",
+  "extends": "../konfik/tsconfig.base",
   "compilerOptions": {
     "noEmit": false,
     "outDir": "dist",

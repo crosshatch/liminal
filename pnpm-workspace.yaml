@@ -67,5 +67,5 @@ overrides:
   react-dom: ^19.2.4
 
 patchedDependencies:
-  miniflare@4.20260415.0: repos/konfik/patches/miniflare@4.20260415.0.patch
-  vocs@1.4.1: repos/konfik/patches/vocs@1.4.1.patch
+  miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
+  vocs@1.4.1: konfik/patches/vocs@1.4.1.patch

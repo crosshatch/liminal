@@ -1,4 +1,4 @@
 {
-  "extends": "../repos/konfik/tsconfig.base",
+  "extends": "../konfik/tsconfig.base",
   "include": ["."]
 }

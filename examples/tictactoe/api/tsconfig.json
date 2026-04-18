@@ -1,5 +1,5 @@
 {
-  "extends": "../../../repos/konfik/tsconfig.base",
+  "extends": "../../../konfik/tsconfig.base",
   "include": ["."],
   "references": [{ "path": "../../../liminal" }, { "path": "../../../liminal-cloudflare" }],
   "exclude": ["dist"],
