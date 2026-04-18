@@ -25,6 +25,7 @@ import * as Mutex from "liminal/_util/Mutex"
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
 import { close } from "./close.ts"
+import { DurableObjectState } from "./DurableObjectState.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 
@@ -97,7 +98,7 @@ export interface ActorRegistry<
   RunROut,
   RunE,
 > extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace, never, never, never> {
-  new (state: DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
+  new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
   readonly [TypeId]: typeof TypeId
 
@@ -201,33 +202,32 @@ export const Service =
       binding,
       (value): value is DurableObjectNamespace => "getByName" in value,
     ) {
-      readonly state
       readonly runtime
       readonly directory = ClientDirectory.make(actor)
 
-      constructor(state: DurableObjectState<{}>, env: unknown) {
+      constructor(state: globalThis.DurableObjectState<{}>, env: unknown) {
         // @ts-ignore
         super(state, env)
 
-        this.state = state
         if (hibernation) {
-          const hibernationDuration = Duration.fromInput(hibernation)
-          if (Option.isSome(hibernationDuration)) {
-            state.setHibernatableWebSocketEventTimeout(Duration.toMillis(hibernationDuration.value))
-          }
+          Option.andThen(
+            Duration.fromInput(hibernation),
+            flow(Duration.toMillis, state.setHibernatableWebSocketEventTimeout),
+          )
         }
 
         this.runtime = Effect.gen({ self: this }, function* () {
-          this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
+          this.#name = yield* Effect.tryPromise(() => state.storage.get("__liminal_name")).pipe(
             Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
           )
-          for (const socket of this.state.getWebSockets()) {
+          for (const socket of state.getWebSockets()) {
             const attachments = yield* S.decodeUnknownEffect(Attachments)(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
           return Layer.mergeAll(
             preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
             Intrinsic.layer,
+            Layer.succeed(DurableObjectState, state),
             Mutex.layer,
           )
         }).pipe(Effect.tapCause(logCause), span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
@@ -240,11 +240,13 @@ export const Service =
           const { name, attachments } = yield* S.decodeUnknownEffect(Params)(url.searchParams.get("__liminal"))
           if (!this.#name) {
             this.#name = name
+            const state = yield* DurableObjectState
             const encoded = yield* S.encodeEffect(Name)(name)
-            yield* Effect.promise(() => this.state.storage.put("__liminal_name", encoded))
+            yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
-          this.state.acceptWebSocket(server)
+          const state = yield* DurableObjectState
+          state.acceptWebSocket(server)
           server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionSuccess))({ _tag: "AuditionSuccess" }))
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
@@ -318,6 +320,7 @@ export const Service =
     }
 
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
+      yield* debug("UpgradeInitiated", { attachments })
       const namespace = yield* tag
       const nameEncoded = yield* S.encodeEffect(Name)(name)
       const stub = namespace.getByName(nameEncoded)
@@ -343,9 +346,7 @@ export const Service =
       const url = new URL(request.url)
       const params = yield* S.encodeEffect(Params)({ name, attachments })
       url.searchParams.set("__liminal", params)
-      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
-        Effect.map((v) => HttpServerResponse.raw(v)),
-      )
+      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never
