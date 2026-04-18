@@ -331,7 +331,25 @@ const make = <
                 ),
                 live(replayCount),
               )
-        }).pipe(Stream.unwrap, Stream.interruptWhen(Fiber.join(fiber)))
+        }).pipe(
+          Stream.unwrap,
+          Stream.interruptWhen(
+            Fiber.await(fiber).pipe(
+              Effect.flatMap(
+                Exit.match({
+                  onSuccess: () => Effect.void,
+                  onFailure: flow(
+                    Cause.findError,
+                    Result.match({
+                      onSuccess: Effect.fail,
+                      onFailure: () => Effect.void,
+                    }),
+                  ),
+                }),
+              ),
+            ),
+          ),
+        )
 
         yield* Deferred.await(audition)
 
@@ -363,7 +381,21 @@ const make = <
               })
               return yield* Effect.raceFirst(
                 Deferred.await(inflight),
-                Fiber.join(fiber).pipe(Effect.andThen(() => new UnresolvedError().asEffect())),
+                Fiber.await(fiber).pipe(
+                  Effect.flatMap(
+                    (exit): Effect.Effect<never, ClientError | UnresolvedError> =>
+                      Exit.match(exit, {
+                        onSuccess: () => new UnresolvedError().asEffect(),
+                        onFailure: flow(
+                          Cause.findError,
+                          Result.match({
+                            onSuccess: Effect.fail,
+                            onFailure: () => new UnresolvedError().asEffect(),
+                          }),
+                        ),
+                      }),
+                  ),
+                ),
               )
             },
             span("f"),
