@@ -19,8 +19,8 @@ import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
+import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
-import { tapLogCause } from "liminal/_util/tapLogCause"
 
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
@@ -230,7 +230,7 @@ export const Service =
             Intrinsic.layer,
             Mutex.layer,
           )
-        }).pipe(tapLogCause, span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
+        }).pipe(Effect.tapCause(logCause), span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
       }
 
       #name?: NameA | undefined
@@ -262,7 +262,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(Effect.scoped, tapLogCause, span("fetch"), this.runtime.runPromise)
+        }).pipe(Effect.scoped, Effect.tapCause(logCause), span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -300,18 +300,20 @@ export const Service =
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
           )
-        }).pipe(Effect.scoped, Mutex.task, tapLogCause, span("webSocketMessage"), this.runtime.runFork)
+        }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-        this.directory.unregister(socket).pipe(Effect.tap(debug("webSocketClose")), tapLogCause, this.runtime.runFork)
+        this.directory
+          .unregister(socket)
+          .pipe(Effect.tap(debug("SocketClosed")), Effect.tapCause(logCause), this.runtime.runFork)
       }
 
       webSocketError(socket: WebSocket, cause: unknown) {
         Effect.gen({ self: this }, function* () {
           yield* debug("SocketErrored", { cause })
           yield* this.directory.unregister(socket)
-        }).pipe(tapLogCause, span("webSocketError", { attributes: { cause } }), this.runtime.runFork)
+        }).pipe(Effect.tapCause(logCause), span("SocketErrored", { attributes: { cause } }), this.runtime.runFork)
       }
     }
 

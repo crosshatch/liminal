@@ -5,5 +5,4 @@ const formatReason = <E>(reason: Cause.Reason<E>): unknown => {
   return S.isSchemaError(value) ? value.toString() : value
 }
 
-export const tapLogCause = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.tapCause(effect, (cause) => Effect.forEach(cause.reasons, flow(formatReason, Effect.logError)))
+export const logCause = <E>(cause: Cause.Cause<E>) => Effect.forEach(cause.reasons, flow(formatReason, Effect.logError))
