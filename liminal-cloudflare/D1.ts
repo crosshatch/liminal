@@ -14,7 +14,7 @@ export interface D1<Self, Id extends string, Binding_ extends string> extends Bi
   Self,
   Id,
   Binding_,
-  globalThis.D1Database,
+  D1Database,
   D1Client.D1Client | SqlClient.SqlClient,
   Config.ConfigError,
   never

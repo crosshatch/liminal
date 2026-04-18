@@ -1,1 +1,1 @@
-repos/konfik/words.txt
+konfik/words.txt

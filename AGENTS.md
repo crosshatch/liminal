@@ -1,1 +1,1 @@
-./repos/konfik/AGENTS.md
+./konfik/AGENTS.md

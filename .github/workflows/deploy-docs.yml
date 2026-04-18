@@ -17,8 +17,8 @@ jobs:
     environment: deploy-docs
     steps:
       - uses: actions/checkout@v6
-      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 repos/konfik"
-      - uses: ./repos/konfik/.github/actions/configure_environment
+      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 konfik"
+      - uses: ./konfik/.github/actions/configure_environment
       - run: pnpm build
       - run: pnpm build
         working-directory: docs

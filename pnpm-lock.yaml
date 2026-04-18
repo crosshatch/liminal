@@ -121,11 +121,11 @@ overrides:
 
 patchedDependencies:
   miniflare@4.20260415.0:
-    hash: 75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b
-    path: repos/konfik/patches/miniflare@4.20260415.0.patch
+    hash: 239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad
+    path: konfik/patches/miniflare@4.20260415.0.patch
   vocs@1.4.1:
     hash: 9d5f90effe2c11945d1c58d556442ae982714328ef92da34fbcf9c3584c56ece
-    path: repos/konfik/patches/vocs@1.4.1.patch
+    path: konfik/patches/vocs@1.4.1.patch
 
 importers:
 
@@ -6134,7 +6134,7 @@ snapshots:
   '@cloudflare/vite-plugin@1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
-      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
+      miniflare: 4.20260415.0(patch_hash=239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad)
       unenv: 2.0.0-rc.24
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
       wrangler: 4.83.0(@cloudflare/workers-types@4.20260416.2)
@@ -6150,7 +6150,7 @@ snapshots:
       '@vitest/snapshot': 4.1.4
       cjs-module-lexer: 1.4.3
       esbuild: 0.27.3
-      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
+      miniflare: 4.20260415.0(patch_hash=239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad)
       vitest: 4.1.4(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
       wrangler: 4.83.0(@cloudflare/workers-types@4.20260416.2)
       zod: 3.25.76
@@ -10296,7 +10296,7 @@ snapshots:
 
   mini-svg-data-uri@1.4.4: {}
 
-  miniflare@4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b):
+  miniflare@4.20260415.0(patch_hash=239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       sharp: 0.34.5
@@ -11666,7 +11666,7 @@ snapshots:
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
       blake3-wasm: 2.1.5
       esbuild: 0.27.3
-      miniflare: 4.20260415.0(patch_hash=75e8c6e108a9a82fb6848f99ed3b62427c996631a855cfd9697edf16d2447c6b)
+      miniflare: 4.20260415.0(patch_hash=239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.24
       workerd: 1.20260415.1
