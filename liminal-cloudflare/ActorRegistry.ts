@@ -12,14 +12,15 @@ import {
   Array,
   Encoding,
   Schema,
-  References,
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
+import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import * as Mutex from "liminal/_util/Mutex"
+import { tapLogCause } from "liminal/_util/tapLogCause"
 
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
@@ -229,12 +230,7 @@ export const Service =
             Intrinsic.layer,
             Mutex.layer,
           )
-        }).pipe(
-          Layer.unwrap,
-          Layer.tapError(Effect.logDebug),
-          Layer.provideMerge(Layer.succeed(References.MinimumLogLevel, "All")),
-          ManagedRuntime.make,
-        )
+        }).pipe(tapLogCause, span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
       }
 
       #name?: NameA | undefined
@@ -266,7 +262,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(Effect.scoped, span("fetch"), Effect.tapError(Effect.logDebug), this.runtime.runPromise)
+        }).pipe(Effect.scoped, tapLogCause, span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -304,65 +300,51 @@ export const Service =
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
           )
-        }).pipe(
-          Effect.scoped,
-          Mutex.task,
-          span("webSocketMessage"),
-          Effect.tapError(Effect.logDebug),
-          this.runtime.runFork,
-        )
+        }).pipe(Effect.scoped, Mutex.task, tapLogCause, span("webSocketMessage"), this.runtime.runFork)
       }
 
       webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-        this.directory.unregister(socket).pipe(Effect.tapError(Effect.logDebug), this.runtime.runFork)
+        this.directory.unregister(socket).pipe(Effect.tap(debug("webSocketClose")), tapLogCause, this.runtime.runFork)
       }
 
       webSocketError(socket: WebSocket, cause: unknown) {
         Effect.gen({ self: this }, function* () {
           yield* debug("SocketErrored", { cause })
           yield* this.directory.unregister(socket)
-        }).pipe(
-          span("webSocketError", { attributes: { cause } }),
-          Effect.tapError(Effect.logDebug),
-          this.runtime.runFork,
-        )
+        }).pipe(tapLogCause, span("webSocketError", { attributes: { cause } }), this.runtime.runFork)
       }
     }
 
-    const upgrade = Effect.fnUntraced(
-      function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
-        const namespace = yield* tag
-        const nameEncoded = yield* S.encodeEffect(Name)(name)
-        const stub = namespace.getByName(nameEncoded)
-        const request = yield* NativeRequest
-        const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
-          Effect.map(flow(String.split(","), Array.map(String.trim))),
+    const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
+      const namespace = yield* tag
+      const nameEncoded = yield* S.encodeEffect(Name)(name)
+      const stub = namespace.getByName(nameEncoded)
+      const request = yield* NativeRequest
+      const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
+        Effect.map(flow(String.split(","), Array.map(String.trim))),
+      )
+      const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
+      const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+        Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
+      )
+      if (requestClientId !== clientId) {
+        return close(
+          4003,
+          yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionFailure))(
+            Protocol.AuditionFailure.make({
+              client: clientId,
+              routed: requestClientId,
+            }),
+          ),
         )
-        const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-        const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
-          Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
-        )
-        if (requestClientId !== clientId) {
-          return close(
-            4003,
-            yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionFailure))(
-              Protocol.AuditionFailure.make({
-                client: clientId,
-                routed: requestClientId,
-              }),
-            ),
-          )
-        }
-        const url = new URL(request.url)
-        const params = yield* S.encodeEffect(Params)({ name, attachments })
-        url.searchParams.set("__liminal", params)
-        return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
-          Effect.map((v) => HttpServerResponse.raw(v)),
-        )
-      },
-      span("upgrade"),
-      Effect.tapError(Effect.logDebug),
-    )
+      }
+      const url = new URL(request.url)
+      const params = yield* S.encodeEffect(Params)({ name, attachments })
+      url.searchParams.set("__liminal", params)
+      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
+        Effect.map((v) => HttpServerResponse.raw(v)),
+      )
+    }, span("upgrade"))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never
   }

@@ -1,5 +1,4 @@
-import { Effect, pipe } from "effect"
+import { Effect, flow } from "effect"
+import { tapLogCause } from "liminal/_util/tapLogCause"
 
-// TODO
-export const mapInternalError = <A, E, R>(x: Effect.Effect<A, E, R>) =>
-  pipe(x, Effect.tapError(Effect.logError), Effect.catchTags({}), Effect.orDie)
+export const mapInternalError = flow(tapLogCause, Effect.orDie)
