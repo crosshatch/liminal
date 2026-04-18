@@ -74,36 +74,23 @@ const GameStarted = reducer(
     () =>
       Effect.succeed({ name: player }),
 )
+
 const MoveMade = reducer("MoveMade", () => (state) => Effect.succeed(state))
+
 const GameEnded = reducer("GameEnded", () => (state) => Effect.succeed(state))
 ```
 
 Each call returns the reducer function unchanged — the value is in the type narrowing, not runtime behavior.
 
-Compose them into a single `reduce` function with `Match.tagsExhaustive`:
-
-```ts
-import { flow, Match } from "effect"
-
-const reduce = flow(
-  Match.value,
-  Match.tagsExhaustive({
-    GameStarted,
-    MoveMade,
-    GameEnded,
-  }),
-)
-```
-
 ## Build the accumulator layer
 
-Combine the source stream, initial function, and reduce function into a layer.
+Combine the source stream, initial function, and reduce functions into a layer.
 
 ```ts
 export const layer = GameState.layer({
   source: TicTacToeClient.events,
   initial,
-  reduce,
+  reduce: Match.valueTags({ GameStarted, MoveMade, GameEnded }),
 })
 ```
 
