@@ -1,6 +1,6 @@
 {
   "extends": "../konfik/tsconfig.base",
   "include": ["."],
-  "exclude": ["dist"],
+  "exclude": ["dist", "vocs.config.ts"],
   "references": [{ "path": "../liminal" }, { "path": "../liminal-cloudflare" }]
 }
