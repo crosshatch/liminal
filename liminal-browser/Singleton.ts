@@ -70,16 +70,14 @@ export const make = Effect.fnUntraced(function* <
       if (typeof raw === "string") {
         const expected = actor.definition.client.key
         if (raw !== expected) {
-          return runner.send(
-            portId,
-            protocol.Audition.Failure.make({
-              routed: raw,
-              client: expected,
-            }),
-          )
+          return runner.send(portId, {
+            _tag: "Audition.Failure",
+            routed: raw,
+            client: expected,
+          })
         }
         return Effect.gen(function* () {
-          yield* runner.send(portId, protocol.Audition.Success.make({}))
+          yield* runner.send(portId, { _tag: "Audition.Success" })
           const subscription = yield* PubSub.subscribe(pubsub).pipe(Scope.provide(inner))
           yield* task(onConnect).pipe(Effect.provideService(actor, { name, clients: handles, currentClient: handle }))
           yield* Stream.fromSubscription(subscription).pipe(
