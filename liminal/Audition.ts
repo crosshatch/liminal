@@ -1,17 +1,17 @@
 import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
 
 import type { F } from "./F.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
-import * as Protocol from "./Protocol.ts"
 
 const { debug, span } = Diagnostic.module("Audition")
 
 const TypeId = "~liminal/Audition" as const
 
-export interface Audition<ClientSelf, D extends Protocol.ProtocolDefinition> extends Pipeable.Pipeable {
+export interface Audition<ClientSelf, D extends ProtocolDefinition> extends Pipeable.Pipeable {
   readonly [TypeId]: typeof TypeId
 
   readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError, ClientSelf>
@@ -29,41 +29,40 @@ export const empty: Audition<never, never> = {
 }
 
 export const add: {
-  <ClientSelf, ClientId extends string, ClientD extends Protocol.ProtocolDefinition>(
+  <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): <AuditionSelf, AuditionD extends Protocol.ProtocolDefinition>(
+  ): <AuditionSelf, AuditionD extends ProtocolDefinition>(
     audition: Audition<AuditionSelf, AuditionD>,
-  ) => Audition<AuditionSelf | ClientSelf, Protocol.ProtocolDefinition.Merge<AuditionD, ClientD>>
+  ) => Audition<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>>
   <
     AuditionClientSelf,
-    AuditionD extends Protocol.ProtocolDefinition,
+    AuditionD extends ProtocolDefinition,
     ClientSelf,
     ClientId extends string,
-    ClientD extends Protocol.ProtocolDefinition,
+    ClientD extends ProtocolDefinition,
   >(
     audition: Audition<AuditionClientSelf, AuditionD>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): Audition<AuditionClientSelf | ClientSelf, Protocol.ProtocolDefinition.Merge<AuditionD, ClientD>>
+  ): Audition<AuditionClientSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>>
 } = Function.dual(
   2,
   <
     AuditionSelf,
-    AuditionD extends Protocol.ProtocolDefinition,
+    AuditionD extends ProtocolDefinition,
     ClientSelf,
     ClientId extends string,
-    ClientD extends Protocol.ProtocolDefinition,
+    ClientD extends ProtocolDefinition,
   >(
     audition: Audition<AuditionSelf, AuditionD>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): Audition<AuditionSelf | ClientSelf, Protocol.ProtocolDefinition.Merge<AuditionD, ClientD>> => {
-    const f: F<AuditionSelf | ClientSelf, Protocol.ProtocolDefinition.Merge<AuditionD, ClientD>> =
-      (method) => (payload) =>
-        audition
-          .f(method as never)(payload)
-          .pipe(
-            Effect.catchTag("AuditionError", () => client.f(method as never)(payload)),
-            span("f"),
-          )
+  ): Audition<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> => {
+    const f: F<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> = (method) => (payload) =>
+      audition
+        .f(method)(payload)
+        .pipe(
+          Effect.catchTag("AuditionError", () => client.f(method)(payload)),
+          span("f"),
+        )
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () =>

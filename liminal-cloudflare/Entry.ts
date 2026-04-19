@@ -25,14 +25,12 @@ export const makeFetch =
     return (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> =>
       handler.pipe(
         Effect.map(HttpServerResponse.toWeb),
-        Effect.provide(
-          Layer.mergeAll(
-            layer,
-            Layer.succeed(ExecutionContext, ctx),
-            Layer.succeed(NativeRequest, request),
-            Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
-          ),
-        ),
+        Effect.provide([
+          layer,
+          Layer.succeed(ExecutionContext, ctx),
+          Layer.succeed(NativeRequest, request),
+          Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
+        ]),
         Effect.scoped,
         Effect.tapCause(logCause),
         span("fetch"),

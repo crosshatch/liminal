@@ -88,7 +88,6 @@ export const Service =
 
     const disconnectAll = tag.asEffect().pipe(
       Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
-      Effect.asVoid,
       span("disconnectAll"),
     )
 
