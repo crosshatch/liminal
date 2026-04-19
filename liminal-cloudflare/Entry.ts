@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers"
 import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
 import { HttpServerRequest, HttpServerResponse, HttpServerError } from "effect/unstable/http"
 import * as Diagnostic from "liminal/_util/Diagnostic"
+import { logCause } from "liminal/_util/logCause"
 
 import { ExecutionContext } from "./ExecutionContext.ts"
 import * as Intrinsic from "./Intrinsic.ts"
@@ -24,13 +25,16 @@ export const makeFetch =
     return (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> =>
       handler.pipe(
         Effect.map(HttpServerResponse.toWeb),
-        Effect.provide([
-          layer,
-          Layer.succeed(ExecutionContext, ctx),
-          Layer.succeed(NativeRequest, request),
-          Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
-        ]),
+        Effect.provide(
+          Layer.mergeAll(
+            layer,
+            Layer.succeed(ExecutionContext, ctx),
+            Layer.succeed(NativeRequest, request),
+            Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
+          ),
+        ),
         Effect.scoped,
+        Effect.tapCause(logCause),
         span("fetch"),
         // Solves crashes between HMRs.
         // Without this, in-flight requests use an old memoMap; new requests use a new one.

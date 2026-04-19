@@ -231,7 +231,7 @@ export const Service =
           if (!this.#name) {
             this.#name = name
             const state = yield* DurableObjectState
-            const encoded = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Name)))(name)
+            const encoded = yield* S.encodeEffect(Name)(name)
             yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
@@ -316,7 +316,7 @@ export const Service =
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
       yield* debug("UpgradeInitiated", { attachments })
       const namespace = yield* tag
-      const nameEncoded = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Name)))(name)
+      const nameEncoded = yield* S.encodeEffect(Name)(name)
       const stub = namespace.getByName(nameEncoded)
       const request = yield* NativeRequest
       const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
@@ -327,12 +327,11 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))(
-          protocol.Audition.Failure.make({
-            client: clientId,
-            routed: requestClientId,
-          }),
-        ).pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
+        yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))({
+          _tag: "Audition.Failure",
+          client: clientId,
+          routed: requestClientId,
+        }).pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
       }
       const url = new URL(request.url)
       const params = yield* S.encodeEffect(Params)({ name, attachments })

@@ -1,6 +1,6 @@
 import { Scope, Effect, Schema as S, PubSub, Ref, Exit, Stream, Semaphore } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
-import { Actor, ClientHandle, Method, type Protocol } from "liminal"
+import { type Actor, ClientHandle, type Method, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 
 const { span } = Diagnostic.module("browser.Singleton")
