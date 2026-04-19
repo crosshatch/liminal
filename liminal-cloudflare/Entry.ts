@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers"
 import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
 import { HttpServerRequest, HttpServerResponse, HttpServerError } from "effect/unstable/http"
+import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { logCause } from "liminal/_util/logCause"
 
@@ -26,7 +27,7 @@ export const makeFetch =
       handler.pipe(
         Effect.map(HttpServerResponse.toWeb),
         Effect.provide([
-          layer,
+          layer.pipe(boundLayer("worker")),
           Layer.succeed(ExecutionContext, ctx),
           Layer.succeed(NativeRequest, request),
           Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
