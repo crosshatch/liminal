@@ -2,9 +2,9 @@ import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
 import { Assets, Entry } from "liminal-cloudflare"
 
-import { TicTacToeRegistry } from "./ActorRegistry.ts"
 import { Database } from "./Database.ts"
 import * as GameState from "./Games.ts"
+import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
 
 export { TicTacToeRegistry }
 

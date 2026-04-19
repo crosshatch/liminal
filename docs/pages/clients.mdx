@@ -47,10 +47,11 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
 
 A few things to note:
 
-- `methods` is a record of `{ payload, success, failure }`, where each is a schema (e.g. `S.Struct(...)`, `S.Void`, `S.Never`).
+- `methods` is a record of `{ payload, success, failure }`, where each is a schema (e.g. `S.Struct(...)`, `S.Void`,
+  `S.Never`).
 - `events` is a record of plain struct fields. Liminal tags them automatically with `_tag`.
 
-## Define methods with `Method.define(...)`
+## Define methods with `Method.make(...)`
 
 For anything beyond a toy example, you may want to define methods separately.
 
@@ -58,7 +59,7 @@ For anything beyond a toy example, you may want to define methods separately.
 import { Schema as S } from "effect"
 import { Method } from "liminal"
 
-export const SendMessage = Method.define({
+export const SendMessage = Method.make({
   payload: S.Struct({
     content: S.String,
   }),

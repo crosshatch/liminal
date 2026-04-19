@@ -6,17 +6,9 @@ export interface MethodDefinition<Payload extends S.Top, Success extends S.Top, 
   readonly failure: Failure
 }
 
-export declare namespace MethodDefinition {
-  export type Any = MethodDefinition<S.Top, S.Top, S.Top>
+export type Any = MethodDefinition<S.Top, S.Top, S.Top>
 
-  export type Merge<T, U> = [T] extends [never]
-    ? U
-    : {
-        [K in keyof T & keyof U]: T[K] extends U[K] ? (U[K] extends T[K] ? T[K] : never) : never
-      }
-}
-
-export const define = <Payload extends S.Top, Success extends S.Top, Failure extends S.Top>({
+export const make = <Payload extends S.Top, Success extends S.Top, Failure extends S.Top>({
   payload,
   success,
   failure,
@@ -26,12 +18,12 @@ export const define = <Payload extends S.Top, Success extends S.Top, Failure ext
   readonly failure: Failure
 }): MethodDefinition<Payload, Success, Failure> => ({ payload, success, failure })
 
-export type Handler<MethodDefinition extends MethodDefinition.Any, R> = (
+export type Handler<MethodDefinition extends Any, R> = (
   payload: MethodDefinition["payload"]["Type"],
 ) => Effect.Effect<MethodDefinition["success"]["Type"], MethodDefinition["failure"]["Type"], R>
 
-export type Handlers<MethodDefinitions extends Record<string, MethodDefinition.Any>, R> = {
+export type Handlers<MethodDefinitions extends Record<string, Any>, R> = {
   [K in keyof MethodDefinitions]: Handler<MethodDefinitions[K], R>
 }
 
-export const handler = <M extends MethodDefinition.Any, R>(_method: M, f: Handler<M, R>): Handler<M, R> => f
+export const handler = <M extends Any, R>(_method: M, f: Handler<M, R>): Handler<M, R> => f

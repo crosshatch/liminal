@@ -1,3 +1,6 @@
+import type { Actor, Method } from "liminal"
+import type { ProtocolDefinition } from "liminal/Protocol"
+
 import {
   Layer,
   Effect,
@@ -15,7 +18,6 @@ import {
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
-import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
@@ -33,12 +35,6 @@ const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
-type SchemaServices<M extends Record<string, Method.MethodDefinition.Any>, E extends Record<string, S.Struct.Fields>> =
-  | Protocol.ProtocolSchemas<M, E>["f"]["payload"]["DecodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["f"]["success"]["EncodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["f"]["failure"]["EncodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["event"]["EncodingServices"]
-
 export interface ActorRegistryDefinition<
   Binding_ extends string,
   ActorSelf,
@@ -47,32 +43,31 @@ export interface ActorRegistryDefinition<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
   RunE,
 > {
+  readonly ""?: this["actor"]["definition"]["client"]["protocol"]
+
   readonly binding: Binding_
 
-  readonly actor: Actor.Actor<
-    ActorSelf,
-    ActorId,
-    NameA,
-    AttachmentFields,
-    ClientSelf,
-    ClientId,
-    MethodDefinitions,
-    EventDefinitions
-  >
+  readonly actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>
 
-  readonly preludeLayer: Layer.Layer<PreludeROut | SchemaServices<MethodDefinitions, EventDefinitions>, PreludeE>
+  readonly preludeLayer: Layer.Layer<
+    | PreludeROut
+    | NonNullable<this[""]>["F"]["Payload"]["DecodingServices"]
+    | NonNullable<this[""]>["F"]["Success"]["EncodingServices"]
+    | NonNullable<this[""]>["F"]["Failure"]["EncodingServices"]
+    | NonNullable<this[""]>["Event"]["EncodingServices"],
+    PreludeE
+  >
 
   readonly runLayer: Layer.Layer<RunROut, RunE, ActorSelf | PreludeROut>
 
   readonly handlers: Method.Handlers<
-    MethodDefinitions,
+    D["methods"],
     ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
   >
 
@@ -91,8 +86,7 @@ export interface ActorRegistry<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
@@ -110,8 +104,7 @@ export interface ActorRegistry<
     AttachmentFields,
     ClientSelf,
     ClientId,
-    MethodDefinitions,
-    EventDefinitions,
+    D,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -135,8 +128,7 @@ export const Service =
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
-    MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    EventDefinitions extends Record<string, S.Struct.Fields>,
+    D extends ProtocolDefinition,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -151,8 +143,7 @@ export const Service =
       AttachmentFields,
       ClientSelf,
       ClientId,
-      MethodDefinitions,
-      EventDefinitions,
+      D,
       PreludeROut,
       PreludeE,
       RunROut,
@@ -168,8 +159,7 @@ export const Service =
     AttachmentFields,
     ClientSelf,
     ClientId,
-    MethodDefinitions,
-    EventDefinitions,
+    D,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -179,7 +169,7 @@ export const Service =
     const {
       definition: {
         name: Name,
-        client: { schema, key: clientId },
+        client: { protocol, key: clientId },
       },
       schema: { attachments: Attachments },
     } = actor
@@ -241,13 +231,17 @@ export const Service =
           if (!this.#name) {
             this.#name = name
             const state = yield* DurableObjectState
-            const encoded = yield* S.encodeEffect(Name)(name)
+            const encoded = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Name)))(name)
             yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
           const state = yield* DurableObjectState
           state.acceptWebSocket(server)
-          server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionSuccess))({ _tag: "AuditionSuccess" }))
+          server.send(
+            yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Success)))({
+              _tag: "Audition.Success",
+            }),
+          )
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -276,7 +270,7 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(schema.f.payload)))(
+          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(protocol.F.Payload)))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
@@ -286,14 +280,14 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.success)))({
-                  _tag: "FSuccess",
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Success)))({
+                  _tag: "F.Success",
                   id,
                   success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.failure)))({
-                  _tag: "FFailure",
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Failure)))({
+                  _tag: "F.Failure",
                   id,
                   failure: { _tag, value } as never,
                 }),
@@ -322,7 +316,7 @@ export const Service =
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
       yield* debug("UpgradeInitiated", { attachments })
       const namespace = yield* tag
-      const nameEncoded = yield* S.encodeEffect(Name)(name)
+      const nameEncoded = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Name)))(name)
       const stub = namespace.getByName(nameEncoded)
       const request = yield* NativeRequest
       const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
@@ -333,18 +327,16 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        return close(
-          4003,
-          yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionFailure))(
-            Protocol.AuditionFailure.make({
-              client: clientId,
-              routed: requestClientId,
-            }),
-          ),
+        const auditionFailure = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))(
+          protocol.Audition.Failure.make({
+            client: clientId,
+            routed: requestClientId,
+          }),
         )
+        return close(auditionFailure)
       }
       const url = new URL(request.url)
-      const params = yield* S.encodeEffect(Params)({ name, attachments })
+      const params = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Params)))({ name, attachments })
       url.searchParams.set("__liminal", params)
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
