@@ -327,16 +327,15 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        const auditionFailure = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))(
+        yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))(
           protocol.Audition.Failure.make({
             client: clientId,
             routed: requestClientId,
           }),
-        )
-        return close(auditionFailure)
+        ).pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
       }
       const url = new URL(request.url)
-      const params = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(Params)))({ name, attachments })
+      const params = yield* S.encodeEffect(Params)({ name, attachments })
       url.searchParams.set("__liminal", params)
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
