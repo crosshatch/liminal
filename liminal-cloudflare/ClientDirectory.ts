@@ -19,7 +19,7 @@ export interface ClientDirectory<
   readonly register: (
     socket: WebSocket,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<this[""]["Handle"], S.SchemaError, never>
+  ) => Effect.Effect<this[""]["Handle"], S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
   readonly get: (socket: WebSocket) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError, never>
 
@@ -41,7 +41,7 @@ export const make = <
     definition: {
       client: { protocol },
     },
-    schema,
+    protocol: { Attachments },
   } = actor
 
   type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
@@ -51,12 +51,12 @@ export const make = <
 
   const get = (socket: WebSocket) => Effect.fromNullishOr(sockets.get(socket))
 
-  const encodeAttachments = S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.attachments)))
+  const encodeAttachments = S.encodeEffect(S.fromJsonString(S.toCodecJson(Attachments)))
 
   const register = Effect.fnUntraced(function* (
     socket: WebSocket,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ): Effect.fn.Return<Handle, S.SchemaError> {
+  ): Effect.fn.Return<Handle, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]> {
     const encoded = yield* encodeAttachments(attachments)
     socket.serializeAttachment(encoded)
     const attachmentsRef = yield* Ref.make(attachments)

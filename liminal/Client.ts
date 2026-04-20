@@ -25,8 +25,6 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
-import type { Transport } from "./Transport.ts"
-
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
@@ -86,6 +84,8 @@ export const Service =
   <Id extends string, D extends ProtocolDefinition>(id: Id, definition: D): Client<Self, Id, D> => {
     const tag = Context.Service<Self, Service<Self, D>>()(id)
 
+    const protocol = Protocol(definition)
+
     const events = tag.asEffect().pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
 
     const f: F<Self, D> = (_tag) =>
@@ -108,16 +108,26 @@ export const Service =
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      protocol: Protocol(definition),
+      protocol,
       events,
       f,
       invalidate,
     })
   }
 
+export interface ClientTransport<D extends ProtocolDefinition> {
+  readonly listen: (
+    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError>,
+  ) => Effect.Effect<void, ClientError | S.SchemaError, Scope.Scope | Protocol<D>["Actor"]["DecodingServices"]>
+
+  readonly send: (
+    message: Protocol<D>["F"]["Payload"]["Type"],
+  ) => Effect.Effect<void, ClientError | S.SchemaError, Protocol<D>["F"]["Payload"]["EncodingServices"]>
+}
+
 const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
   client: Client<Self, Id, D>,
-  build: Effect.Effect<Transport<D>, ClientError, R | Scope.Scope>,
+  build: Effect.Effect<ClientTransport<D>, ClientError, R | Scope.Scope>,
   replay?: ReplayConfig | undefined,
 ) =>
   Effect.gen(function* () {
@@ -375,14 +385,13 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
-      const decodeActorMessage = S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(protocol.Actor)))
       return {
         listen: Effect.fnUntraced(function* (publish) {
           yield* socket
             .runRaw((raw) =>
               pipe(
                 raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                decodeActorMessage,
+                protocol.decodeActor,
                 Effect.andThen(publish),
               ),
             )
@@ -395,7 +404,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
                     yield* debug("Socket.Disconnected")
                     return yield* publish({ _tag: "Disconnect" })
                   }
-                  yield* debug(reason._tag, { cause })
+                  yield* debug(`SocketErrored.${reason._tag}`, { cause })
                   return yield* new ConnectionError({ cause })
                 }),
               ),
@@ -404,9 +413,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
-            const message = yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Payload)))(v).pipe(
-              Effect.mapError((cause) => new ConnectionError({ cause })),
-            )
+            const message = yield* protocol.encodeFPayload(v)
             yield* write(message).pipe(
               Effect.catchTag("SocketError", (cause) => new ConnectionError({ cause }).asEffect()),
             )

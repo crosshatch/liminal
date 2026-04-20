@@ -1,4 +1,4 @@
-import { Schema as S, Record, Types } from "effect"
+import { flow, Schema as S, Record, Types, Effect, SchemaAST } from "effect"
 
 import type * as Method from "./Method.ts"
 
@@ -23,6 +23,10 @@ export declare namespace ProtocolDefinition {
     [T] extends [never] ? U["events"] : T["events"] & U["events"]
   >
 }
+
+const parseJson = flow(S.toCodecJson, S.fromJsonString)
+const decode = flow(parseJson, S.decodeUnknownEffect)
+const encode = flow(parseJson, S.encodeEffect)
 
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
@@ -89,6 +93,21 @@ export interface Protocol<D extends ProtocolDefinition> {
       this["Disconnect"],
     ]
   >
+
+  readonly encodeFPayload: (
+    input: this["F"]["Payload"]["Type"],
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<string, S.SchemaError, this["F"]["Payload"]["EncodingServices"]>
+
+  readonly decodeEvent: (
+    input: unknown,
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<this["Event"]["Type"], S.SchemaError, this["Event"]["DecodingServices"]>
+
+  readonly decodeActor: (
+    input: unknown,
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<this["Actor"]["Type"], S.SchemaError, this["Actor"]["DecodingServices"]>
 }
 
 const Disconnect = S.TaggedStruct("Disconnect", {})
@@ -132,11 +151,18 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     Disconnect,
   ]) as never
 
+  const encodeFPayload = encode(F.Payload)
+  const decodeEvent = decode(Event)
+  const decodeActor = decode(Actor)
+
   return {
     Audition,
     Event,
     F,
     Actor,
     Disconnect,
+    encodeFPayload,
+    decodeEvent,
+    decodeActor,
   }
 }

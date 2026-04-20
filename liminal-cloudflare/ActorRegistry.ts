@@ -60,7 +60,9 @@ export interface ActorRegistryDefinition<
     | NonNullable<this[""]>["F"]["Payload"]["DecodingServices"]
     | NonNullable<this[""]>["F"]["Success"]["EncodingServices"]
     | NonNullable<this[""]>["F"]["Failure"]["EncodingServices"]
-    | NonNullable<this[""]>["Event"]["EncodingServices"],
+    | NonNullable<this[""]>["Event"]["EncodingServices"]
+    | S.Struct<AttachmentFields>["DecodingServices"]
+    | S.Struct<AttachmentFields>["EncodingServices"],
     PreludeE
   >
 
@@ -171,7 +173,7 @@ export const Service =
         name: Name,
         client: { protocol, key: clientId },
       },
-      schema: { attachments: Attachments },
+      protocol: { Attachments },
     } = actor
 
     const Params = S.StringFromBase64Url.pipe(
@@ -206,6 +208,13 @@ export const Service =
           )
         }
 
+        const baseLayer = Layer.mergeAll(
+          preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
+          Intrinsic.layer,
+          Layer.succeed(DurableObjectState, state),
+          Mutex.layer,
+        )
+
         this.runtime = Effect.gen({ self: this }, function* () {
           this.#name = yield* Effect.tryPromise(() => state.storage.get("__liminal_name")).pipe(
             Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
@@ -216,13 +225,14 @@ export const Service =
             )
             yield* this.directory.register(socket, attachments)
           }
-          return Layer.mergeAll(
-            preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
-            Intrinsic.layer,
-            Layer.succeed(DurableObjectState, state),
-            Mutex.layer,
-          )
-        }).pipe(Effect.tapCause(logCause), span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
+        }).pipe(
+          Effect.tapCause(logCause),
+          span("make_runtime"),
+          Layer.effectDiscard,
+          Layer.provideMerge(baseLayer),
+          boundLayer("actor"),
+          ManagedRuntime.make,
+        )
       }
 
       #name?: NameA | undefined

@@ -49,8 +49,8 @@ export interface Actor<
 
   readonly definition: ActorDefinition<NameA, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly schema: {
-    readonly attachments: S.Codec<S.Struct<AttachmentFields>["Type"], S.Struct<AttachmentFields>["Encoded"]>
+  readonly protocol: {
+    readonly Attachments: S.Struct<AttachmentFields>
   }
 
   readonly sendAll: Send<ActorSelf, D>
@@ -99,8 +99,8 @@ export const Service =
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      schema: {
-        attachments: S.Struct(definition.attachments) as never,
+      protocol: {
+        Attachments: S.Struct(definition.attachments),
       },
       sendAll,
       disconnectAll,
