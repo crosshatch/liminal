@@ -18,5 +18,5 @@ export type ClientError = AuditionError | ConnectionError
 export class UnresolvedError extends S.TaggedErrorClass<UnresolvedError>()("UnresolvedError", {}) {}
 
 export type FError<D extends ProtocolDefinition> = [
-  D["methods"][keyof D["methods"]]["failure"]["Type"] | ClientError | UnresolvedError,
+  D["methods"][keyof D["methods"]]["failure"]["Type"] | ClientError | S.SchemaError | UnresolvedError,
 ][0]

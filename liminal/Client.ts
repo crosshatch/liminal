@@ -49,7 +49,7 @@ interface EventTake<A, E> {
 }
 
 export interface Session<Self, D extends ProtocolDefinition> {
-  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError>
+  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
   readonly f: F<Self, D>
 
@@ -70,7 +70,11 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
 
   readonly protocol: Protocol<D>
 
-  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError, Self>
+  readonly events: Stream.Stream<
+    ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
+    ClientError | S.SchemaError,
+    Self
+  >
 
   readonly f: F<Self, D>
 
@@ -320,7 +324,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 Deferred.await(inflight),
                 Fiber.await(fiber).pipe(
                   Effect.flatMap(
-                    (exit): Effect.Effect<never, ClientError | UnresolvedError> =>
+                    (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
                       Exit.match(exit, {
                         onSuccess: () => new UnresolvedError().asEffect(),
                         onFailure: flow(
@@ -395,7 +399,6 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
                   return yield* new ConnectionError({ cause })
                 }),
               ),
-              Effect.catchTag("SchemaError", (cause) => new ConnectionError({ cause }).asEffect()),
             )
         }, span("listen")),
         send: Effect.fnUntraced(

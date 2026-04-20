@@ -14,7 +14,11 @@ const TypeId = "~liminal/Audition" as const
 export interface Audition<ClientSelf, D extends ProtocolDefinition> extends Pipeable.Pipeable {
   readonly [TypeId]: typeof TypeId
 
-  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError, ClientSelf>
+  readonly events: Stream.Stream<
+    ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
+    ClientError | S.SchemaError,
+    ClientSelf
+  >
 
   readonly f: F<ClientSelf, D>
 }

@@ -211,7 +211,9 @@ export const Service =
             Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
           )
           for (const socket of state.getWebSockets()) {
-            const attachments = yield* S.decodeUnknownEffect(Attachments)(socket.deserializeAttachment())
+            const attachments = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(Attachments)))(
+              socket.deserializeAttachment(),
+            )
             yield* this.directory.register(socket, attachments)
           }
           return Layer.mergeAll(
