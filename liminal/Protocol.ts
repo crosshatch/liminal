@@ -142,14 +142,7 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     event: S.TaggedUnion(events),
   }) as never
 
-  const Actor: T["Actor"] = S.Union([
-    Audition.Success,
-    Audition.Failure,
-    F.Success,
-    F.Failure,
-    Event,
-    Disconnect,
-  ]) as never
+  const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 
   const encodeFPayload = encode(F.Payload)
   const decodeEvent = decode(Event)
