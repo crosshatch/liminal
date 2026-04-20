@@ -1,6 +1,8 @@
-import { flow, Schema as S, Record, Types, Effect, SchemaAST } from "effect"
+import { flow, Schema as S, Record, Types, Effect } from "effect"
 
 import type * as Method from "./Method.ts"
+
+import { phantom } from "./_util/phantom.ts"
 
 export interface ProtocolDefinition<
   Methods extends Record<string, Method.Any> = Record<string, Method.Any>,
@@ -23,10 +25,6 @@ export declare namespace ProtocolDefinition {
     [T] extends [never] ? U["events"] : T["events"] & U["events"]
   >
 }
-
-const parseJson = flow(S.toCodecJson, S.fromJsonString)
-const decode = flow(parseJson, S.decodeUnknownEffect)
-const encode = flow(parseJson, S.encodeEffect)
 
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
@@ -93,21 +91,6 @@ export interface Protocol<D extends ProtocolDefinition> {
       this["Disconnect"],
     ]
   >
-
-  readonly encodeFPayload: (
-    input: this["F"]["Payload"]["Type"],
-    options?: SchemaAST.ParseOptions,
-  ) => Effect.Effect<string, S.SchemaError, this["F"]["Payload"]["EncodingServices"]>
-
-  readonly decodeEvent: (
-    input: unknown,
-    options?: SchemaAST.ParseOptions,
-  ) => Effect.Effect<this["Event"]["Type"], S.SchemaError, this["Event"]["DecodingServices"]>
-
-  readonly decodeActor: (
-    input: unknown,
-    options?: SchemaAST.ParseOptions,
-  ) => Effect.Effect<this["Actor"]["Type"], S.SchemaError, this["Actor"]["DecodingServices"]>
 }
 
 const Disconnect = S.TaggedStruct("Disconnect", {})
@@ -144,18 +127,75 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
 
   const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 
-  const encodeFPayload = encode(F.Payload)
-  const decodeEvent = decode(Event)
-  const decodeActor = decode(Actor)
-
-  return {
-    Audition,
-    Event,
-    F,
-    Actor,
-    Disconnect,
-    encodeFPayload,
-    decodeEvent,
-    decodeActor,
-  }
+  return { Audition, Event, F, Actor, Disconnect }
 }
+
+const toJsonStringCodec = flow(S.toCodecJson, S.fromJsonString)
+const encode = flow(toJsonStringCodec, S.encodeEffect)
+const decode = flow(toJsonStringCodec, S.decodeUnknownEffect)
+
+export interface ClientTranscoders<D extends ProtocolDefinition> {
+  "": Protocol<D>
+
+  readonly encodeFPayload: (
+    input: this[""]["F"]["Payload"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Payload"]["EncodingServices"]>
+
+  readonly decodeActor: (
+    input: unknown,
+  ) => Effect.Effect<this[""]["Actor"]["Type"], S.SchemaError, this[""]["Actor"]["DecodingServices"]>
+}
+
+export const ClientTranscoders = <D extends ProtocolDefinition>({ F, Actor }: Protocol<D>): ClientTranscoders<D> => ({
+  ...phantom,
+  encodeFPayload: encode(F.Payload),
+  decodeActor: decode(Actor),
+})
+
+export interface ActorTranscoders<D extends ProtocolDefinition> {
+  "": Protocol<D>
+
+  readonly encodeAuditionSuccess: (
+    input: this[""]["Audition"]["Success"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Success"]["EncodingServices"]>
+
+  readonly encodeAuditionFailure: (
+    input: this[""]["Audition"]["Failure"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Failure"]["EncodingServices"]>
+
+  readonly encodeEvent: (
+    input: this[""]["Event"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["Event"]["EncodingServices"]>
+
+  readonly decodeFPayload: (
+    input: unknown,
+  ) => Effect.Effect<this[""]["F"]["Payload"]["Type"], S.SchemaError, this[""]["F"]["Payload"]["DecodingServices"]>
+
+  readonly encodeFSuccess: (
+    input: this[""]["F"]["Success"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Success"]["EncodingServices"]>
+
+  readonly encodeFFailure: (
+    input: this[""]["F"]["Failure"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Failure"]["EncodingServices"]>
+
+  readonly encodeDisconnect: (
+    input: this[""]["Disconnect"]["Type"],
+  ) => Effect.Effect<string, S.SchemaError, this[""]["Disconnect"]["EncodingServices"]>
+}
+
+export const ActorTranscoders = <D extends ProtocolDefinition>({
+  F,
+  Event,
+  Disconnect,
+  Audition,
+}: Protocol<D>): ActorTranscoders<D> => ({
+  ...phantom,
+  encodeAuditionSuccess: encode(Audition.Success),
+  encodeAuditionFailure: encode(Audition.Failure),
+  encodeEvent: encode(Event),
+  decodeFPayload: decode(F.Payload),
+  encodeFSuccess: encode(F.Success),
+  encodeFFailure: encode(F.Failure),
+  encodeDisconnect: encode(Disconnect),
+})

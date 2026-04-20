@@ -1,4 +1,5 @@
 import type { Actor, Method } from "liminal"
+import type { TopFromString } from "liminal/_util/schema"
 import type { ProtocolDefinition } from "liminal/Protocol"
 
 import {
@@ -39,7 +40,7 @@ export interface ActorRegistryDefinition<
   Binding_ extends string,
   ActorSelf,
   ActorId extends string,
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
@@ -53,7 +54,7 @@ export interface ActorRegistryDefinition<
 
   readonly binding: Binding_
 
-  readonly actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>
+  readonly actor: Actor.Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
 
   readonly preludeLayer: Layer.Layer<
     | PreludeROut
@@ -62,7 +63,9 @@ export interface ActorRegistryDefinition<
     | NonNullable<this[""]>["F"]["Failure"]["EncodingServices"]
     | NonNullable<this[""]>["Event"]["EncodingServices"]
     | S.Struct<AttachmentFields>["DecodingServices"]
-    | S.Struct<AttachmentFields>["EncodingServices"],
+    | S.Struct<AttachmentFields>["EncodingServices"]
+    | Name["EncodingServices"]
+    | Name["DecodingServices"],
     PreludeE
   >
 
@@ -84,7 +87,7 @@ export interface ActorRegistry<
   Binding_ extends string,
   ActorSelf,
   ActorId extends string,
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
@@ -102,7 +105,7 @@ export interface ActorRegistry<
     Binding_,
     ActorSelf,
     ActorId,
-    NameA,
+    Name,
     AttachmentFields,
     ClientSelf,
     ClientId,
@@ -114,7 +117,7 @@ export interface ActorRegistry<
   >
 
   readonly upgrade: (
-    name: NameA,
+    name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<HttpServerResponse.HttpServerResponse, Schema.SchemaError, RegistrySelf | NativeRequest>
 }
@@ -126,7 +129,7 @@ export const Service =
     Binding_ extends string,
     ActorSelf,
     ActorId extends string,
-    NameA,
+    Name extends TopFromString,
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
@@ -141,7 +144,7 @@ export const Service =
       Binding_,
       ActorSelf,
       ActorId,
-      NameA,
+      Name,
       AttachmentFields,
       ClientSelf,
       ClientId,
@@ -157,7 +160,7 @@ export const Service =
     Binding_,
     ActorSelf,
     ActorId,
-    NameA,
+    Name,
     AttachmentFields,
     ClientSelf,
     ClientId,
@@ -171,23 +174,20 @@ export const Service =
     const {
       definition: {
         name: Name,
-        client: { protocol, key: clientId },
+        client: { key: clientId },
       },
       protocol: { Attachments },
+      transcoders,
     } = actor
 
-    const Params = S.StringFromBase64Url.pipe(
-      S.decodeTo(
-        S.fromJsonString(
-          S.toCodecJson(
-            S.Struct({
-              name: Name,
-              attachments: Attachments,
-            }),
-          ),
-        ),
-      ),
-    )
+    const encodeName = S.encodeEffect(Name)
+    const decodeName = S.decodeUnknownEffect(Name)
+
+    const AttachmentsJson = S.toCodecJson(Attachments)
+    const decodeAttachments = S.decodeUnknownEffect(AttachmentsJson)
+    const AttachmentsJsonString = S.fromJsonString(AttachmentsJson)
+    const encodeAttachmentsString = S.encodeEffect(AttachmentsJsonString)
+    const decodeAttachmentsString = S.decodeUnknownEffect(AttachmentsJsonString)
 
     class tag extends Binding.Service<RegistrySelf>()(
       id,
@@ -217,12 +217,10 @@ export const Service =
 
         this.runtime = Effect.gen({ self: this }, function* () {
           this.#name = yield* Effect.tryPromise(() => state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
+            Effect.flatMap((v) => (typeof v === "string" ? decodeName(v) : Effect.succeed(undefined))),
           )
           for (const socket of state.getWebSockets()) {
-            const attachments = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(Attachments)))(
-              socket.deserializeAttachment(),
-            )
+            const attachments = yield* decodeAttachments(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
         }).pipe(
@@ -235,11 +233,12 @@ export const Service =
         )
       }
 
-      #name?: NameA | undefined
+      #name?: Name["Type"] | undefined
       fetch(request: Request): Promise<Response> {
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
-          const { name, attachments } = yield* S.decodeUnknownEffect(Params)(url.searchParams.get("__liminal"))
+          const name = yield* decodeName(url.searchParams.get("__liminal_name"))
+          const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
           if (!this.#name) {
             this.#name = name
             const state = yield* DurableObjectState
@@ -249,11 +248,9 @@ export const Service =
           const { 0: webSocket, 1: server } = new WebSocketPair()
           const state = yield* DurableObjectState
           state.acceptWebSocket(server)
-          server.send(
-            yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Success)))({
-              _tag: "Audition.Success",
-            }),
-          )
+          yield* transcoders
+            .encodeAuditionSuccess({ _tag: "Audition.Success" })
+            .pipe(Effect.andThen((v) => Effect.sync(() => server.send(v))))
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -282,7 +279,7 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(protocol.F.Payload)))(
+          const message = yield* transcoders.decodeFPayload(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
@@ -292,13 +289,13 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Success)))({
+                transcoders.encodeFSuccess({
                   _tag: "F.Success",
                   id,
                   success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Failure)))({
+                transcoders.encodeFFailure({
                   _tag: "F.Failure",
                   id,
                   failure: { _tag, value } as never,
@@ -325,10 +322,10 @@ export const Service =
       }
     }
 
-    const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
+    const upgrade = Effect.fnUntraced(function* (name: Name["Type"], attachments: (typeof Attachments)["Type"]) {
       yield* debug("UpgradeInitiated", { attachments })
       const namespace = yield* tag
-      const nameEncoded = yield* S.encodeEffect(Name)(name)
+      const nameEncoded = yield* encodeName(name)
       const stub = namespace.getByName(nameEncoded)
       const request = yield* NativeRequest
       const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
@@ -339,15 +336,17 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        return yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))({
-          _tag: "Audition.Failure",
-          client: clientId,
-          routed: requestClientId,
-        }).pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
+        return yield* transcoders
+          .encodeAuditionFailure({
+            _tag: "Audition.Failure",
+            client: clientId,
+            routed: requestClientId,
+          })
+          .pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
       }
       const url = new URL(request.url)
-      const params = yield* S.encodeEffect(Params)({ name, attachments })
-      url.searchParams.set("__liminal", params)
+      url.searchParams.set("__liminal_name", nameEncoded)
+      url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 

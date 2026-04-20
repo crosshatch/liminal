@@ -1,3 +1,5 @@
+import type { TopFromString } from "liminal/_util/schema"
+
 import { Schema as S, Effect, Ref, Cause } from "effect"
 import { type Actor, ClientHandle, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
@@ -29,19 +31,17 @@ export interface ClientDirectory<
 export const make = <
   ActorSelf,
   ActorId extends string,
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   D extends Protocol.ProtocolDefinition,
 >(
-  actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>,
+  actor: Actor.Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
 ): ClientDirectory<ActorSelf, AttachmentFields, D> => {
   const {
-    definition: {
-      client: { protocol },
-    },
     protocol: { Attachments },
+    transcoders,
   } = actor
 
   type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
@@ -51,7 +51,7 @@ export const make = <
 
   const get = (socket: WebSocket) => Effect.fromNullishOr(sockets.get(socket))
 
-  const encodeAttachments = S.encodeEffect(S.fromJsonString(S.toCodecJson(Attachments)))
+  const encodeAttachments = S.encodeEffect(S.toCodecJson(Attachments))
 
   const register = Effect.fnUntraced(function* (
     socket: WebSocket,
@@ -67,10 +67,12 @@ export const make = <
         socket.serializeAttachment(yield* encodeAttachments(value))
       }),
       send: (_tag, payload) => {
-        return S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Event)))({
-          _tag: "Event",
-          event: { _tag, ...payload } as never,
-        }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v))))
+        return transcoders
+          .encodeEvent({
+            _tag: "Event",
+            event: { _tag, ...payload } as never,
+          })
+          .pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v))))
       },
       disconnect: Effect.sync(() => {
         socket.close(1000)
@@ -92,11 +94,5 @@ export const make = <
       }
     }).pipe(span("unregister"))
 
-  return {
-    ...phantom,
-    handles,
-    register,
-    get,
-    unregister,
-  }
+  return { ...phantom, handles, register, get, unregister }
 }

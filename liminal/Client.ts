@@ -28,7 +28,7 @@ import { Worker } from "effect/unstable/workers"
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
-import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
+import { Protocol, type ProtocolDefinition, ClientTranscoders } from "./Protocol.ts"
 
 const { debug, span } = Diagnostic.module("Client")
 
@@ -68,6 +68,8 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
 
   readonly protocol: Protocol<D>
 
+  readonly transcoders: ClientTranscoders<D>
+
   readonly events: Stream.Stream<
     ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
     ClientError | S.SchemaError,
@@ -85,6 +87,8 @@ export const Service =
     const tag = Context.Service<Self, Service<Self, D>>()(id)
 
     const protocol = Protocol(definition)
+
+    const transcoders = ClientTranscoders(protocol)
 
     const events = tag.asEffect().pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
 
@@ -109,6 +113,7 @@ export const Service =
       [TypeId]: TypeId,
       definition,
       protocol,
+      transcoders,
       events,
       f,
       invalidate,
@@ -381,7 +386,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
   make<Self, Id, D, Socket.WebSocketConstructor>(
     client,
     Effect.gen(function* () {
-      const { protocol } = client
+      const { transcoders } = client
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
@@ -391,7 +396,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
             .runRaw((raw) =>
               pipe(
                 raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                protocol.decodeActor,
+                transcoders.decodeActor,
                 Effect.andThen(publish),
               ),
             )
@@ -413,7 +418,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
-            const message = yield* protocol.encodeFPayload(v)
+            const message = yield* transcoders.encodeFPayload(v)
             yield* write(message).pipe(
               Effect.catchTag("SocketError", (cause) => new ConnectionError({ cause }).asEffect()),
             )

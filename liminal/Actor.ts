@@ -2,18 +2,24 @@ import { Context, Schema as S, Effect } from "effect"
 
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
 import type { Send } from "./Send.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
+import type { TopFromString } from "./_util/schema.ts"
 import * as Method from "./Method.ts"
+import { ActorTranscoders, type ProtocolDefinition } from "./Protocol.ts"
 
 const { span } = Diagnostic.module("Actor")
 
 export const TypeId = "~liminal/Actor" as const
 
-export interface Service<ActorSelf, NameA, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
-  readonly name: NameA
+export interface Service<
+  ActorSelf,
+  Name extends TopFromString,
+  AttachmentFields extends S.Struct.Fields,
+  D extends ProtocolDefinition,
+> {
+  readonly name: Name["Type"]
 
   readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
 
@@ -21,37 +27,41 @@ export interface Service<ActorSelf, NameA, AttachmentFields extends S.Struct.Fie
 }
 
 export interface ActorDefinition<
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
   D extends ProtocolDefinition,
 > {
-  readonly name: S.Codec<NameA, string>
+  readonly name: Name
 
   readonly attachments: AttachmentFields
 
   readonly client: ActorClient.Client<ClientSelf, ClientId, D>
 }
 
+export interface ActorProtocol<AttachmentFields extends S.Struct.Fields> {
+  readonly Attachments: S.Struct<AttachmentFields>
+}
+
 export interface Actor<
   ActorSelf,
   ActorId extends string,
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ActorClientSelf,
   ActorClientId extends string,
   D extends ProtocolDefinition,
-> extends Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, D>> {
-  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, NameA, AttachmentFields, D>>
+> extends Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>> {
+  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, Name, AttachmentFields, D>>
 
   readonly [TypeId]: typeof TypeId
 
-  readonly definition: ActorDefinition<NameA, AttachmentFields, ActorClientSelf, ActorClientId, D>
+  readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly protocol: {
-    readonly Attachments: S.Struct<AttachmentFields>
-  }
+  readonly protocol: ActorProtocol<AttachmentFields>
+
+  readonly transcoders: ActorTranscoders<D>
 
   readonly sendAll: Send<ActorSelf, D>
 
@@ -67,16 +77,16 @@ export const Service =
   <ActorSelf>() =>
   <
     ActorId extends string,
-    NameA,
+    Name extends TopFromString,
     D extends ProtocolDefinition,
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
   >(
     id: ActorId,
-    definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, D>,
-  ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D> => {
-    const tag = Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, D>>()(id)
+    definition: ActorDefinition<Name, AttachmentFields, ClientSelf, ClientId, D>,
+  ): Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D> => {
+    const tag = Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>>()(id)
 
     const sendAll: Send<ActorSelf, D> = (key, payload) =>
       tag.asEffect().pipe(
@@ -102,6 +112,7 @@ export const Service =
       protocol: {
         Attachments: S.Struct(definition.attachments),
       },
+      transcoders: ActorTranscoders(definition.client.protocol),
       sendAll,
       disconnectAll,
       handler,
