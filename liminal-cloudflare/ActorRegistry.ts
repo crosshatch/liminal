@@ -327,7 +327,7 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))({
+        return yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))({
           _tag: "Audition.Failure",
           client: clientId,
           routed: requestClientId,
