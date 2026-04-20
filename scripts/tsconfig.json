@@ -1,4 +1,5 @@
 {
   "extends": "../konfik/tsconfig.base",
-  "include": ["."]
+  "include": ["."],
+  "exclude": ["dist"]
 }

@@ -1,6 +1,6 @@
-import { Effect, Stream, Option, flow, Match } from "effect"
-import { Accumulator } from "liminal"
 import { TicTacToeClient, Player } from "@liminal-examples/tictactoe/TicTacToeClient"
+import { Effect, Stream, Option, Match } from "effect"
+import { Accumulator } from "liminal"
 
 type Item = Stream.Success<typeof TicTacToeClient.events>
 
@@ -19,7 +19,9 @@ const GameStarted = reducer(
     () =>
       Effect.succeed({ name: player }),
 )
+
 const GameEnded = reducer("GameEnded", () => (state) => Effect.succeed(state))
+
 const MoveMade = reducer("MoveMade", () => (state) => Effect.succeed(state))
 
 export const layer = GameState.layer({
@@ -31,12 +33,5 @@ export const layer = GameState.layer({
     }
     return Option.none()
   }),
-  reduce: flow(
-    Match.value,
-    Match.tagsExhaustive({
-      GameStarted,
-      MoveMade,
-      GameEnded,
-    }),
-  ),
+  reduce: Match.valueTags({ GameStarted, MoveMade, GameEnded }),
 })

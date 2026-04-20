@@ -1,120 +1,161 @@
-import { Schema as S, Record } from "effect"
+import { flow, Schema as S, Record, Types, Effect, SchemaAST } from "effect"
 
-import type { MethodDefinition } from "./Method.ts"
+import type * as Method from "./Method.ts"
 
-export const AuditionSuccess = S.TaggedStruct("AuditionSuccess", {})
-
-export const AuditionFailure = S.TaggedStruct("AuditionFailure", {
-  client: S.String,
-  routed: S.String,
-})
-
-export interface ProtocolSchemas<
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+export interface ProtocolDefinition<
+  Methods extends Record<string, Method.Any> = Record<string, Method.Any>,
+  Events extends Record<string, S.Struct.Fields> = Record<string, S.Struct.Fields>,
 > {
-  readonly f: {
-    readonly payload: S.TaggedStruct<
-      "FPayload",
+  readonly methods: Methods
+
+  readonly events: Events
+}
+
+export declare namespace ProtocolDefinition {
+  export type Merge<T extends ProtocolDefinition, U extends ProtocolDefinition> = ProtocolDefinition<
+    [T] extends [never]
+      ? U["methods"]
+      : {
+          [K in keyof T["methods"] & keyof U["methods"] as Types.Equals<T["methods"][K], U["methods"][K]> extends true
+            ? K
+            : never]: T["methods"][K]
+        },
+    [T] extends [never] ? U["events"] : T["events"] & U["events"]
+  >
+}
+
+const parseJson = flow(S.toCodecJson, S.fromJsonString)
+const decode = flow(parseJson, S.decodeUnknownEffect)
+const encode = flow(parseJson, S.encodeEffect)
+
+export interface Protocol<D extends ProtocolDefinition> {
+  readonly Audition: {
+    readonly Success: S.TaggedStruct<"Audition.Success", {}>
+    readonly Failure: S.TaggedStruct<
+      "Audition.Failure",
+      {
+        client: S.String
+        routed: S.String
+      }
+    >
+  }
+
+  readonly Event: S.TaggedStruct<
+    "Event",
+    {
+      readonly event: S.TaggedUnion<{
+        readonly [K in keyof D["events"] & string]: S.TaggedStruct<K, D["events"][K]>
+      }>
+    }
+  >
+
+  readonly F: {
+    readonly Payload: S.TaggedStruct<
+      "F.Payload",
       {
         readonly id: S.Int
         readonly payload: S.TaggedUnion<{
-          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
-            K,
-            { readonly value: MethodDefinitions[K]["payload"] }
-          >
+          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["payload"] }>
         }>
       }
     >
 
-    readonly success: S.TaggedStruct<
-      "FSuccess",
+    readonly Success: S.TaggedStruct<
+      "F.Success",
       {
         readonly id: S.Int
         readonly success: S.TaggedUnion<{
-          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
-            K,
-            { readonly value: MethodDefinitions[K]["success"] }
-          >
+          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["success"] }>
         }>
       }
     >
 
-    readonly failure: S.TaggedStruct<
-      "FFailure",
+    readonly Failure: S.TaggedStruct<
+      "F.Failure",
       {
         readonly id: S.Int
         readonly failure: S.TaggedUnion<{
-          readonly [K in keyof MethodDefinitions & string]: S.TaggedStruct<
-            K,
-            { readonly value: MethodDefinitions[K]["failure"] }
-          >
+          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["failure"] }>
         }>
       }
     >
   }
 
-  readonly event: S.TaggedStruct<
-    "Event",
-    {
-      readonly event: S.TaggedUnion<{
-        readonly [K in keyof EventDefinitions & string]: S.TaggedStruct<K, EventDefinitions[K]>
-      }>
-    }
-  >
+  readonly Disconnect: S.TaggedStruct<"Disconnect", {}>
 
-  readonly actor: S.Union<
+  readonly Actor: S.Union<
     [
-      typeof AuditionSuccess,
-      typeof AuditionFailure,
-      this["f"]["success"],
-      this["f"]["failure"],
-      this["event"],
-      typeof Disconnect,
+      this["Audition"]["Success"],
+      this["Audition"]["Failure"],
+      this["F"]["Success"],
+      this["F"]["Failure"],
+      this["Event"],
+      this["Disconnect"],
     ]
   >
+
+  readonly encodeFPayload: (
+    input: this["F"]["Payload"]["Type"],
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<string, S.SchemaError, this["F"]["Payload"]["EncodingServices"]>
+
+  readonly decodeEvent: (
+    input: unknown,
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<this["Event"]["Type"], S.SchemaError, this["Event"]["DecodingServices"]>
+
+  readonly decodeActor: (
+    input: unknown,
+    options?: SchemaAST.ParseOptions,
+  ) => Effect.Effect<this["Actor"]["Type"], S.SchemaError, this["Actor"]["DecodingServices"]>
 }
 
-export const Disconnect = S.TaggedStruct("Disconnect", {})
+const Disconnect = S.TaggedStruct("Disconnect", {})
 
-export const TransportFailure = S.TaggedStruct("TransportFailure", { cause: S.Unknown })
+const Audition = {
+  Success: S.TaggedStruct("Audition.Success", {}),
+  Failure: S.TaggedStruct("Audition.Failure", {
+    client: S.String,
+    routed: S.String,
+  }),
+}
 
-export const ProtocolSchemas = <
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
->(
-  methods: MethodDefinitions,
-  events: EventDefinitions,
-): ProtocolSchemas<MethodDefinitions, EventDefinitions> => {
-  type T = ProtocolSchemas<MethodDefinitions, EventDefinitions>
+export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): Protocol<D> => {
+  type T = Protocol<D>
 
-  const f: T["f"] = {
-    payload: S.TaggedStruct("FPayload", {
+  const F: T["F"] = {
+    Payload: S.TaggedStruct("F.Payload", {
       id: S.Int,
       payload: S.TaggedUnion(Record.map(methods, ({ payload: value }) => ({ value }))),
     }) as never,
-    success: S.TaggedStruct("FSuccess", {
+    Success: S.TaggedStruct("F.Success", {
       id: S.Int,
       success: S.TaggedUnion(Record.map(methods, ({ success: value }) => ({ value }))),
     }) as never,
-    failure: S.TaggedStruct("FFailure", {
+    Failure: S.TaggedStruct("F.Failure", {
       id: S.Int,
       failure: S.TaggedUnion(Record.map(methods, ({ failure: value }) => ({ value }))),
     }) as never,
   }
 
-  const event: T["event"] = S.TaggedStruct("Event", {
+  const Event: T["Event"] = S.TaggedStruct("Event", {
     event: S.TaggedUnion(events),
   }) as never
 
-  const actor: T["actor"] = S.Union([
-    AuditionSuccess,
-    AuditionFailure,
-    f.success,
-    f.failure,
-    event,
-    Disconnect,
-  ]) as never
+  const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 
-  return { f, event, actor }
+  const encodeFPayload = encode(F.Payload)
+  const decodeEvent = decode(Event)
+  const decodeActor = decode(Actor)
+
+  return {
+    Audition,
+    Event,
+    F,
+    Actor,
+    Disconnect,
+    encodeFPayload,
+    decodeEvent,
+    decodeActor,
+  }
 }

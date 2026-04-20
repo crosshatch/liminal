@@ -1,5 +1,5 @@
 import { Schema as S, Effect, Ref, Cause } from "effect"
-import { Method, Actor, ClientHandle } from "liminal"
+import { type Actor, ClientHandle, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { phantom } from "liminal/_util/phantom"
 
@@ -8,10 +8,10 @@ const { span } = Diagnostic.module("cloudflare.ClientDirectory")
 export interface ClientDirectory<
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends Protocol.ProtocolDefinition,
 > {
   readonly "": {
-    readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
+    readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
   }
 
   readonly handles: ReadonlySet<this[""]["Handle"]>
@@ -19,7 +19,7 @@ export interface ClientDirectory<
   readonly register: (
     socket: WebSocket,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<this[""]["Handle"], S.SchemaError, never>
+  ) => Effect.Effect<this[""]["Handle"], S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
   readonly get: (socket: WebSocket) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError, never>
 
@@ -33,51 +33,41 @@ export const make = <
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends Protocol.ProtocolDefinition,
 >(
-  actor: Actor.Actor<
-    ActorSelf,
-    ActorId,
-    NameA,
-    AttachmentFields,
-    ClientSelf,
-    ClientId,
-    MethodDefinitions,
-    EventDefinitions
-  >,
-): ClientDirectory<ActorSelf, AttachmentFields, EventDefinitions> => {
+  actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>,
+): ClientDirectory<ActorSelf, AttachmentFields, D> => {
   const {
     definition: {
-      client: {
-        schema: { event },
-      },
+      client: { protocol },
     },
-    schema,
+    protocol: { Attachments },
   } = actor
 
-  type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
+  type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
 
   const sockets = new Map<WebSocket, Handle>()
   const handles = new Set<Handle>()
 
   const get = (socket: WebSocket) => Effect.fromNullishOr(sockets.get(socket))
 
+  const encodeAttachments = S.encodeEffect(S.fromJsonString(S.toCodecJson(Attachments)))
+
   const register = Effect.fnUntraced(function* (
     socket: WebSocket,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ): Effect.fn.Return<Handle, S.SchemaError> {
-    const encoded = yield* S.encodeEffect(schema.attachments)(attachments)
+  ): Effect.fn.Return<Handle, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]> {
+    const encoded = yield* encodeAttachments(attachments)
     socket.serializeAttachment(encoded)
     const attachmentsRef = yield* Ref.make(attachments)
-    const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
+    const handle = ClientHandle.make<ActorSelf, AttachmentFields, D>({
       attachments: Ref.get(attachmentsRef),
       save: Effect.fnUntraced(function* (value) {
         yield* Ref.set(attachmentsRef, value)
-        socket.serializeAttachment(yield* S.encodeEffect(schema.attachments)(value))
+        socket.serializeAttachment(yield* encodeAttachments(value))
       }),
       send: (_tag, payload) => {
-        return S.encodeEffect(S.fromJsonString(S.toCodecJson(event)))({
+        return S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Event)))({
           _tag: "Event",
           event: { _tag, ...payload } as never,
         }).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v))))

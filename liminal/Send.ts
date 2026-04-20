@@ -1,12 +1,8 @@
 import { Schema as S, Effect } from "effect"
 
-export type Send<ActorSelf, EventDefinitions extends Record<string, S.Struct.Fields>> = <
-  K extends keyof EventDefinitions,
->(
+import type { ProtocolDefinition } from "./Protocol.ts"
+
+export type Send<ActorSelf, D extends ProtocolDefinition> = <K extends keyof D["events"]>(
   tag: K,
-  payload: S.Struct<EventDefinitions[K]>["Type"],
-) => Effect.Effect<
-  void,
-  S.SchemaError,
-  ActorSelf | ReturnType<typeof S.TaggedUnion<EventDefinitions>>["EncodingServices"]
->
+  payload: S.Struct<D["events"][K]>["Type"],
+) => Effect.Effect<void, S.SchemaError, ActorSelf | ReturnType<typeof S.TaggedUnion<D["events"]>>["EncodingServices"]>

@@ -1,3 +1,6 @@
+import type { Actor, Method } from "liminal"
+import type { ProtocolDefinition } from "liminal/Protocol"
+
 import {
   Layer,
   Effect,
@@ -15,7 +18,6 @@ import {
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
-import { Protocol, type Actor, type Method } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
@@ -25,18 +27,13 @@ import * as Mutex from "liminal/_util/Mutex"
 import * as Binding from "./Binding.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
 import { close } from "./close.ts"
+import { DurableObjectState } from "./DurableObjectState.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
-
-type SchemaServices<M extends Record<string, Method.MethodDefinition.Any>, E extends Record<string, S.Struct.Fields>> =
-  | Protocol.ProtocolSchemas<M, E>["f"]["payload"]["DecodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["f"]["success"]["EncodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["f"]["failure"]["EncodingServices"]
-  | Protocol.ProtocolSchemas<M, E>["event"]["EncodingServices"]
 
 export interface ActorRegistryDefinition<
   Binding_ extends string,
@@ -46,32 +43,33 @@ export interface ActorRegistryDefinition<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
   RunE,
 > {
+  readonly ""?: this["actor"]["definition"]["client"]["protocol"]
+
   readonly binding: Binding_
 
-  readonly actor: Actor.Actor<
-    ActorSelf,
-    ActorId,
-    NameA,
-    AttachmentFields,
-    ClientSelf,
-    ClientId,
-    MethodDefinitions,
-    EventDefinitions
-  >
+  readonly actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>
 
-  readonly preludeLayer: Layer.Layer<PreludeROut | SchemaServices<MethodDefinitions, EventDefinitions>, PreludeE>
+  readonly preludeLayer: Layer.Layer<
+    | PreludeROut
+    | NonNullable<this[""]>["F"]["Payload"]["DecodingServices"]
+    | NonNullable<this[""]>["F"]["Success"]["EncodingServices"]
+    | NonNullable<this[""]>["F"]["Failure"]["EncodingServices"]
+    | NonNullable<this[""]>["Event"]["EncodingServices"]
+    | S.Struct<AttachmentFields>["DecodingServices"]
+    | S.Struct<AttachmentFields>["EncodingServices"],
+    PreludeE
+  >
 
   readonly runLayer: Layer.Layer<RunROut, RunE, ActorSelf | PreludeROut>
 
   readonly handlers: Method.Handlers<
-    MethodDefinitions,
+    D["methods"],
     ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
   >
 
@@ -90,14 +88,13 @@ export interface ActorRegistry<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
   RunE,
 > extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace, never, never, never> {
-  new (state: DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
+  new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
   readonly [TypeId]: typeof TypeId
 
@@ -109,8 +106,7 @@ export interface ActorRegistry<
     AttachmentFields,
     ClientSelf,
     ClientId,
-    MethodDefinitions,
-    EventDefinitions,
+    D,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -134,8 +130,7 @@ export const Service =
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
-    MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-    EventDefinitions extends Record<string, S.Struct.Fields>,
+    D extends ProtocolDefinition,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -150,8 +145,7 @@ export const Service =
       AttachmentFields,
       ClientSelf,
       ClientId,
-      MethodDefinitions,
-      EventDefinitions,
+      D,
       PreludeROut,
       PreludeE,
       RunROut,
@@ -167,8 +161,7 @@ export const Service =
     AttachmentFields,
     ClientSelf,
     ClientId,
-    MethodDefinitions,
-    EventDefinitions,
+    D,
     PreludeROut,
     PreludeE,
     RunROut,
@@ -178,9 +171,9 @@ export const Service =
     const {
       definition: {
         name: Name,
-        client: { schema, key: clientId },
+        client: { protocol, key: clientId },
       },
-      schema: { attachments: Attachments },
+      protocol: { Attachments },
     } = actor
 
     const Params = S.StringFromBase64Url.pipe(
@@ -201,36 +194,45 @@ export const Service =
       binding,
       (value): value is DurableObjectNamespace => "getByName" in value,
     ) {
-      readonly state
       readonly runtime
       readonly directory = ClientDirectory.make(actor)
 
-      constructor(state: DurableObjectState<{}>, env: unknown) {
+      constructor(state: globalThis.DurableObjectState<{}>, env: unknown) {
         // @ts-ignore
         super(state, env)
 
-        this.state = state
         if (hibernation) {
-          const hibernationDuration = Duration.fromInput(hibernation)
-          if (Option.isSome(hibernationDuration)) {
-            state.setHibernatableWebSocketEventTimeout(Duration.toMillis(hibernationDuration.value))
-          }
+          Option.andThen(
+            Duration.fromInput(hibernation),
+            flow(Duration.toMillis, state.setHibernatableWebSocketEventTimeout),
+          )
         }
 
+        const baseLayer = Layer.mergeAll(
+          preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
+          Intrinsic.layer,
+          Layer.succeed(DurableObjectState, state),
+          Mutex.layer,
+        )
+
         this.runtime = Effect.gen({ self: this }, function* () {
-          this.#name = yield* Effect.tryPromise(() => this.state.storage.get("__liminal_name")).pipe(
+          this.#name = yield* Effect.tryPromise(() => state.storage.get("__liminal_name")).pipe(
             Effect.flatMap((v) => (typeof v === "string" ? S.decodeEffect(Name)(v) : Effect.succeed(undefined))),
           )
-          for (const socket of this.state.getWebSockets()) {
-            const attachments = yield* S.decodeUnknownEffect(Attachments)(socket.deserializeAttachment())
+          for (const socket of state.getWebSockets()) {
+            const attachments = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(Attachments)))(
+              socket.deserializeAttachment(),
+            )
             yield* this.directory.register(socket, attachments)
           }
-          return Layer.mergeAll(
-            preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
-            Intrinsic.layer,
-            Mutex.layer,
-          )
-        }).pipe(Effect.tapCause(logCause), span("make_runtime"), Layer.unwrap, boundLayer("actor"), ManagedRuntime.make)
+        }).pipe(
+          Effect.tapCause(logCause),
+          span("make_runtime"),
+          Layer.effectDiscard,
+          Layer.provideMerge(baseLayer),
+          boundLayer("actor"),
+          ManagedRuntime.make,
+        )
       }
 
       #name?: NameA | undefined
@@ -240,12 +242,18 @@ export const Service =
           const { name, attachments } = yield* S.decodeUnknownEffect(Params)(url.searchParams.get("__liminal"))
           if (!this.#name) {
             this.#name = name
+            const state = yield* DurableObjectState
             const encoded = yield* S.encodeEffect(Name)(name)
-            yield* Effect.promise(() => this.state.storage.put("__liminal_name", encoded))
+            yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
-          this.state.acceptWebSocket(server)
-          server.send(yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionSuccess))({ _tag: "AuditionSuccess" }))
+          const state = yield* DurableObjectState
+          state.acceptWebSocket(server)
+          server.send(
+            yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Success)))({
+              _tag: "Audition.Success",
+            }),
+          )
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -274,7 +282,7 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(schema.f.payload)))(
+          const message = yield* S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(protocol.F.Payload)))(
             raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
           )
           yield* debug("MessageReceived", { message })
@@ -284,14 +292,14 @@ export const Service =
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.success)))({
-                  _tag: "FSuccess",
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Success)))({
+                  _tag: "F.Success",
                   id,
                   success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                S.encodeEffect(S.fromJsonString(S.toCodecJson(schema.f.failure)))({
-                  _tag: "FFailure",
+                S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.F.Failure)))({
+                  _tag: "F.Failure",
                   id,
                   failure: { _tag, value } as never,
                 }),
@@ -318,6 +326,7 @@ export const Service =
     }
 
     const upgrade = Effect.fnUntraced(function* (name: NameA, attachments: S.Struct<AttachmentFields>["Type"]) {
+      yield* debug("UpgradeInitiated", { attachments })
       const namespace = yield* tag
       const nameEncoded = yield* S.encodeEffect(Name)(name)
       const stub = namespace.getByName(nameEncoded)
@@ -330,22 +339,16 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        return close(
-          4003,
-          yield* S.encodeEffect(S.fromJsonString(Protocol.AuditionFailure))(
-            Protocol.AuditionFailure.make({
-              client: clientId,
-              routed: requestClientId,
-            }),
-          ),
-        )
+        return yield* S.encodeEffect(S.fromJsonString(S.toCodecJson(protocol.Audition.Failure)))({
+          _tag: "Audition.Failure",
+          client: clientId,
+          routed: requestClientId,
+        }).pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
       }
       const url = new URL(request.url)
       const params = yield* S.encodeEffect(Params)({ name, attachments })
       url.searchParams.set("__liminal", params)
-      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
-        Effect.map((v) => HttpServerResponse.raw(v)),
-      )
+      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 
     return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never

@@ -3,6 +3,8 @@
   "compilerOptions": {
     "composite": false,
     "declaration": false,
+    "noEmit": false,
+    "outDir": "dist",
     "target": "ES2022",
     "paths": { "@/*": ["./*"] }
   },

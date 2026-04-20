@@ -2,7 +2,7 @@ import { Context, Schema as S, Effect } from "effect"
 
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
-import type { MethodDefinition } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 import type { Send } from "./Send.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
@@ -12,17 +12,12 @@ const { span } = Diagnostic.module("Actor")
 
 export const TypeId = "~liminal/Actor" as const
 
-export interface Service<
-  ActorSelf,
-  NameA,
-  AttachmentFields extends S.Struct.Fields,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
-> {
+export interface Service<ActorSelf, NameA, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
   readonly name: NameA
 
-  readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>
+  readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
 
-  readonly clients: ReadonlySet<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>>
+  readonly clients: ReadonlySet<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>>
 }
 
 export interface ActorDefinition<
@@ -30,14 +25,13 @@ export interface ActorDefinition<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
+  D extends ProtocolDefinition,
 > {
   readonly name: S.Codec<NameA, string>
 
   readonly attachments: AttachmentFields
 
-  readonly client: ActorClient.Client<ClientSelf, ClientId, MethodDefinitions, EventDefinitions>
+  readonly client: ActorClient.Client<ClientSelf, ClientId, D>
 }
 
 export interface Actor<
@@ -47,34 +41,26 @@ export interface Actor<
   AttachmentFields extends S.Struct.Fields,
   ActorClientSelf,
   ActorClientId extends string,
-  MethodDefinitions extends Record<string, MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
-> extends Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>> {
-  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>
+  D extends ProtocolDefinition,
+> extends Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, D>> {
+  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, NameA, AttachmentFields, D>>
 
   readonly [TypeId]: typeof TypeId
 
-  readonly definition: ActorDefinition<
-    NameA,
-    AttachmentFields,
-    ActorClientSelf,
-    ActorClientId,
-    MethodDefinitions,
-    EventDefinitions
-  >
+  readonly definition: ActorDefinition<NameA, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly schema: {
-    readonly attachments: S.Codec<S.Struct<AttachmentFields>["Type"], S.Struct<AttachmentFields>["Encoded"]>
+  readonly protocol: {
+    readonly Attachments: S.Struct<AttachmentFields>
   }
 
-  readonly sendAll: Send<ActorSelf, EventDefinitions>
+  readonly sendAll: Send<ActorSelf, D>
 
   readonly disconnectAll: Effect.Effect<void, never, ActorSelf>
 
-  readonly handler: <K extends keyof MethodDefinitions, R>(
+  readonly handler: <K extends keyof D["methods"], R>(
     tag: K,
-    f: Method.Handler<MethodDefinitions[K], R>,
-  ) => Method.Handler<MethodDefinitions[K], R>
+    f: Method.Handler<D["methods"][K], R>,
+  ) => Method.Handler<D["methods"][K], R>
 }
 
 export const Service =
@@ -82,18 +68,17 @@ export const Service =
   <
     ActorId extends string,
     NameA,
+    D extends ProtocolDefinition,
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
-    MethodDefinitions extends Record<string, MethodDefinition.Any>,
-    EventDefinitions extends Record<string, S.Struct.Fields>,
   >(
     id: ActorId,
-    definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions>,
-  ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, MethodDefinitions, EventDefinitions> => {
-    const tag = Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, EventDefinitions>>()(id)
+    definition: ActorDefinition<NameA, AttachmentFields, ClientSelf, ClientId, D>,
+  ): Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D> => {
+    const tag = Context.Service<ActorSelf, Service<ActorSelf, NameA, AttachmentFields, D>>()(id)
 
-    const sendAll: Send<ActorSelf, EventDefinitions> = (key, payload) =>
+    const sendAll: Send<ActorSelf, D> = (key, payload) =>
       tag.asEffect().pipe(
         Effect.flatMap(({ clients }) =>
           Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
@@ -106,16 +91,16 @@ export const Service =
       span("disconnectAll"),
     )
 
-    const handler = <K extends keyof MethodDefinitions, R>(
+    const handler = <K extends keyof D["methods"], R>(
       _tag: K,
-      f: Method.Handler<MethodDefinitions[K], R>,
-    ): Method.Handler<MethodDefinitions[K], R> => f
+      f: Method.Handler<D["methods"][K], R>,
+    ): Method.Handler<D["methods"][K], R> => f
 
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      schema: {
-        attachments: S.Struct(definition.attachments) as never,
+      protocol: {
+        Attachments: S.Struct(definition.attachments),
       },
       sendAll,
       disconnectAll,

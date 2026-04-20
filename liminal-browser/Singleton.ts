@@ -1,6 +1,6 @@
 import { Scope, Effect, Schema as S, PubSub, Ref, Exit, Stream, Semaphore } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
-import { Actor, ClientHandle, Method, Protocol } from "liminal"
+import { type Actor, ClientHandle, type Method, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 
 const { span } = Diagnostic.module("browser.Singleton")
@@ -12,9 +12,8 @@ export const make = Effect.fnUntraced(function* <
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  MethodDefinitions extends Record<string, Method.MethodDefinition.Any>,
-  EventDefinitions extends Record<string, S.Struct.Fields>,
-  Handlers extends Method.Handlers<MethodDefinitions, any>,
+  D extends Protocol.ProtocolDefinition,
+  Handlers extends Method.Handlers<D["methods"], any>,
   A,
   E,
   R,
@@ -25,23 +24,16 @@ export const make = Effect.fnUntraced(function* <
   handlers,
   onConnect,
 }: {
-  readonly actor: Actor.Actor<
-    ActorSelf,
-    ActorId,
-    NameA,
-    AttachmentFields,
-    ClientSelf,
-    ClientId,
-    MethodDefinitions,
-    EventDefinitions
-  >
+  readonly actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>
   readonly name: NameA
   readonly attachments: S.Struct<AttachmentFields>["Type"]
   readonly handlers: Handlers
   readonly onConnect: Effect.Effect<A, E, R>
 }) {
-  const { schema } = actor.definition.client
-  const handles = new Set<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, EventDefinitions>>()
+  const { protocol } = actor.definition.client
+  type _ = typeof protocol
+
+  const handles = new Set<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>>()
   const semaphore = yield* Semaphore.make(1)
   const task = semaphore.withPermits(1)
   const outer = yield* Scope.make()
@@ -49,10 +41,10 @@ export const make = Effect.fnUntraced(function* <
   return Effect.gen(function* () {
     const inner = yield* Scope.fork(outer, "sequential")
     const attachmentsRef = yield* Ref.make(attachments)
-    const pubsub = yield* Effect.acquireRelease(PubSub.unbounded<typeof schema.actor.Type>(), PubSub.shutdown).pipe(
+    const pubsub = yield* Effect.acquireRelease(PubSub.unbounded<_["Actor"]["Type"]>(), PubSub.shutdown).pipe(
       Scope.provide(inner),
     )
-    const handle = ClientHandle.make<ActorSelf, AttachmentFields, EventDefinitions>({
+    const handle = ClientHandle.make<ActorSelf, AttachmentFields, D>({
       send: (_tag, payload) =>
         PubSub.publish(pubsub, {
           _tag: "Event",
@@ -68,7 +60,7 @@ export const make = Effect.fnUntraced(function* <
     handles.add(handle)
 
     const platform = yield* WorkerRunner.WorkerRunnerPlatform
-    const runner = yield* platform.start<typeof schema.actor.Type, unknown>()
+    const runner = yield* platform.start<_["Actor"]["Type"], unknown>()
 
     yield* runner.run<
       void,
@@ -78,16 +70,14 @@ export const make = Effect.fnUntraced(function* <
       if (typeof raw === "string") {
         const expected = actor.definition.client.key
         if (raw !== expected) {
-          return runner.send(
-            portId,
-            Protocol.AuditionFailure.make({
-              routed: raw,
-              client: expected,
-            }),
-          )
+          return runner.send(portId, {
+            _tag: "Audition.Failure",
+            routed: raw,
+            client: expected,
+          })
         }
         return Effect.gen(function* () {
-          yield* runner.send(portId, Protocol.AuditionSuccess.make({}))
+          yield* runner.send(portId, { _tag: "Audition.Success" })
           const subscription = yield* PubSub.subscribe(pubsub).pipe(Scope.provide(inner))
           yield* task(onConnect).pipe(Effect.provideService(actor, { name, clients: handles, currentClient: handle }))
           yield* Stream.fromSubscription(subscription).pipe(
@@ -97,7 +87,7 @@ export const make = Effect.fnUntraced(function* <
       }
 
       return Effect.gen(function* () {
-        const message = yield* S.decodeUnknownEffect(S.toType(schema.f.payload))(raw)
+        const message = yield* S.decodeUnknownEffect(S.toType(protocol.F.Payload))(raw)
         const { id, payload } = message
         const { _tag, value } = payload as never
         const handler = handlers[_tag]!
@@ -110,13 +100,13 @@ export const make = Effect.fnUntraced(function* <
           Effect.matchEffect({
             onSuccess: (value) =>
               PubSub.publish(pubsub, {
-                _tag: "FSuccess" as const,
+                _tag: "F.Success" as const,
                 id,
                 success: { _tag, value } as never,
               }),
             onFailure: (value) =>
               PubSub.publish(pubsub, {
-                _tag: "FFailure" as const,
+                _tag: "F.Failure" as const,
                 id,
                 failure: { _tag, value } as never,
               }),

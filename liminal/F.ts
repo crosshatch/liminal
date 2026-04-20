@@ -1,12 +1,10 @@
-import { Record, Effect } from "effect"
+import { Effect } from "effect"
 
 import type { FError } from "./errors.ts"
-import type { MethodDefinition } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
-export type F<ClientSelf, MethodDefinitions extends Record<string, MethodDefinition.Any>> = <
-  Method extends keyof MethodDefinitions,
->(
+export type F<Self, D extends ProtocolDefinition> = <Method extends keyof D["methods"]>(
   method: Method,
 ) => (
-  payload: MethodDefinitions[Method]["payload"]["Type"],
-) => Effect.Effect<MethodDefinitions[Method]["success"]["Type"], FError<MethodDefinitions>, ClientSelf>
+  payload: D["methods"][Method]["payload"]["Type"],
+) => Effect.Effect<D["methods"][Method]["success"]["Type"], FError<D>, Self>
