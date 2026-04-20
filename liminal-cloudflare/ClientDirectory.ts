@@ -1,8 +1,9 @@
+import type { TopFromString } from "liminal/_util/schema"
+
 import { Schema as S, Effect, Ref, Cause } from "effect"
 import { type Actor, ClientHandle, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { phantom } from "liminal/_util/phantom"
-import type { TopFromString } from "liminal/_util/schema"
 
 const { span } = Diagnostic.module("cloudflare.ClientDirectory")
 
@@ -54,8 +55,8 @@ export const make = <
 
   const register = Effect.fnUntraced(function* (
     socket: WebSocket,
-    attachments: (typeof Attachments)["Type"],
-  ): Effect.fn.Return<Handle, S.SchemaError, (typeof Attachments)["EncodingServices"]> {
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ): Effect.fn.Return<Handle, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]> {
     const encoded = yield* encodeAttachments(attachments)
     socket.serializeAttachment(encoded)
     const attachmentsRef = yield* Ref.make(attachments)
