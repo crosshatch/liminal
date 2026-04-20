@@ -1,5 +1,13 @@
 # liminal-browser
 
+## 0.17.6
+
+### Patch Changes
+
+- d7b1da3: Simplify type-level representation of client protocol.
+- Updated dependencies [d7b1da3]
+  - liminal@0.17.6
+
 ## 0.17.5
 
 ### Patch Changes
