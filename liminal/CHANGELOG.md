@@ -1,5 +1,11 @@
 # liminal
 
+## 0.17.6
+
+### Patch Changes
+
+- d7b1da3: Simplify type-level representation of client protocol.
+
 ## 0.17.5
 
 ### Patch Changes
