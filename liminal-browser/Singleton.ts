@@ -2,13 +2,14 @@ import { Scope, Effect, Schema as S, PubSub, Ref, Exit, Stream, Semaphore } from
 import { WorkerRunner } from "effect/unstable/workers"
 import { type Actor, ClientHandle, type Method, type Protocol } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
+import type { TopFromString } from "liminal/_util/schema"
 
 const { span } = Diagnostic.module("browser.Singleton")
 
 export const make = Effect.fnUntraced(function* <
   ActorSelf,
   ActorId extends string,
-  NameA,
+  Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
@@ -24,8 +25,8 @@ export const make = Effect.fnUntraced(function* <
   handlers,
   onConnect,
 }: {
-  readonly actor: Actor.Actor<ActorSelf, ActorId, NameA, AttachmentFields, ClientSelf, ClientId, D>
-  readonly name: NameA
+  readonly actor: Actor.Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
+  readonly name: Name["Type"]
   readonly attachments: S.Struct<AttachmentFields>["Type"]
   readonly handlers: Handlers
   readonly onConnect: Effect.Effect<A, E, R>
