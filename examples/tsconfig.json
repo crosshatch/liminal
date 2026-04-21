@@ -1,4 +1,4 @@
 {
   "include": [],
-  "references": [{ "path": "./tictactoe" }]
+  "references": [{ "path": "./tictactoe" }, { "path": "./dynamic_workers/" }]
 }
