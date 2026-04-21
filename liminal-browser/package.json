@@ -25,7 +25,6 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
-    "@effect/platform-browser": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*"
   }

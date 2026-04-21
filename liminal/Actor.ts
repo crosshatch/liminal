@@ -7,7 +7,7 @@ import type { Send } from "./Send.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Method from "./Method.ts"
-import { ActorTranscoders, type ProtocolDefinition } from "./Protocol.ts"
+import { type ProtocolDefinition } from "./Protocol.ts"
 
 const { span } = Diagnostic.module("Actor")
 
@@ -40,10 +40,6 @@ export interface ActorDefinition<
   readonly client: ActorClient.Client<ClientSelf, ClientId, D>
 }
 
-export interface ActorProtocol<AttachmentFields extends S.Struct.Fields> {
-  readonly Attachments: S.Struct<AttachmentFields>
-}
-
 export interface Actor<
   ActorSelf,
   ActorId extends string,
@@ -58,10 +54,6 @@ export interface Actor<
   readonly [TypeId]: typeof TypeId
 
   readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
-
-  readonly protocol: ActorProtocol<AttachmentFields>
-
-  readonly transcoders: ActorTranscoders<Name, AttachmentFields, D>
 
   readonly sendAll: Send<ActorSelf, D>
 
@@ -109,10 +101,6 @@ export const Service =
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      protocol: {
-        Attachments: S.Struct(definition.attachments),
-      },
-      transcoders: ActorTranscoders(definition.name, definition.attachments, definition.client.protocol),
       sendAll,
       disconnectAll,
       handler,

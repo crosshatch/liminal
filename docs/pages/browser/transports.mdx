@@ -7,8 +7,8 @@ Two transport families are available:
 - `Client.layerSocket(...)` for server-backed actors over WebSocket
 - `Client.layerWorker(...)` for browser-local actors over workers or `MessagePort`
 
-`liminal-browser` adds `Singleton.make(...)`, which lets you host an actor locally inside the browser and talk to it
-through the same client protocol.
+`liminal-browser` adds `ActorRegistry.make(...)`, which lets you host actors locally inside the browser and talk to
+them through the same client protocol.
 
 ## `Client.layerSocket(...)`
 
@@ -52,11 +52,12 @@ const NotificationLive = NotificationAccumulatorLive.pipe(
 `effect/unstable/workers`). The exact provider depends on whether you are spawning a real worker, bridging through a
 platform adapter, or forwarding a `MessagePort`.
 
-## Host an actor in the browser with `Singleton.make(...)`
+## Host actors in the browser with `ActorRegistry.make(...)`
 
-`Singleton.make(...)` from `liminal-browser` runs an actor inside the current JavaScript realm. It wires up the same
-client protocol, event stream, and method handlers, but without any network layer — the caller talks to a local
-pubsub-backed transport instead.
+`ActorRegistry.make(...)` from `liminal-browser` runs actors inside the current JavaScript realm. It wires up the same
+client protocol, event stream, and method handlers, but without any network layer — each client reaches the actor
+through a `MessagePort` instead of a socket. Multiple clients can coexist, and multiple actor-names are supported per
+registry (keyed the same way Cloudflare Durable Objects are).
 
 This is useful for:
 
@@ -64,21 +65,66 @@ This is useful for:
 - web-worker-hosted actors that own local state (notifications, caches, background sync)
 - tests that want to exercise handlers without a server
 
+The registry is driven by a `Stream<Introduction>`. Each `Introduction` carries the `MessagePort` for a new client,
+the actor-name to route it to, and the initial `attachments`:
+
 ```ts
-import { Effect } from "effect"
-import { Singleton } from "liminal-browser"
+import { Stream } from "effect"
+import type { Introduction } from "liminal-browser/ActorRegistry"
+
+import type { NotificationActor } from "./NotificationActor.ts"
+
+type NotificationIntroduction = Introduction<
+  typeof NotificationActor.definition.name,
+  typeof NotificationActor.definition.attachments
+>
+
+declare const introductions: Stream.Stream<NotificationIntroduction>
+```
+
+Where the stream comes from depends on how clients reach the registry. For a same-realm setup, use a `MessageChannel`
+per client:
+
+```ts
+import { Effect, Stream } from "effect"
+import { ActorRegistry } from "liminal-browser"
 
 import { handlers } from "./handlers.ts"
 import { NotificationActor } from "./NotificationActor.ts"
 import { onConnect } from "./onConnect.ts"
 
-const notifications = Singleton.make({
-  actor: NotificationActor,
+const channel = new MessageChannel()
+const introductions = Stream.make({
+  port: channel.port1,
   name: "singleton",
   attachments: {},
+})
+
+const program = ActorRegistry.make({
+  actor: NotificationActor,
   handlers,
   onConnect,
+  introductions,
 })
 ```
 
-Pair it with `Client.layerWorker(...)` on the consuming side to reach the singleton through the normal client surface.
+For a `SharedWorker`, adapt the `connect` event:
+
+```ts
+import { Stream } from "effect"
+
+declare const self: SharedWorkerGlobalScope
+
+const introductions = Stream.fromEventListener<MessageEvent>(self, "connect").pipe(
+  Stream.map((e) => ({
+    port: e.ports[0]!,
+    // Name/attachments come from whatever handshake your caller uses — typically
+    // the first message on the port, or info in the URL the SharedWorker was opened with.
+    name: "singleton" as const,
+    attachments: {},
+  })),
+)
+```
+
+Pair the registry with `Client.layerWorker(...)` on the consuming side to reach the hosted actors through the normal
+client surface.

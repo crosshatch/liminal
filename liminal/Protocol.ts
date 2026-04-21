@@ -1,9 +1,6 @@
-import { flow, Schema as S, Record, Types, Effect } from "effect"
+import { Schema as S, Record, Types } from "effect"
 
-import type { TopFromString } from "./_util/schema.ts"
 import type * as Method from "./Method.ts"
-
-import { phantom } from "./_util/phantom.ts"
 
 export interface ProtocolDefinition<
   Methods extends Record<string, Method.Any> = Record<string, Method.Any>,
@@ -94,7 +91,7 @@ export interface Protocol<D extends ProtocolDefinition> {
   >
 }
 
-const Disconnect = S.TaggedStruct("Disconnect", {})
+export const Disconnect = S.TaggedStruct("Disconnect", {})
 
 const Audition = {
   Success: S.TaggedStruct("Audition.Success", {}),
@@ -130,93 +127,3 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
 
   return { Audition, Event, F, Actor, Disconnect }
 }
-
-const toJsonStringCodec = flow(S.toCodecJson, S.fromJsonString)
-const encode = flow(toJsonStringCodec, S.encodeEffect)
-const decode = flow(toJsonStringCodec, S.decodeUnknownEffect)
-
-export interface ClientTranscoders<D extends ProtocolDefinition> {
-  "": Protocol<D>
-
-  readonly encodeFPayload: (
-    input: this[""]["F"]["Payload"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Payload"]["EncodingServices"]>
-
-  readonly decodeActor: (
-    input: unknown,
-  ) => Effect.Effect<this[""]["Actor"]["Type"], S.SchemaError, this[""]["Actor"]["DecodingServices"]>
-}
-
-export const ClientTranscoders = <D extends ProtocolDefinition>({ F, Actor }: Protocol<D>): ClientTranscoders<D> => ({
-  ...phantom,
-  encodeFPayload: encode(F.Payload),
-  decodeActor: decode(Actor),
-})
-
-export interface ActorTranscoders<
-  Name extends TopFromString,
-  AttachmentFields extends S.Struct.Fields,
-  D extends ProtocolDefinition,
-> {
-  "": Protocol<D>
-
-  readonly encodeName: (input: Name["Type"]) => Effect.Effect<string, S.SchemaError, Name["EncodingServices"]>
-
-  readonly encodeAttachments: (
-    input: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<S.Json, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
-
-  readonly decodeAttachments: (
-    input: unknown,
-  ) => Effect.Effect<S.Struct<AttachmentFields>["Type"], S.SchemaError, S.Struct<AttachmentFields>["DecodingServices"]>
-
-  readonly encodeAuditionSuccess: (
-    input: this[""]["Audition"]["Success"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Success"]["EncodingServices"]>
-
-  readonly encodeAuditionFailure: (
-    input: this[""]["Audition"]["Failure"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Failure"]["EncodingServices"]>
-
-  readonly encodeEvent: (
-    input: this[""]["Event"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Event"]["EncodingServices"]>
-
-  readonly decodeFPayload: (
-    input: unknown,
-  ) => Effect.Effect<this[""]["F"]["Payload"]["Type"], S.SchemaError, this[""]["F"]["Payload"]["DecodingServices"]>
-
-  readonly encodeFSuccess: (
-    input: this[""]["F"]["Success"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Success"]["EncodingServices"]>
-
-  readonly encodeFFailure: (
-    input: this[""]["F"]["Failure"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Failure"]["EncodingServices"]>
-
-  readonly encodeDisconnect: (
-    input: this[""]["Disconnect"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Disconnect"]["EncodingServices"]>
-}
-
-export const ActorTranscoders = <
-  Name extends TopFromString,
-  AttachmentFields extends S.Struct.Fields,
-  D extends ProtocolDefinition,
->(
-  name: Name,
-  attachments: AttachmentFields,
-  { F, Event, Disconnect, Audition }: Protocol<D>,
-): ActorTranscoders<Name, AttachmentFields, D> => ({
-  ...phantom,
-  encodeName: S.encodeEffect(name),
-  encodeAttachments: S.encodeEffect(S.toCodecJson(S.Struct(attachments))),
-  decodeAttachments: S.decodeUnknownEffect(S.toCodecJson(S.Struct(attachments))),
-  encodeAuditionSuccess: encode(Audition.Success),
-  encodeAuditionFailure: encode(Audition.Failure),
-  encodeEvent: encode(Event),
-  decodeFPayload: decode(F.Payload),
-  encodeFSuccess: encode(F.Success),
-  encodeFFailure: encode(F.Failure),
-  encodeDisconnect: encode(Disconnect),
-})

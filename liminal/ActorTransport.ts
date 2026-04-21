@@ -1,7 +1,17 @@
-import { Effect } from "effect"
+import { Effect, Schema as S } from "effect"
 
-export interface ActorTransport<T> {
-  readonly send: (transport: T, value: string) => Effect.Effect<void>
+import type { Protocol, ProtocolDefinition } from "./Protocol.ts"
 
-  readonly close: (transport: T) => Effect.Effect<void>
+export interface ActorTransport<Raw, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
+  readonly send: (
+    transport: Raw,
+    event: Protocol<D>["Event"]["Type"],
+  ) => Effect.Effect<void, S.SchemaError, Protocol<D>["Event"]["EncodingServices"]>
+
+  readonly close: (transport: Raw) => Effect.Effect<void>
+
+  readonly snapshot: (
+    transport: Raw,
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<void, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 }

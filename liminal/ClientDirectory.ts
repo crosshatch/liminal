@@ -3,7 +3,7 @@ import { Schema as S, Effect, Cause, Ref } from "effect"
 import type { TopFromString } from "./_util/schema.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
+import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import { phantom } from "./_util/phantom.ts"
@@ -33,6 +33,16 @@ export interface ClientDirectory<
   readonly unregister: (key: ClientKey) => Effect.Effect<void>
 }
 
+export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
+  attachments: (
+    value: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<T, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
+  event: (
+    value: Protocol<D>["Event"]["Type"],
+  ) => Effect.Effect<T, S.SchemaError, Protocol<D>["Event"]["EncodingServices"]>
+  disconnect: Effect.Effect<T, S.SchemaError, (typeof Disconnect)["EncodingServices"]>
+}
+
 export const make = <
   Raw,
   ActorSelf,
@@ -43,8 +53,8 @@ export const make = <
   ClientId extends string,
   D extends ProtocolDefinition,
 >(
-  { send, close }: ActorTransport<Raw>,
-  { transcoders }: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
+  _actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
+  { send, close, snapshot }: ActorTransport<Raw, AttachmentFields, D>,
 ): ClientDirectory<Raw, ActorSelf, AttachmentFields, D> => {
   type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
 
@@ -54,17 +64,19 @@ export const make = <
   const get = (raw: Raw) => Effect.fromNullishOr(raws.get(raw))
 
   const register = Effect.fnUntraced(function* (raw: Raw, attachments: S.Struct<AttachmentFields>["Type"]) {
+    yield* snapshot(raw, attachments)
     const attachmentsRef = yield* Ref.make(attachments)
-    const handle: Handle = ClientHandle.make<ActorSelf, AttachmentFields, D>({
+    const handle: Handle = ClientHandle.make({
       attachments: Ref.get(attachmentsRef),
-      save: (value) => Ref.set(attachmentsRef, value),
+      save: Effect.fnUntraced(function* (attachments) {
+        yield* Ref.set(attachmentsRef, attachments)
+        yield* snapshot(raw, attachments)
+      }),
       send: (_tag, payload) =>
-        transcoders
-          .encodeEvent({
-            _tag: "Event",
-            event: { _tag, ...payload } as never,
-          })
-          .pipe(Effect.andThen((v) => send(raw, v))),
+        send(raw, {
+          _tag: "Event",
+          event: { _tag, ...payload } as never,
+        }),
       disconnect: close(raw).pipe(
         Effect.andThen(() =>
           Effect.sync(() => {
