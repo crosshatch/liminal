@@ -13,7 +13,6 @@ import {
   String,
   Array,
   Encoding,
-  Schema,
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
@@ -118,7 +117,7 @@ export interface ActorRegistry<
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, Schema.SchemaError, RegistrySelf | NativeRequest>
+  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest>
 }
 
 export const Service =

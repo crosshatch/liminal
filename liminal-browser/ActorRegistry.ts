@@ -71,6 +71,7 @@ export const make = Effect.fnUntraced(function* <
     snapshot: () => Effect.void,
   }
 
+  const getEntryTask = yield* Semaphore.make(1).pipe(Effect.map((v) => v.withPermits(1)))
   const getEntry = Effect.fnUntraced(function* (key: string) {
     const existing = entries[key]
     if (existing) return existing
@@ -82,7 +83,7 @@ export const make = Effect.fnUntraced(function* <
     }
     entries[key] = fresh
     return fresh
-  })
+  }, getEntryTask)
 
   const outerScope = yield* Scope.Scope
 
