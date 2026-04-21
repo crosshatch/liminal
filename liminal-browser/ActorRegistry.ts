@@ -112,8 +112,8 @@ export const make = Effect.fnUntraced(function* <
                     if (client !== expectedKey) {
                       port.postMessage({
                         _tag: "Audition.Failure",
-                        client: expectedKey,
-                        routed: typeof e.data === "string" ? e.data : "<non-string>",
+                        client,
+                        routed: expectedKey,
                       } satisfies typeof Audition.Failure.Type)
                       yield* transport.close(port)
                       return yield* Scope.close(scope, Exit.void)
@@ -168,7 +168,12 @@ export const make = Effect.fnUntraced(function* <
           )
 
           yield* Stream.fromEventListener<MessageEvent>(port, "messageerror").pipe(
-            Stream.runForEach((cause) => debug("PortErrored", { cause })),
+            Stream.runForEach(
+              Effect.fnUntraced(function* (cause) {
+                yield* debug("PortErrored", { cause })
+                yield* Scope.close(scope, Exit.void)
+              }),
+            ),
             Effect.forkScoped,
           )
         }).pipe(
@@ -176,7 +181,7 @@ export const make = Effect.fnUntraced(function* <
             Option.match(yield* Ref.get(stateRef), {
               onSome: ({ entry: { directory } }) => directory.unregister(port),
               onNone: () => Effect.void,
-            }),
+            }).pipe(Effect.andThen(Effect.sync(() => delete entries[name]))),
           ),
           Scope.provide(scope),
         )
