@@ -1,5 +1,5 @@
 import type { TopFromString } from "liminal/_util/schema"
-import type { Protocol, ProtocolDefinition } from "liminal/Protocol"
+import type { ProtocolDefinition } from "liminal/Protocol"
 
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream } from "effect"
@@ -44,15 +44,12 @@ export const make = Effect.fnUntraced(function* <
   const {
     definition: {
       client: {
-        protocol: { F, Client: ClientM, Audition },
+        protocol: { Client: ClientM, Actor },
         key: expected,
       },
       name: Name,
     },
   } = actor
-
-  type ActorMessage = Protocol<D>["Actor"]["Type"]
-  type ClientMessage = Protocol<D>["Client"]["Type"]
 
   const validateClientMessage = S.decodeUnknownEffect(S.toType(ClientM))
   const encodeName = S.encodeEffect(Name)
@@ -63,7 +60,7 @@ export const make = Effect.fnUntraced(function* <
   }
 
   const entries: Record<string, Entry> = {}
-  const runners = new Map<MessagePort, WorkerRunner.WorkerRunner<ActorMessage, ClientMessage>>()
+  const runners = new Map<MessagePort, WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>>()
 
   const transport: ActorTransport<MessagePort, AttachmentFields, D> = {
     send: (port, event) => runners.get(port)?.send(0, event) ?? Effect.void,
@@ -105,7 +102,7 @@ export const make = Effect.fnUntraced(function* <
         const scope = yield* Scope.fork(outerScope, "sequential")
         const closeScope = Scope.close(scope, Exit.void)
 
-        const backing = yield* BrowserWorkerRunner.make(port).start<ActorMessage, ClientMessage>()
+        const backing = yield* BrowserWorkerRunner.make(port).start<typeof Actor.Type, typeof ClientM.Type>()
         runners.set(port, backing)
 
         yield* Scope.addFinalizer(
@@ -128,7 +125,7 @@ export const make = Effect.fnUntraced(function* <
 
         yield* backing
           .run(
-            Effect.fnUntraced(function* (_portId: number, raw: ClientMessage) {
+            Effect.fnUntraced(function* (_portId, raw) {
               const state = yield* Ref.get(stateRef)
               yield* Effect.gen(function* () {
                 const message = yield* validateClientMessage(raw)
@@ -143,7 +140,7 @@ export const make = Effect.fnUntraced(function* <
                       _tag: "Audition.Failure",
                       expected,
                       actual,
-                    } satisfies typeof Audition.Failure.Type)
+                    })
                     return yield* closeScope
                   }
                   const key = yield* encodeName(name)
@@ -157,7 +154,7 @@ export const make = Effect.fnUntraced(function* <
                     currentClient,
                   })
                   yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-                  yield* backing.send(0, { _tag: "Audition.Success" } satisfies typeof Audition.Success.Type)
+                  yield* backing.send(0, { _tag: "Audition.Success" })
                   return yield* onConnect.pipe(entry.mutex, Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
                 }
                 const { entry, ActorLive } = state.value
@@ -176,18 +173,16 @@ export const make = Effect.fnUntraced(function* <
                   >
                 )[_tag]!(value).pipe(
                   Effect.match({
-                    onSuccess: (value) =>
-                      ({
-                        _tag: "F.Success",
-                        id,
-                        success: { _tag, value } as never,
-                      }) satisfies typeof F.Success.Type,
-                    onFailure: (value) =>
-                      ({
-                        _tag: "F.Failure",
-                        id,
-                        failure: { _tag, value } as never,
-                      }) satisfies typeof F.Failure.Type,
+                    onSuccess: (value) => ({
+                      _tag: "F.Success" as const,
+                      id,
+                      success: { _tag, value } as never,
+                    }),
+                    onFailure: (value) => ({
+                      _tag: "F.Failure" as const,
+                      id,
+                      failure: { _tag, value } as never,
+                    }),
                   }),
                   Effect.andThen((v) => backing.send(0, v)),
                   span("handler", { attributes: { _tag } }),
