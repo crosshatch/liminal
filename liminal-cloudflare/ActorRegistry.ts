@@ -1,4 +1,3 @@
-import type { Actor, Method } from "liminal"
 import type { TopFromString } from "liminal/_util/schema"
 import type { ProtocolDefinition } from "liminal/Protocol"
 
@@ -19,6 +18,7 @@ import {
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
+import { type Actor, type Method, ClientDirectory } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
@@ -26,11 +26,11 @@ import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
 
 import * as Binding from "./Binding.ts"
-import * as ClientDirectory from "./ClientDirectory.ts"
 import { close } from "./close.ts"
 import { DurableObjectState } from "./DurableObjectState.ts"
 import * as Intrinsic from "./Intrinsic.ts"
 import { NativeRequest } from "./NativeRequest.ts"
+import { transport } from "./transport.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
@@ -183,9 +183,7 @@ export const Service =
     const encodeName = S.encodeEffect(Name)
     const decodeName = S.decodeUnknownEffect(Name)
 
-    const AttachmentsJson = S.toCodecJson(Attachments)
-    const decodeAttachments = S.decodeUnknownEffect(AttachmentsJson)
-    const AttachmentsJsonString = S.fromJsonString(AttachmentsJson)
+    const AttachmentsJsonString = S.fromJsonString(S.toCodecJson(Attachments))
     const encodeAttachmentsString = S.encodeEffect(AttachmentsJsonString)
     const decodeAttachmentsString = S.decodeUnknownEffect(AttachmentsJsonString)
 
@@ -195,7 +193,7 @@ export const Service =
       (value): value is DurableObjectNamespace => "getByName" in value,
     ) {
       readonly runtime
-      readonly directory = ClientDirectory.make(actor)
+      readonly directory = ClientDirectory.make(transport, actor)
 
       constructor(state: globalThis.DurableObjectState<{}>, env: unknown) {
         // @ts-ignore
@@ -220,7 +218,7 @@ export const Service =
             Effect.flatMap((v) => (typeof v === "string" ? decodeName(v) : Effect.succeed(undefined))),
           )
           for (const socket of state.getWebSockets()) {
-            const attachments = yield* decodeAttachments(socket.deserializeAttachment())
+            const attachments = yield* transcoders.decodeAttachments(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
         }).pipe(

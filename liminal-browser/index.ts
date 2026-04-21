@@ -1,1 +1,1 @@
-export * as Singleton from "./Singleton.ts"
+export * as ActorRegistry from "./ActorRegistry.ts"

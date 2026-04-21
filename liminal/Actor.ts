@@ -1,11 +1,11 @@
 import { Context, Schema as S, Effect } from "effect"
 
+import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type * as ClientHandle from "./ClientHandle.ts"
 import type { Send } from "./Send.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
-import type { TopFromString } from "./_util/schema.ts"
 import * as Method from "./Method.ts"
 import { ActorTranscoders, type ProtocolDefinition } from "./Protocol.ts"
 
@@ -61,7 +61,7 @@ export interface Actor<
 
   readonly protocol: ActorProtocol<AttachmentFields>
 
-  readonly transcoders: ActorTranscoders<D>
+  readonly transcoders: ActorTranscoders<Name, AttachmentFields, D>
 
   readonly sendAll: Send<ActorSelf, D>
 
@@ -112,7 +112,7 @@ export const Service =
       protocol: {
         Attachments: S.Struct(definition.attachments),
       },
-      transcoders: ActorTranscoders(definition.client.protocol),
+      transcoders: ActorTranscoders(definition.name, definition.attachments, definition.client.protocol),
       sendAll,
       disconnectAll,
       handler,

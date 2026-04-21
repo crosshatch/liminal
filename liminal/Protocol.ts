@@ -1,5 +1,6 @@
 import { flow, Schema as S, Record, Types, Effect } from "effect"
 
+import type { TopFromString } from "./_util/schema.ts"
 import type * as Method from "./Method.ts"
 
 import { phantom } from "./_util/phantom.ts"
@@ -152,8 +153,22 @@ export const ClientTranscoders = <D extends ProtocolDefinition>({ F, Actor }: Pr
   decodeActor: decode(Actor),
 })
 
-export interface ActorTranscoders<D extends ProtocolDefinition> {
+export interface ActorTranscoders<
+  Name extends TopFromString,
+  AttachmentFields extends S.Struct.Fields,
+  D extends ProtocolDefinition,
+> {
   "": Protocol<D>
+
+  readonly encodeName: (input: Name["Type"]) => Effect.Effect<string, S.SchemaError, Name["EncodingServices"]>
+
+  readonly encodeAttachments: (
+    input: S.Struct<AttachmentFields>["Type"],
+  ) => Effect.Effect<S.Json, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
+
+  readonly decodeAttachments: (
+    input: unknown,
+  ) => Effect.Effect<S.Struct<AttachmentFields>["Type"], S.SchemaError, S.Struct<AttachmentFields>["DecodingServices"]>
 
   readonly encodeAuditionSuccess: (
     input: this[""]["Audition"]["Success"]["Type"],
@@ -184,13 +199,19 @@ export interface ActorTranscoders<D extends ProtocolDefinition> {
   ) => Effect.Effect<string, S.SchemaError, this[""]["Disconnect"]["EncodingServices"]>
 }
 
-export const ActorTranscoders = <D extends ProtocolDefinition>({
-  F,
-  Event,
-  Disconnect,
-  Audition,
-}: Protocol<D>): ActorTranscoders<D> => ({
+export const ActorTranscoders = <
+  Name extends TopFromString,
+  AttachmentFields extends S.Struct.Fields,
+  D extends ProtocolDefinition,
+>(
+  name: Name,
+  attachments: AttachmentFields,
+  { F, Event, Disconnect, Audition }: Protocol<D>,
+): ActorTranscoders<Name, AttachmentFields, D> => ({
   ...phantom,
+  encodeName: S.encodeEffect(name),
+  encodeAttachments: S.encodeEffect(S.toCodecJson(S.Struct(attachments))),
+  decodeAttachments: S.decodeUnknownEffect(S.toCodecJson(S.Struct(attachments))),
   encodeAuditionSuccess: encode(Audition.Success),
   encodeAuditionFailure: encode(Audition.Failure),
   encodeEvent: encode(Event),
