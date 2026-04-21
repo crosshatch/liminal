@@ -1,8 +1,6 @@
-import { flow, Schema as S, Record, Types, Effect } from "effect"
+import { Schema as S, Record, Types } from "effect"
 
 import type * as Method from "./Method.ts"
-
-import { phantom } from "./_util/phantom.ts"
 
 export interface ProtocolDefinition<
   Methods extends Record<string, Method.Any> = Record<string, Method.Any>,
@@ -28,12 +26,13 @@ export declare namespace ProtocolDefinition {
 
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
+    readonly Payload: S.TaggedStruct<"Audition.Payload", { client: S.String }>
     readonly Success: S.TaggedStruct<"Audition.Success", {}>
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
       {
-        client: S.String
-        routed: S.String
+        expected: S.String
+        actual: S.String
       }
     >
   }
@@ -81,6 +80,8 @@ export interface Protocol<D extends ProtocolDefinition> {
 
   readonly Disconnect: S.TaggedStruct<"Disconnect", {}>
 
+  readonly Client: S.Union<[this["Audition"]["Payload"], this["F"]["Payload"], this["Disconnect"]]>
+
   readonly Actor: S.Union<
     [
       this["Audition"]["Success"],
@@ -93,13 +94,16 @@ export interface Protocol<D extends ProtocolDefinition> {
   >
 }
 
-const Disconnect = S.TaggedStruct("Disconnect", {})
+export const Disconnect = S.TaggedStruct("Disconnect", {})
 
 const Audition = {
+  Payload: S.TaggedStruct("Audition.Payload", {
+    client: S.String,
+  }),
   Success: S.TaggedStruct("Audition.Success", {}),
   Failure: S.TaggedStruct("Audition.Failure", {
-    client: S.String,
-    routed: S.String,
+    expected: S.String,
+    actual: S.String,
   }),
 }
 
@@ -125,77 +129,9 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     event: S.TaggedUnion(events),
   }) as never
 
+  const Client: T["Client"] = S.Union([Audition.Payload, F.Payload, Disconnect])
+
   const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 
-  return { Audition, Event, F, Actor, Disconnect }
+  return { Audition, Event, F, Client, Actor, Disconnect }
 }
-
-const toJsonStringCodec = flow(S.toCodecJson, S.fromJsonString)
-const encode = flow(toJsonStringCodec, S.encodeEffect)
-const decode = flow(toJsonStringCodec, S.decodeUnknownEffect)
-
-export interface ClientTranscoders<D extends ProtocolDefinition> {
-  "": Protocol<D>
-
-  readonly encodeFPayload: (
-    input: this[""]["F"]["Payload"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Payload"]["EncodingServices"]>
-
-  readonly decodeActor: (
-    input: unknown,
-  ) => Effect.Effect<this[""]["Actor"]["Type"], S.SchemaError, this[""]["Actor"]["DecodingServices"]>
-}
-
-export const ClientTranscoders = <D extends ProtocolDefinition>({ F, Actor }: Protocol<D>): ClientTranscoders<D> => ({
-  ...phantom,
-  encodeFPayload: encode(F.Payload),
-  decodeActor: decode(Actor),
-})
-
-export interface ActorTranscoders<D extends ProtocolDefinition> {
-  "": Protocol<D>
-
-  readonly encodeAuditionSuccess: (
-    input: this[""]["Audition"]["Success"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Success"]["EncodingServices"]>
-
-  readonly encodeAuditionFailure: (
-    input: this[""]["Audition"]["Failure"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Audition"]["Failure"]["EncodingServices"]>
-
-  readonly encodeEvent: (
-    input: this[""]["Event"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Event"]["EncodingServices"]>
-
-  readonly decodeFPayload: (
-    input: unknown,
-  ) => Effect.Effect<this[""]["F"]["Payload"]["Type"], S.SchemaError, this[""]["F"]["Payload"]["DecodingServices"]>
-
-  readonly encodeFSuccess: (
-    input: this[""]["F"]["Success"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Success"]["EncodingServices"]>
-
-  readonly encodeFFailure: (
-    input: this[""]["F"]["Failure"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["F"]["Failure"]["EncodingServices"]>
-
-  readonly encodeDisconnect: (
-    input: this[""]["Disconnect"]["Type"],
-  ) => Effect.Effect<string, S.SchemaError, this[""]["Disconnect"]["EncodingServices"]>
-}
-
-export const ActorTranscoders = <D extends ProtocolDefinition>({
-  F,
-  Event,
-  Disconnect,
-  Audition,
-}: Protocol<D>): ActorTranscoders<D> => ({
-  ...phantom,
-  encodeAuditionSuccess: encode(Audition.Success),
-  encodeAuditionFailure: encode(Audition.Failure),
-  encodeEvent: encode(Event),
-  decodeFPayload: decode(F.Payload),
-  encodeFSuccess: encode(F.Success),
-  encodeFFailure: encode(F.Failure),
-  encodeDisconnect: encode(Disconnect),
-})

@@ -1,5 +1,3 @@
-import type { Actor, Method } from "liminal"
-import type { TopFromString } from "liminal/_util/schema"
 import type { ProtocolDefinition } from "liminal/Protocol"
 
 import {
@@ -15,18 +13,18 @@ import {
   String,
   Array,
   Encoding,
-  Schema,
   Option,
 } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
+import { type Actor, type Method, ClientDirectory, type ActorTransport } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal/_util/schema"
 
 import * as Binding from "./Binding.ts"
-import * as ClientDirectory from "./ClientDirectory.ts"
 import { close } from "./close.ts"
 import { DurableObjectState } from "./DurableObjectState.ts"
 import * as Intrinsic from "./Intrinsic.ts"
@@ -119,7 +117,7 @@ export interface ActorRegistry<
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, Schema.SchemaError, RegistrySelf | NativeRequest>
+  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest>
 }
 
 export const Service =
@@ -174,20 +172,37 @@ export const Service =
     const {
       definition: {
         name: Name,
-        client: { key: clientId },
+        client: {
+          key: clientId,
+          protocol: { Audition, Event, F, Client: ClientM },
+        },
+        attachments: AttachmentFields,
       },
-      protocol: { Attachments },
-      transcoders,
     } = actor
 
     const encodeName = S.encodeEffect(Name)
     const decodeName = S.decodeUnknownEffect(Name)
 
-    const AttachmentsJson = S.toCodecJson(Attachments)
-    const decodeAttachments = S.decodeUnknownEffect(AttachmentsJson)
-    const AttachmentsJsonString = S.fromJsonString(AttachmentsJson)
-    const encodeAttachmentsString = S.encodeEffect(AttachmentsJsonString)
-    const decodeAttachmentsString = S.decodeUnknownEffect(AttachmentsJsonString)
+    const Attachments = S.Struct(AttachmentFields)
+    const encodeAttachments = S.encodeEffect(S.toCodecJson(Attachments))
+    const decodeAttachments = S.decodeUnknownEffect(S.toCodecJson(Attachments))
+    const encodeAttachmentsString = encodeJsonString(Attachments)
+    const decodeAttachmentsString = decodeJsonString(Attachments)
+
+    const encodeAuditionSuccess = encodeJsonString(Audition.Success)
+    const encodeAuditionFailure = encodeJsonString(Audition.Failure)
+    const decodeClientM = decodeJsonString(ClientM)
+    const encodeFSuccess = encodeJsonString(F.Success)
+    const encodeFFailure = encodeJsonString(F.Failure)
+
+    const encodeEvent = encodeJsonString(Event)
+
+    const transport: ActorTransport<WebSocket, AttachmentFields, D> = {
+      send: (socket, event) => encodeEvent(event).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
+      close: (socket) => Effect.sync(() => socket.close(1000)),
+      snapshot: (socket, attachments) =>
+        encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
+    }
 
     class tag extends Binding.Service<RegistrySelf>()(
       id,
@@ -195,7 +210,7 @@ export const Service =
       (value): value is DurableObjectNamespace => "getByName" in value,
     ) {
       readonly runtime
-      readonly directory = ClientDirectory.make(actor)
+      readonly directory = ClientDirectory.make(actor, transport)
 
       constructor(state: globalThis.DurableObjectState<{}>, env: unknown) {
         // @ts-ignore
@@ -248,9 +263,7 @@ export const Service =
           const { 0: webSocket, 1: server } = new WebSocketPair()
           const state = yield* DurableObjectState
           state.acceptWebSocket(server)
-          yield* transcoders
-            .encodeAuditionSuccess({ _tag: "Audition.Success" })
-            .pipe(Effect.andThen((v) => Effect.sync(() => server.send(v))))
+          server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const currentClient = yield* this.directory.register(server, attachments)
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -279,23 +292,27 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* transcoders.decodeFPayload(
-            raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw,
-          )
+          const message = yield* decodeClientM(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
           yield* debug("MessageReceived", { message })
+          if (message._tag === "Audition.Payload") {
+            return yield* Effect.die(undefined)
+          }
+          if (message._tag === "Disconnect") {
+            return yield* currentClient.disconnect
+          }
           const { id, payload } = message
           const { _tag, value } = payload as never
           yield* handlers[_tag]!(value).pipe(
             Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
             Effect.matchEffect({
               onSuccess: (value) =>
-                transcoders.encodeFSuccess({
+                encodeFSuccess({
                   _tag: "F.Success",
                   id,
                   success: { _tag, value } as never,
                 }),
               onFailure: (value) =>
-                transcoders.encodeFFailure({
+                encodeFFailure({
                   _tag: "F.Failure",
                   id,
                   failure: { _tag, value } as never,
@@ -336,13 +353,13 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        return yield* transcoders
-          .encodeAuditionFailure({
+        return close(
+          yield* encodeAuditionFailure({
             _tag: "Audition.Failure",
-            client: clientId,
-            routed: requestClientId,
-          })
-          .pipe(Effect.andThen((v) => Effect.sync(() => close(v))))
+            expected: clientId,
+            actual: requestClientId,
+          }),
+        )
       }
       const url = new URL(request.url)
       url.searchParams.set("__liminal_name", nameEncoded)

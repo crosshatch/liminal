@@ -26,9 +26,10 @@ import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
+import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
-import { Protocol, type ProtocolDefinition, ClientTranscoders } from "./Protocol.ts"
+import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
 
 const { debug, span } = Diagnostic.module("Client")
 
@@ -68,8 +69,6 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
 
   readonly protocol: Protocol<D>
 
-  readonly transcoders: ClientTranscoders<D>
-
   readonly events: Stream.Stream<
     ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
     ClientError | S.SchemaError,
@@ -87,8 +86,6 @@ export const Service =
     const tag = Context.Service<Self, Service<Self, D>>()(id)
 
     const protocol = Protocol(definition)
-
-    const transcoders = ClientTranscoders(protocol)
 
     const events = tag.asEffect().pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
 
@@ -113,7 +110,6 @@ export const Service =
       [TypeId]: TypeId,
       definition,
       protocol,
-      transcoders,
       events,
       f,
       invalidate,
@@ -195,9 +191,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 return
               }
               case "Audition.Failure": {
-                const { client, routed } = message
-                yield* debug("Audition.Failed", { client, routed })
-                return yield* new AuditionError({ value: { client, routed } })
+                const { expected, actual } = message
+                yield* debug("Audition.Failed", { expected, actual })
+                return yield* new AuditionError({ value: { expected, actual } })
               }
               case "Event": {
                 const { event } = message
@@ -382,11 +378,14 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
   | Socket.WebSocketConstructor
   | Protocol<D>["Actor"]["DecodingServices"]
   | Protocol<D>["F"]["Payload"]["EncodingServices"]
-> =>
-  make<Self, Id, D, Socket.WebSocketConstructor>(
+> => {
+  const { F, Actor } = client.protocol
+  const encodeFPayload = encodeJsonString(F.Payload)
+  const decodeActor = decodeJsonString(Actor)
+
+  return make<Self, Id, D, Socket.WebSocketConstructor>(
     client,
     Effect.gen(function* () {
-      const { transcoders } = client
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
@@ -396,7 +395,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
             .runRaw((raw) =>
               pipe(
                 raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                transcoders.decodeActor,
+                decodeActor,
                 Effect.andThen(publish),
               ),
             )
@@ -418,7 +417,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
-            const message = yield* transcoders.encodeFPayload(v)
+            const message = yield* encodeFPayload(v)
             yield* write(message).pipe(
               Effect.catchTag("SocketError", (cause) => new ConnectionError({ cause }).asEffect()),
             )
@@ -430,8 +429,9 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
     }),
     replay,
   )
+}
 
-export const layerWorker = <Self, Id extends string, D extends ProtocolDefinition>({
+export const layerWorker = <Self, Id extends string, D extends ProtocolDefinition, T extends Protocol<D>>({
   client,
   replay,
 }: {
@@ -440,22 +440,17 @@ export const layerWorker = <Self, Id extends string, D extends ProtocolDefinitio
 }): Layer.Layer<
   Self,
   never,
-  | Worker.WorkerPlatform
-  | Worker.Spawner
-  | Protocol<D>["Actor"]["DecodingServices"]
-  | Protocol<D>["F"]["Payload"]["EncodingServices"]
+  Worker.WorkerPlatform | Worker.Spawner | T["Actor"]["DecodingServices"] | T["F"]["Payload"]["EncodingServices"]
 > =>
   make<Self, Id, D, Worker.WorkerPlatform | Worker.Spawner>(
     client,
     Effect.gen(function* () {
-      type T = Protocol<D>
-
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
-        .spawn<T["Actor"]["Type"], T["F"]["Payload"]["Type"] | string>(0)
+        .spawn<T["Actor"]["Type"], T["Client"]["Type"]>(0)
         .pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
 
-      const send = (message: T["F"]["Payload"]["Type"]) =>
+      const send = (message: T["Client"]["Type"]) =>
         backing.send(message).pipe(
           Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
           span("send"),
@@ -464,18 +459,27 @@ export const layerWorker = <Self, Id extends string, D extends ProtocolDefinitio
       return {
         listen: Effect.fnUntraced(function* (publish) {
           const stop = yield* Deferred.make<void>()
-          yield* Effect.raceFirst(
-            backing.run(
+          yield* backing
+            .run(
               Effect.fnUntraced(function* (message) {
                 yield* publish(message)
                 if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
                   yield* Deferred.succeed(stop, void 0)
                 }
               }),
-              { onSpawn: backing.send(client.key).pipe(Effect.orDie) },
-            ),
-            Deferred.await(stop),
-          ).pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
+              {
+                onSpawn: backing
+                  .send({
+                    _tag: "Audition.Payload",
+                    client: client.key,
+                  })
+                  .pipe(Effect.orDie),
+              },
+            )
+            .pipe(
+              Effect.raceFirst(Deferred.await(stop)),
+              Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
+            )
         }, span("listen")),
         send,
       }
