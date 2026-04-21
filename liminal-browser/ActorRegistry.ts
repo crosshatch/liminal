@@ -1,7 +1,7 @@
 import type { TopFromString } from "liminal/_util/schema"
 import type { ProtocolDefinition } from "liminal/Protocol"
 
-import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream } from "effect"
+import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream } from "effect"
 import { type Actor, type ClientHandle, type Method, ClientDirectory, type ActorTransport } from "liminal"
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { logCause } from "liminal/_util/logCause"
@@ -88,6 +88,7 @@ export const make = Effect.fnUntraced(function* <
 
         const stateRef = yield* Ref.make<
           Option.Option<{
+            readonly key: string
             readonly entry: Entry
             readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
             readonly ActorLive: Layer.Layer<ActorSelf>
@@ -95,9 +96,37 @@ export const make = Effect.fnUntraced(function* <
         >(Option.none())
 
         const scope = yield* Scope.fork(outerScope, "sequential")
+        const closeScope = Scope.close(scope, Exit.void)
 
-        yield* Effect.gen(function* () {
-          yield* Stream.fromEventListener<MessageEvent>(port, "message").pipe(
+        yield* Scope.addFinalizer(
+          scope,
+          Effect.gen(function* () {
+            const state = yield* Ref.get(stateRef)
+            if (Option.isSome(state)) {
+              const {
+                key,
+                entry: { directory },
+              } = state.value
+              yield* directory.unregister(port)
+              if (directory.handles.size === 0) {
+                delete entries[key]
+              }
+            }
+            yield* transport.close(port)
+          }),
+        )
+
+        const forkScoped = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+          effect.pipe(
+            Effect.catchCause((cause) =>
+              Cause.hasInterruptsOnly(cause) ? Effect.void : logCause(cause).pipe(Effect.andThen(closeScope)),
+            ),
+            Effect.forkScoped,
+            Scope.provide(scope),
+          )
+
+        yield* forkScoped(
+          Stream.fromEventListener<MessageEvent>(port, "message").pipe(
             Stream.runForEach(
               Effect.fnUntraced(function* (e) {
                 const state = yield* Ref.get(stateRef)
@@ -115,18 +144,19 @@ export const make = Effect.fnUntraced(function* <
                         client,
                         routed: expectedKey,
                       } satisfies typeof Audition.Failure.Type)
-                      yield* transport.close(port)
-                      return yield* Scope.close(scope, Exit.void)
+                      return yield* closeScope
                     }
                     const key = yield* encodeName(name)
                     const entry = yield* getEntry(key)
-                    const currentClient = yield* entry.directory.register(port, attachments)
+                    const currentClient = Object.assign(yield* entry.directory.register(port, attachments), {
+                      disconnect: closeScope,
+                    })
                     const ActorLive = Layer.succeed(actor, {
                       name,
                       clients: entry.directory.handles,
                       currentClient,
                     })
-                    yield* Ref.set(stateRef, Option.some({ entry, currentClient, ActorLive }))
+                    yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
                     port.postMessage({ _tag: "Audition.Success" } satisfies typeof Audition.Success.Type)
                     return yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
                   }
@@ -135,8 +165,7 @@ export const make = Effect.fnUntraced(function* <
                     return yield* Effect.die(undefined)
                   }
                   if (message._tag === "Disconnect") {
-                    yield* transport.close(port)
-                    return yield* Scope.close(scope, Exit.void)
+                    return yield* closeScope
                   }
                   const { id, payload } = message
                   const { _tag, value } = payload as never
@@ -164,30 +193,17 @@ export const make = Effect.fnUntraced(function* <
                 })
               }, span("message")),
             ),
-            Effect.forkScoped,
-          )
-
-          yield* Stream.fromEventListener<MessageEvent>(port, "messageerror").pipe(
-            Stream.runForEach(
-              Effect.fnUntraced(function* (cause) {
-                yield* debug("PortErrored", { cause })
-                yield* Scope.close(scope, Exit.void)
-              }),
-            ),
-            Effect.forkScoped,
-          )
-        }).pipe(
-          Effect.ensuring(
-            Option.match(yield* Ref.get(stateRef), {
-              onSome: ({ entry: { directory } }) => directory.unregister(port),
-              onNone: () => Effect.void,
-            }).pipe(Effect.andThen(Effect.sync(() => delete entries[name]))),
           ),
-          Scope.provide(scope),
+        )
+
+        yield* forkScoped(
+          Stream.fromEventListener<MessageEvent>(port, "messageerror").pipe(
+            Stream.runForEach((cause) => debug("PortErrored", { cause }).pipe(Effect.andThen(closeScope))),
+          ),
         )
 
         port.start()
-      }).pipe(Effect.catchCause(logCause)),
+      }).pipe(Effect.catchCause((cause) => (Cause.hasInterruptsOnly(cause) ? Effect.void : logCause(cause)))),
     ),
   )
 }, span("make"))
