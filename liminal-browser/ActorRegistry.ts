@@ -71,7 +71,8 @@ export const make = Effect.fnUntraced(function* <
     snapshot: () => Effect.void,
   }
 
-  const getEntryTask = yield* Semaphore.make(1).pipe(Effect.map((v) => v.withPermits(1)))
+  const useEntries = yield* Semaphore.make(1).pipe(Effect.map((v) => v.withPermits(1)))
+
   const getEntry = Effect.fnUntraced(function* (key: string) {
     const existing = entries[key]
     if (existing) return existing
@@ -83,7 +84,7 @@ export const make = Effect.fnUntraced(function* <
     }
     entries[key] = fresh
     return fresh
-  }, getEntryTask)
+  }, useEntries)
 
   const outerScope = yield* Scope.Scope
 
@@ -122,7 +123,7 @@ export const make = Effect.fnUntraced(function* <
                 delete entries[key]
               }
             }
-          }),
+          }).pipe(useEntries),
         )
 
         yield* backing
@@ -171,7 +172,7 @@ export const make = Effect.fnUntraced(function* <
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],
-                    Handlers[keyof Handlers] extends (p: never) => Effect.Effect<any, any, infer R> ? R : never
+                    Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
                   >
                 )[_tag]!(value).pipe(
                   Effect.match({
