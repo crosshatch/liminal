@@ -101,7 +101,6 @@ export const make = Effect.fnUntraced(function* <
             Stream.runForEach(
               Effect.fnUntraced(function* (e) {
                 const state = yield* Ref.get(stateRef)
-
                 yield* Effect.gen(function* () {
                   const message = yield* validateClientMessage(e.data)
                   yield* debug("MessageReceived", { message })
@@ -134,6 +133,10 @@ export const make = Effect.fnUntraced(function* <
                   const { entry, ActorLive } = state.value
                   if (message._tag === "Audition.Payload") {
                     return yield* Effect.die(undefined)
+                  }
+                  if (message._tag === "Disconnect") {
+                    yield* transport.close(port)
+                    return yield* Scope.close(scope, Exit.void)
                   }
                   const { id, payload } = message
                   const { _tag, value } = payload as never

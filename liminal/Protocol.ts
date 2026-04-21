@@ -80,7 +80,7 @@ export interface Protocol<D extends ProtocolDefinition> {
 
   readonly Disconnect: S.TaggedStruct<"Disconnect", {}>
 
-  readonly Client: S.Union<[this["Audition"]["Payload"], this["F"]["Payload"]]>
+  readonly Client: S.Union<[this["Audition"]["Payload"], this["F"]["Payload"], this["Disconnect"]]>
 
   readonly Actor: S.Union<
     [
@@ -129,7 +129,7 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     event: S.TaggedUnion(events),
   }) as never
 
-  const Client: T["Client"] = S.Union([Audition.Payload, F.Payload])
+  const Client: T["Client"] = S.Union([Audition.Payload, F.Payload, Disconnect])
 
   const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 

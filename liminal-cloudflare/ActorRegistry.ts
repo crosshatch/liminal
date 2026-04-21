@@ -175,7 +175,7 @@ export const Service =
         name: Name,
         client: {
           key: clientId,
-          protocol: { Audition, Event, F },
+          protocol: { Audition, Event, F, Client: ClientM },
         },
         attachments: AttachmentFields,
       },
@@ -192,7 +192,7 @@ export const Service =
 
     const encodeAuditionSuccess = encodeJsonString(Audition.Success)
     const encodeAuditionFailure = encodeJsonString(Audition.Failure)
-    const decodeFPayload = decodeJsonString(F.Payload)
+    const decodeClientM = decodeJsonString(ClientM)
     const encodeFSuccess = encodeJsonString(F.Success)
     const encodeFFailure = encodeJsonString(F.Failure)
 
@@ -293,8 +293,14 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          const message = yield* decodeFPayload(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
+          const message = yield* decodeClientM(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
           yield* debug("MessageReceived", { message })
+          if (message._tag === "Audition.Payload") {
+            return yield* Effect.die(undefined)
+          }
+          if (message._tag === "Disconnect") {
+            return yield* currentClient.disconnect
+          }
           const { id, payload } = message
           const { _tag, value } = payload as never
           yield* handlers[_tag]!(value).pipe(
