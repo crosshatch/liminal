@@ -311,6 +311,9 @@ importers:
 
   liminal-browser:
     dependencies:
+      '@effect/platform-browser':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.50
