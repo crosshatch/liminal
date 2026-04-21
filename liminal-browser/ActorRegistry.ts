@@ -39,11 +39,7 @@ export const make = Effect.fnUntraced(function* <
   readonly handlers: Handlers
   readonly onConnect: Effect.Effect<A, E, R>
   readonly introductions: Stream.Stream<Introduction<Name, AttachmentFields>, IntroductionE, IntroductionR>
-}): Effect.fn.Return<
-  void,
-  IntroductionE,
-  Scope.Scope | S.Struct<AttachmentFields>["EncodingServices"] | IntroductionR
-> {
+}) {
   const {
     definition: {
       client: {

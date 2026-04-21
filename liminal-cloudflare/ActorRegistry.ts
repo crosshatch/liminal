@@ -184,8 +184,9 @@ export const Service =
     const encodeName = S.encodeEffect(Name)
     const decodeName = S.decodeUnknownEffect(Name)
 
-    const Attachments = S.toCodecJson(S.Struct(AttachmentFields))
-    const decodeAttachments = S.decodeUnknownEffect(Attachments)
+    const Attachments = S.Struct(AttachmentFields)
+    const encodeAttachments = S.encodeEffect(S.toCodecJson(Attachments))
+    const decodeAttachments = S.decodeUnknownEffect(S.toCodecJson(Attachments))
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const decodeAttachmentsString = decodeJsonString(Attachments)
 
@@ -195,7 +196,6 @@ export const Service =
     const encodeFSuccess = encodeJsonString(F.Success)
     const encodeFFailure = encodeJsonString(F.Failure)
 
-    const encodeAttachments = S.encodeEffect(Attachments)
     const encodeEvent = encodeJsonString(Event)
 
     const transport: ActorTransport<WebSocket, AttachmentFields, D> = {
@@ -348,7 +348,7 @@ export const Service =
         Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
       )
       if (requestClientId !== clientId) {
-        close(
+        return close(
           yield* encodeAuditionFailure({
             _tag: "Audition.Failure",
             client: clientId,

@@ -26,6 +26,7 @@ import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
+import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
@@ -361,10 +362,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
     return rcr
   }).pipe(Layer.effect(client))
 
-const toJsonStringCodec = flow(S.toCodecJson, S.fromJsonString)
-const encode = flow(toJsonStringCodec, S.encodeEffect)
-const decode = flow(toJsonStringCodec, S.decodeUnknownEffect)
-
 export const layerSocket = <Self, Id extends string, D extends ProtocolDefinition>({
   client,
   url,
@@ -383,8 +380,8 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
   | Protocol<D>["F"]["Payload"]["EncodingServices"]
 > => {
   const { F, Actor } = client.protocol
-  const encodeFPayload = encode(F.Payload)
-  const decodeActor = decode(Actor)
+  const encodeFPayload = encodeJsonString(F.Payload)
+  const decodeActor = decodeJsonString(Actor)
 
   return make<Self, Id, D, Socket.WebSocketConstructor>(
     client,
