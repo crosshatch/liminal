@@ -447,10 +447,10 @@ export const layerWorker = <Self, Id extends string, D extends ProtocolDefinitio
     Effect.gen(function* () {
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
-        .spawn<T["Actor"]["Type"], T["F"]["Payload"]["Type"] | string>(0)
+        .spawn<T["Actor"]["Type"], T["Client"]["Type"]>(0)
         .pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
 
-      const send = (message: T["F"]["Payload"]["Type"]) =>
+      const send = (message: T["Client"]["Type"]) =>
         backing.send(message).pipe(
           Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
           span("send"),
@@ -467,7 +467,14 @@ export const layerWorker = <Self, Id extends string, D extends ProtocolDefinitio
                   yield* Deferred.succeed(stop, void 0)
                 }
               }),
-              { onSpawn: backing.send(client.key).pipe(Effect.orDie) },
+              {
+                onSpawn: backing
+                  .send({
+                    _tag: "Audition.Payload",
+                    client: client.key,
+                  })
+                  .pipe(Effect.orDie),
+              },
             )
             .pipe(
               Effect.raceFirst(Deferred.await(stop)),

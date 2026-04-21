@@ -12,7 +12,7 @@ import * as ClientHandle from "./ClientHandle.ts"
 const { span } = Diagnostic.module("ClientDirectory")
 
 export interface ClientDirectory<
-  ClientKey,
+  Raw,
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
   D extends ProtocolDefinition,
@@ -24,13 +24,13 @@ export interface ClientDirectory<
   readonly handles: ReadonlySet<this[""]["Handle"]>
 
   readonly register: (
-    key: ClientKey,
+    raw: Raw,
     attachments: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<this[""]["Handle"], S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
-  readonly get: (key: ClientKey) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError>
+  readonly get: (raw: Raw) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError>
 
-  readonly unregister: (key: ClientKey) => Effect.Effect<void>
+  readonly unregister: (raw: Raw) => Effect.Effect<void>
 }
 
 export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {

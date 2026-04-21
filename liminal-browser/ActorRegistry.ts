@@ -43,13 +43,14 @@ export const make = Effect.fnUntraced(function* <
   const {
     definition: {
       client: {
-        protocol: { Audition, F },
+        protocol: { F, Client: ClientM, Audition },
+        key: expectedKey,
       },
       name: Name,
     },
   } = actor
 
-  const validateFPayload = S.decodeUnknownEffect(S.toType(F.Payload))
+  const validateClientMessage = S.decodeUnknownEffect(S.toType(ClientM))
   const encodeName = S.encodeEffect(Name)
 
   interface Entry {
@@ -70,47 +71,53 @@ export const make = Effect.fnUntraced(function* <
     if (existing) return existing
     const directory = ClientDirectory.make(actor, transport)
     const semaphore = yield* Semaphore.make(1)
-    const fresh = { directory, mutex: semaphore.withPermits(1) }
+    const fresh = {
+      directory,
+      mutex: semaphore.withPermits(1),
+    }
     entries[key] = fresh
     return fresh
   })
 
-  const expectedKey = actor.definition.client.key
-
   const outerScope = yield* Scope.Scope
 
   yield* introductions.pipe(
-    Stream.runForEach(
-      Effect.fnUntraced(function* ({ port, name, attachments }) {
+    Stream.runForEach(({ name, port, attachments }) =>
+      Effect.gen(function* () {
         yield* debug("IntroductionReceived", { name })
-        const scope = yield* Scope.fork(outerScope, "sequential")
 
-        const readyRef = yield* Ref.make<
+        const stateRef = yield* Ref.make<
           Option.Option<{
             readonly entry: Entry
-            readonly key: string
             readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
             readonly ActorLive: Layer.Layer<ActorSelf>
           }>
         >(Option.none())
 
+        const scope = yield* Scope.fork(outerScope, "sequential")
+
         yield* Effect.gen(function* () {
           yield* Stream.fromEventListener<MessageEvent>(port, "message").pipe(
             Stream.runForEach(
-              Effect.fnUntraced(
-                function* (e) {
-                  const state = yield* Ref.get(readyRef)
+              Effect.fnUntraced(function* (e) {
+                const state = yield* Ref.get(stateRef)
+
+                yield* Effect.gen(function* () {
+                  const message = yield* validateClientMessage(e.data)
+                  yield* debug("MessageReceived", { message })
                   if (Option.isNone(state)) {
-                    if (typeof e.data !== "string" || e.data !== expectedKey) {
-                      yield* debug("AuditionFailed", { routed: e.data })
+                    if (message._tag !== "Audition.Payload") {
+                      return yield* Effect.die(undefined)
+                    }
+                    const { client } = message
+                    if (client !== expectedKey) {
                       port.postMessage({
                         _tag: "Audition.Failure",
                         client: expectedKey,
                         routed: typeof e.data === "string" ? e.data : "<non-string>",
                       } satisfies typeof Audition.Failure.Type)
-                      yield* Scope.close(scope, Exit.void)
-                      port.close()
-                      return
+                      yield* transport.close(port)
+                      return yield* Scope.close(scope, Exit.void)
                     }
                     const key = yield* encodeName(name)
                     const entry = yield* getEntry(key)
@@ -120,67 +127,59 @@ export const make = Effect.fnUntraced(function* <
                       clients: entry.directory.handles,
                       currentClient,
                     })
+                    yield* Ref.set(stateRef, Option.some({ entry, currentClient, ActorLive }))
                     port.postMessage({ _tag: "Audition.Success" } satisfies typeof Audition.Success.Type)
-                    yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
-                    // Stream.runForEach is sequential: this set completes before the next message is pulled,
-                    // so the Option.none branch above cannot race with message handling after audition.
-                    yield* Ref.set(readyRef, Option.some({ entry, key, currentClient, ActorLive }))
-                    return
+                    return yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
                   }
                   const { entry, ActorLive } = state.value
-                  yield* Effect.gen(function* () {
-                    const message = yield* validateFPayload(e.data)
-                    yield* debug("MessageReceived", { message })
-                    const { id, payload } = message
-                    const { _tag, value } = payload as never
-                    yield* handlers[_tag]!(value).pipe(
-                      Effect.match({
-                        onSuccess: (value) =>
-                          ({
-                            _tag: "F.Success",
-                            id,
-                            success: { _tag, value } as never,
-                          }) satisfies typeof F.Success.Type,
-                        onFailure: (value) =>
-                          ({
-                            _tag: "F.Failure",
-                            id,
-                            failure: { _tag, value } as never,
-                          }) satisfies typeof F.Failure.Type,
-                      }),
-                      Effect.andThen((v) => Effect.sync(() => port.postMessage(v))),
-                      span("handler", { attributes: { _tag } }),
-                      Effect.scoped,
-                      Effect.provide(ActorLive),
-                    )
-                  }).pipe(entry.mutex)
-                },
-                Effect.tapCause(logCause),
-                span("message"),
-              ),
+                  if (message._tag === "Audition.Payload") {
+                    return yield* Effect.die(undefined)
+                  }
+                  const { id, payload } = message
+                  const { _tag, value } = payload as never
+                  yield* handlers[_tag]!(value).pipe(
+                    Effect.match({
+                      onSuccess: (value) =>
+                        ({
+                          _tag: "F.Success",
+                          id,
+                          success: { _tag, value } as never,
+                        }) satisfies typeof F.Success.Type,
+                      onFailure: (value) =>
+                        ({
+                          _tag: "F.Failure",
+                          id,
+                          failure: { _tag, value } as never,
+                        }) satisfies typeof F.Failure.Type,
+                    }),
+                    Effect.andThen((v) => Effect.sync(() => port.postMessage(v))),
+                    span("handler", { attributes: { _tag } }),
+                    Effect.scoped,
+                    Effect.provide(ActorLive),
+                    entry.mutex,
+                  )
+                })
+              }, span("message")),
             ),
             Effect.forkScoped,
           )
+
           yield* Stream.fromEventListener<MessageEvent>(port, "messageerror").pipe(
-            Stream.runForEach(
-              Effect.fnUntraced(function* (cause) {
-                yield* debug("PortErrored", { cause })
-                const state = yield* Ref.get(readyRef)
-                if (Option.isSome(state)) {
-                  const { entry, key } = state.value
-                  yield* entry.directory.unregister(port)
-                  if (entry.directory.handles.size === 0) delete entries[key]
-                }
-                yield* Scope.close(scope, Exit.void)
-                port.close()
-              }),
-            ),
+            Stream.runForEach((cause) => debug("PortErrored", { cause })),
             Effect.forkScoped,
           )
-        }).pipe(Scope.provide(scope))
+        }).pipe(
+          Effect.ensuring(
+            Option.match(yield* Ref.get(stateRef), {
+              onSome: ({ entry: { directory } }) => directory.unregister(port),
+              onNone: () => Effect.void,
+            }),
+          ),
+          Scope.provide(scope),
+        )
 
         port.start()
-      }, Effect.tapCause(logCause)),
+      }).pipe(Effect.catchCause(logCause)),
     ),
   )
 }, span("make"))

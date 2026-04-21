@@ -26,6 +26,7 @@ export declare namespace ProtocolDefinition {
 
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
+    readonly Payload: S.TaggedStruct<"Audition.Payload", { client: S.String }>
     readonly Success: S.TaggedStruct<"Audition.Success", {}>
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
@@ -79,6 +80,8 @@ export interface Protocol<D extends ProtocolDefinition> {
 
   readonly Disconnect: S.TaggedStruct<"Disconnect", {}>
 
+  readonly Client: S.Union<[this["Audition"]["Payload"], this["F"]["Payload"]]>
+
   readonly Actor: S.Union<
     [
       this["Audition"]["Success"],
@@ -94,6 +97,9 @@ export interface Protocol<D extends ProtocolDefinition> {
 export const Disconnect = S.TaggedStruct("Disconnect", {})
 
 const Audition = {
+  Payload: S.TaggedStruct("Audition.Payload", {
+    client: S.String,
+  }),
   Success: S.TaggedStruct("Audition.Success", {}),
   Failure: S.TaggedStruct("Audition.Failure", {
     client: S.String,
@@ -123,7 +129,9 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     event: S.TaggedUnion(events),
   }) as never
 
+  const Client: T["Client"] = S.Union([Audition.Payload, F.Payload])
+
   const Actor: T["Actor"] = S.Union([Audition.Success, Audition.Failure, F.Success, F.Failure, Event, Disconnect])
 
-  return { Audition, Event, F, Actor, Disconnect }
+  return { Audition, Event, F, Client, Actor, Disconnect }
 }
