@@ -45,7 +45,7 @@ export const make = Effect.fnUntraced(function* <
     definition: {
       client: {
         protocol: { F, Client: ClientM, Audition },
-        key: expectedKey,
+        key: expected,
       },
       name: Name,
     },
@@ -124,86 +124,86 @@ export const make = Effect.fnUntraced(function* <
           }),
         )
 
-        const forkScoped = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-          effect.pipe(
+        yield* backing
+          .run(
+            Effect.fnUntraced(function* (_portId: number, raw: ClientMessage) {
+              const state = yield* Ref.get(stateRef)
+              yield* Effect.gen(function* () {
+                const message = yield* validateClientMessage(raw)
+                yield* debug("MessageReceived", { message })
+                if (Option.isNone(state)) {
+                  if (message._tag !== "Audition.Payload") {
+                    return yield* Effect.die(undefined)
+                  }
+                  const { client: actual } = message
+                  if (actual !== expected) {
+                    yield* backing.send(0, {
+                      _tag: "Audition.Failure",
+                      expected,
+                      actual,
+                    } satisfies typeof Audition.Failure.Type)
+                    return yield* closeScope
+                  }
+                  const key = yield* encodeName(name)
+                  const entry = yield* getEntry(key)
+                  const currentClient = Object.assign(yield* entry.directory.register(port, attachments), {
+                    disconnect: closeScope,
+                  })
+                  const ActorLive = Layer.succeed(actor, {
+                    name,
+                    clients: entry.directory.handles,
+                    currentClient,
+                  })
+                  yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
+                  yield* backing.send(0, { _tag: "Audition.Success" } satisfies typeof Audition.Success.Type)
+                  return yield* onConnect.pipe(entry.mutex, Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
+                }
+                const { entry, ActorLive } = state.value
+                if (message._tag === "Audition.Payload") {
+                  return yield* Effect.die(undefined)
+                }
+                if (message._tag === "Disconnect") {
+                  return yield* closeScope
+                }
+                const { id, payload } = message
+                const { _tag, value } = payload as never
+                yield* (
+                  handlers as Method.Handlers<
+                    D["methods"],
+                    Handlers[keyof Handlers] extends (p: never) => Effect.Effect<any, any, infer R> ? R : never
+                  >
+                )[_tag]!(value).pipe(
+                  Effect.match({
+                    onSuccess: (value) =>
+                      ({
+                        _tag: "F.Success",
+                        id,
+                        success: { _tag, value } as never,
+                      }) satisfies typeof F.Success.Type,
+                    onFailure: (value) =>
+                      ({
+                        _tag: "F.Failure",
+                        id,
+                        failure: { _tag, value } as never,
+                      }) satisfies typeof F.Failure.Type,
+                  }),
+                  Effect.andThen((v) => backing.send(0, v)),
+                  span("handler", { attributes: { _tag } }),
+                  Effect.scoped,
+                  Effect.provide(ActorLive),
+                  entry.mutex,
+                )
+              })
+            }, span("message")),
+          )
+          .pipe(
+            Effect.andThen(closeScope),
             Effect.catchCause((cause) =>
               Cause.hasInterruptsOnly(cause) ? Effect.void : logCause(cause).pipe(Effect.andThen(closeScope)),
             ),
             Effect.forkScoped,
             Scope.provide(scope),
           )
-
-        const onMessage = Effect.fnUntraced(function* (_portId: number, raw: ClientMessage) {
-          const state = yield* Ref.get(stateRef)
-          yield* Effect.gen(function* () {
-            const message = yield* validateClientMessage(raw)
-            yield* debug("MessageReceived", { message })
-            if (Option.isNone(state)) {
-              if (message._tag !== "Audition.Payload") {
-                return yield* Effect.die(undefined)
-              }
-              const { client } = message
-              if (client !== expectedKey) {
-                yield* backing.send(0, {
-                  _tag: "Audition.Failure",
-                  client,
-                  routed: expectedKey,
-                } satisfies typeof Audition.Failure.Type)
-                return yield* closeScope
-              }
-              const key = yield* encodeName(name)
-              const entry = yield* getEntry(key)
-              const currentClient = Object.assign(yield* entry.directory.register(port, attachments), {
-                disconnect: closeScope,
-              })
-              const ActorLive = Layer.succeed(actor, {
-                name,
-                clients: entry.directory.handles,
-                currentClient,
-              })
-              yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-              yield* backing.send(0, { _tag: "Audition.Success" } satisfies typeof Audition.Success.Type)
-              return yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
-            }
-            const { entry, ActorLive } = state.value
-            if (message._tag === "Audition.Payload") {
-              return yield* Effect.die(undefined)
-            }
-            if (message._tag === "Disconnect") {
-              return yield* closeScope
-            }
-            const { id, payload } = message
-            const { _tag, value } = payload as never
-            yield* (
-              handlers as Method.Handlers<
-                D["methods"],
-                Handlers[keyof Handlers] extends (p: never) => Effect.Effect<any, any, infer R> ? R : never
-              >
-            )[_tag]!(value).pipe(
-              Effect.match({
-                onSuccess: (value) =>
-                  ({
-                    _tag: "F.Success",
-                    id,
-                    success: { _tag, value } as never,
-                  }) satisfies typeof F.Success.Type,
-                onFailure: (value) =>
-                  ({
-                    _tag: "F.Failure",
-                    id,
-                    failure: { _tag, value } as never,
-                  }) satisfies typeof F.Failure.Type,
-              }),
-              Effect.andThen((v) => backing.send(0, v)),
-              span("handler", { attributes: { _tag } }),
-              Effect.scoped,
-              Effect.provide(ActorLive),
-              entry.mutex,
-            )
-          })
-        }, span("message"))
-
-        yield* forkScoped(backing.run(onMessage).pipe(Effect.andThen(closeScope)))
       }),
     ),
     Effect.tapCause(logCause),

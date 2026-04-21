@@ -357,8 +357,8 @@ export const Service =
         return close(
           yield* encodeAuditionFailure({
             _tag: "Audition.Failure",
-            client: clientId,
-            routed: requestClientId,
+            expected: clientId,
+            actual: requestClientId,
           }),
         )
       }

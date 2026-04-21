@@ -31,8 +31,8 @@ export interface Protocol<D extends ProtocolDefinition> {
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
       {
-        client: S.String
-        routed: S.String
+        expected: S.String
+        actual: S.String
       }
     >
   }
@@ -102,8 +102,8 @@ const Audition = {
   }),
   Success: S.TaggedStruct("Audition.Success", {}),
   Failure: S.TaggedStruct("Audition.Failure", {
-    client: S.String,
-    routed: S.String,
+    expected: S.String,
+    actual: S.String,
   }),
 }
 

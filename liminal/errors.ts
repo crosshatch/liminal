@@ -4,8 +4,8 @@ import type { ProtocolDefinition } from "./Protocol.ts"
 
 export class AuditionError extends S.TaggedErrorClass<AuditionError>()("AuditionError", {
   value: S.Struct({
-    client: S.String,
-    routed: S.String,
+    expected: S.String,
+    actual: S.String,
   }).pipe(S.optional),
 }) {}
 
