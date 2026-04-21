@@ -1,5 +1,13 @@
 # liminal-cloudflare
 
+## 0.17.7
+
+### Patch Changes
+
+- e5c54be: Decouple actor transport. Implement proper multi-actor instance browser registry.
+- Updated dependencies [e5c54be]
+  - liminal@0.17.7
+
 ## 0.17.6
 
 ### Patch Changes
