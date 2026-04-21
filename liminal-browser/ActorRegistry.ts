@@ -66,10 +66,7 @@ export const make = Effect.fnUntraced(function* <
   const runners = new Map<MessagePort, WorkerRunner.WorkerRunner<ActorMessage, ClientMessage>>()
 
   const transport: ActorTransport<MessagePort, AttachmentFields, D> = {
-    send: (port, event) => {
-      const backing = runners.get(port)
-      return backing ? backing.send(0, event) : Effect.void
-    },
+    send: (port, event) => runners.get(port)?.send(0, event) ?? Effect.void,
     close: () => Effect.void,
     snapshot: () => Effect.void,
   }
@@ -90,8 +87,8 @@ export const make = Effect.fnUntraced(function* <
   const outerScope = yield* Scope.Scope
 
   yield* introductions.pipe(
-    Stream.runForEach(({ name, port, attachments }) =>
-      Effect.gen(function* () {
+    Stream.runForEach(
+      Effect.fnUntraced(function* ({ name, port, attachments }) {
         yield* debug("IntroductionReceived", { name })
 
         const stateRef = yield* Ref.make<
@@ -177,7 +174,12 @@ export const make = Effect.fnUntraced(function* <
             }
             const { id, payload } = message
             const { _tag, value } = payload as never
-            yield* handlers[_tag]!(value).pipe(
+            yield* (
+              handlers as Method.Handlers<
+                D["methods"],
+                Handlers[keyof Handlers] extends (p: never) => Effect.Effect<any, any, infer R> ? R : never
+              >
+            )[_tag]!(value).pipe(
               Effect.match({
                 onSuccess: (value) =>
                   ({
@@ -202,7 +204,8 @@ export const make = Effect.fnUntraced(function* <
         }, span("message"))
 
         yield* forkScoped(backing.run(onMessage).pipe(Effect.andThen(closeScope)))
-      }).pipe(Effect.catchCause((cause) => (Cause.hasInterruptsOnly(cause) ? Effect.void : logCause(cause)))),
+      }),
     ),
+    Effect.tapCause(logCause),
   )
 }, span("make"))
