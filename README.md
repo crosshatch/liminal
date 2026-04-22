@@ -11,7 +11,11 @@
 
 ## Contributing
 
-To contribute, please read our [contributing guideline](https://github.com/crosshatch/konfik/blob/main/CONTRIBUTING.md).
+```
+git clone --recurse-submodules=konfik git@github.com:crosshatch/liminal.git
+```
+
+Please read the [contributing guide](https://github.com/crosshatch/konfik/blob/main/CONTRIBUTING.md).
 
 ## License
 
