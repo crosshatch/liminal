@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Entry } from "liminal-cloudflare"
+import { Assets, Worker } from "liminal-cloudflare/bindings"
 
 import { Database } from "./Database.ts"
 import * as GameState from "./Games.ts"
@@ -32,5 +32,5 @@ export default ApiLive.pipe(
   Effect.flatMap((v) => v),
   Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
   Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  Entry.make(Layer.empty),
+  Worker.make(Layer.empty),
 )

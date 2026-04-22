@@ -18,6 +18,10 @@
       "types": "./index.ts",
       "default": "./dist/index.js"
     },
+    "./bindings": {
+      "types": "./bindings/index.ts",
+      "default": "./dist/bindings/index.js"
+    },
     "./*": {
       "types": "./*.ts",
       "default": "./dist/*.js"

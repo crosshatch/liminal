@@ -1,13 +1,11 @@
 import { env } from "cloudflare:workers"
-import { Data, Context, Layer, Effect } from "effect"
+import { Data, Context, Layer, Effect, Schema as S, Cause, SchemaIssue, Option } from "effect"
 
 export const TypeId = "~liminal/cloudflare/Binding" as const
 
-export type BindingError = BindingNotFoundError | BindingValidationError
-
-export class BindingNotFoundError extends Data.TaggedError("BindingNotFoundError")<{}> {}
-
-export class BindingValidationError extends Data.TaggedError("BindingValidationError")<{}> {}
+export class BindingError extends Data.TaggedError("BindingError")<{
+  readonly cause: S.SchemaError | Cause.NoSuchElementError
+}> {}
 
 export interface Binding<Self, Id extends string, Binding_ extends string, A, ROut, E, RIn> extends Context.Service<
   Self,
@@ -32,8 +30,8 @@ export const Service =
   ): Binding<Self, Id, Binding_, A, ROut, E, RIn> => {
     const tag = Context.Service<Self, A>()(id)
     const layer = Effect.fromNullishOr((env as never)[binding]).pipe(
-      Effect.catchTag("NoSuchElementError", () => new BindingNotFoundError().asEffect()),
-      Effect.filterOrFail(f, () => new BindingValidationError()),
+      Effect.filterOrFail(f, (v) => new S.SchemaError(new SchemaIssue.InvalidValue(Option.some(v)))),
+      Effect.catch((cause) => new BindingError({ cause }).asEffect()),
       Effect.map((v) => Layer.mergeAll(makeLayer(v), Layer.succeed(tag, v))),
       Layer.unwrap,
     )

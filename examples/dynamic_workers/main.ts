@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Entry } from "liminal-cloudflare"
+import { Worker } from "liminal-cloudflare/bindings"
 
 import { ApiLive } from "./ApiLive.ts"
 
@@ -10,5 +10,5 @@ export default ApiLive.pipe(
   Effect.flatMap((v) => v),
   Effect.tapCause(Effect.logError),
   Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  Entry.make(Layer.empty),
+  Worker.make(Layer.empty),
 )
