@@ -1,6 +1,9 @@
 import { Layer } from "effect"
 
-import { Assets } from "./Assets.ts"
-import * as Entry from "./Entry.ts"
+import { Assets } from "./bindings/Assets.ts"
+import * as Worker from "./bindings/Worker.ts"
 
-export default Assets.forward.pipe(Entry.make(Layer.empty))
+export default Worker.make({
+  handler: Assets.forward,
+  prelude: Layer.empty,
+})

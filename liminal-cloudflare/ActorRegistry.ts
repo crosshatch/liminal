@@ -24,11 +24,8 @@ import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal/_util/schema"
 
-import * as Binding from "./Binding.ts"
+import { Binding, DurableObjectState, NativeRequest, Intrinsic } from "./bindings/index.ts"
 import { close } from "./close.ts"
-import { DurableObjectState } from "./DurableObjectState.ts"
-import * as Intrinsic from "./Intrinsic.ts"
-import { NativeRequest } from "./NativeRequest.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 

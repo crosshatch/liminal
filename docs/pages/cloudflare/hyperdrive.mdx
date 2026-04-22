@@ -9,7 +9,7 @@ string as a redacted value.
 
 ```ts
 import { Effect, Redacted } from "effect"
-import { Hyperdrive } from "liminal-cloudflare"
+import { Hyperdrive } from "liminal-cloudflare/bindings"
 
 export class AppHyperdrive extends Hyperdrive.Service<AppHyperdrive>()("Database", {
   binding: "HYPERDRIVE",

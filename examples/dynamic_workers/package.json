@@ -1,0 +1,16 @@
+{
+  "name": "@liminal-examples/dynamic-workers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@effect/sql-d1": "catalog:",
+    "effect": "catalog:",
+    "liminal": "workspace:*",
+    "liminal-cloudflare": "workspace:*",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

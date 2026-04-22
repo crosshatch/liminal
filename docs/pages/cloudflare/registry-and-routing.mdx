@@ -5,7 +5,7 @@
 This guide covers:
 
 - `ActorRegistry.Service(...)`
-- `Entry.make(...)`
+- `Worker.make(...)`
 
 ## Define a registry with `ActorRegistry.Service(...)`
 
@@ -140,7 +140,7 @@ On the Cloudflare side, `upgrade(...)`:
 That validation step is why the client and actor definitions must line up. If the wrong client tries to connect, the
 session fails with an audition error rather than silently misbehaving.
 
-## Build the Worker `fetch` entrypoint with `Entry.make(...)`
+## Build the Worker `fetch` entrypoint with `Worker.make(...)`
 
 The Worker entrypoint usually exports:
 
@@ -150,7 +150,7 @@ The Worker entrypoint usually exports:
 ```ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Entry } from "liminal-cloudflare"
+import { Worker } from "liminal-cloudflare/bindings"
 
 import { ApiLive } from "./ApiLive.ts"
 import { ChatRegistry } from "./chat/ChatRegistry.ts"
@@ -159,21 +159,23 @@ import { PreludeLive } from "./PreludeLive.ts"
 
 export { ChatRegistry, LobbyRegistry }
 
-export default ApiLive.pipe(
-  Layer.provide(HttpServer.layerServices),
-  HttpRouter.toHttpEffect,
-  Effect.flatMap((handler) => handler),
-  Effect.provide(Layer.mergeAll(ChatRegistry.layer, LobbyRegistry.layer, PreludeLive)),
-  Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  Entry.make(Layer.empty),
-)
+export default Worker.make({
+  handler: ApiLive.pipe(
+    Layer.provide(HttpServer.layerServices),
+    HttpRouter.toHttpEffect,
+    Effect.flatMap((handler) => handler),
+    Effect.provide(Layer.mergeAll(ChatRegistry.layer, LobbyRegistry.layer, PreludeLive)),
+    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
+  ),
+  prelude: Layer.empty,
+})
 ```
 
-`Entry.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
+`Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
 Durable Object runtime for actor messages.
 
 Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `preludeLayer`
-and providing it here, or by passing it directly to `Entry.make(...)`.
+and providing it here, or by passing it to `Worker.make(...)` as its `prelude`.
 
 ## Wrangler alignment matters
 
