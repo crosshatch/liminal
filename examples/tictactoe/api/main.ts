@@ -31,13 +31,7 @@ export default Worker.make({
     Layer.provide(HttpServer.layerServices),
     HttpRouter.toHttpEffect,
     Effect.flatMap((v) => v),
-    Effect.provide(
-      Layer.mergeAll(
-        KvLive,
-        TicTacToeRegistry.layer({ binding: "TICTACTOE_REGISTRY" }),
-        Assets.layer({ binding: "ASSETS" }),
-      ),
-    ),
+    Effect.provide(Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE_REGISTRY"), Assets.layer("ASSETS"))),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
   prelude: Layer.empty,

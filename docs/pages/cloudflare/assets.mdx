@@ -4,10 +4,20 @@
 
 It gives you two things:
 
-- `Assets.layer` to validate and provide the binding as an Effect service
+- `Assets.layer(binding)` to validate and provide the binding as an Effect service
 - `Assets.forward` to proxy the current `NativeRequest` to the asset binding
 
-> NOTE: the binding name is fixed to `ASSETS`
+## Provide the Assets binding
+
+The Cloudflare env binding name is supplied when you build the layer:
+
+```ts
+import { Assets } from "liminal-cloudflare/bindings"
+
+const AssetsLive = Assets.layer("ASSETS")
+```
+
+The convention is to use `ASSETS` as the binding name, but anything that matches your Wrangler configuration works.
 
 ## Use `Assets.forward` in a catch-all route
 
@@ -37,16 +47,8 @@ export const ApiLive = Layer.mergeAll(
 )
 ```
 
-## `Assets` is intrinsic
-
-Unlike `Hyperdrive`, `Kv` and various other bindings, `Assets` is intrinsic. That means it is automatically available
-inside the runtimes built by:
-
-- `Worker.make(...)`
-- `ActorRegistry.Service(...)`
-
-So if you are using normal `liminal-cloudflare` entrypoints, you do not need to provide `Assets.layer` manually just to
-call `Assets.forward`; `Assets` is part of Liminal's intrinsic Cloudflare runtime.
+For either pattern to run, `Assets.layer("ASSETS")` needs to be included in the Worker runtime alongside
+the rest of your bindings.
 
 ## `Assets.forward` only makes sense in HTTP request handling
 

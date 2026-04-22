@@ -21,7 +21,6 @@ import * as handlers from "./handlers/handlers.ts"
 import { onConnect } from "./lifecycle/onConnect.ts"
 
 export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatRegistry", {
-  binding: "CHAT_ROOMS",
   actor: ChatActor,
   prelude: PreludeLive,
   runLayer: CurrentUserId.layerChat,
@@ -32,13 +31,15 @@ export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatReg
 
 ## What each registry field means
 
-- `binding`: the Durable Object binding name from Wrangler
 - `actor`: the Liminal actor definition
 - `prelude`: long-lived runtime dependencies for the Durable Object instance
 - `runLayer`: short-lived, request-local dependencies derived from actor context
 - `onConnect`: logic that runs for newly upgraded sockets
 - `handlers`: the method implementation table
 - `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
+
+The Durable Object binding name is not part of the definition — it is supplied later when you call
+`ChatRegistry.layer("CHAT_ROOMS")` to provide the registry to your Worker runtime.
 
 In practice, `runLayer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name and
 current client attachments.
@@ -164,12 +165,22 @@ export default Worker.make({
     Layer.provide(HttpServer.layerServices),
     HttpRouter.toHttpEffect,
     Effect.flatMap((handler) => handler),
-    Effect.provide(Layer.mergeAll(ChatRegistry.layer, LobbyRegistry.layer, PreludeLive)),
+    Effect.provide(
+      Layer.mergeAll(
+        ChatRegistry.layer("CHAT_ROOMS"),
+        LobbyRegistry.layer("LOBBY"),
+        PreludeLive,
+      ),
+    ),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
   prelude: Layer.empty,
 })
 ```
+
+Each registry's `.layer(binding)` is what ties it to a specific Durable Object binding in Wrangler. The binding name
+lives at the layer call site rather than in the registry definition, which makes it easy to mount the same registry
+under different bindings.
 
 `Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
 Durable Object runtime for actor messages.
@@ -202,7 +213,7 @@ The registry binding, named export, and Wrangler config must line up.
 
 The important correspondence is:
 
-- `binding: "CHAT_ROOMS"` in `ActorRegistry`
+- `ChatRegistry.layer("CHAT_ROOMS")` in the Worker runtime
 - `name: "CHAT_ROOMS"` in Wrangler
 - `export { ChatRegistry }` in the Worker entrypoint
 - `class_name: "ChatRegistry"` in Wrangler

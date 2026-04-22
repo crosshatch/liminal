@@ -16,9 +16,7 @@ export interface Binding<Self, Id extends string, A, ROut, E, RIn> extends Conte
 
   readonly [TypeId]: typeof TypeId
 
-  readonly layer: (config: {
-    binding: string
-  }) => Layer.Layer<Self | ROut, BindingMissingError | BindingInvalidError | E, RIn>
+  readonly layer: (binding: string) => Layer.Layer<Self | ROut, BindingMissingError | BindingInvalidError | E, RIn>
 }
 
 export const Binding =
@@ -29,7 +27,7 @@ export const Binding =
     makeLayer: (resource: A) => Layer.Layer<ROut, E, RIn> = () => Layer.empty as never,
   ): Binding<Self, Id, A, ROut, E, RIn> => {
     const tag = Context.Service<Self, A>()(id)
-    const layer = ({ binding }: { binding: string }) =>
+    const layer = (binding: string) =>
       Effect.gen(function* () {
         const v = (env as never)[binding]
         if (!v) {
