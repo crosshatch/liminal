@@ -93,12 +93,12 @@ import { TicTacToeActor } from "./TicTacToeActor.ts"
 export const onConnect = Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
   const player = clients.size === 1 ? "X" : "O"
-  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
+  yield* TicTacToeActor.all.send("GameStarted", { player }).pipe(Effect.orDie)
 })
 ```
 
-Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas —
-see [Accumulator](../accumulator.mdx).
+Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas — see
+[Accumulator](../accumulator.mdx).
 
 ## Implement method handlers
 
@@ -126,7 +126,7 @@ export const handleMove = TicTacToeActor.handler(
       return yield* new SlotTakenError()
     }
 
-    yield* TicTacToeActor.sendAll("MoveMade", { player, position })
+    yield* TicTacToeActor.all.send("MoveMade", { player, position })
 
     board[position[0]][position[1]] = player
     yield* setBoard({ board, turn: turn === "X" ? "O" : "X" })
@@ -139,41 +139,42 @@ The main server-side APIs used here are:
 - `yield* TicTacToeActor` for actor context like `name`, `clients`, and `currentClient`
 - `yield* client.attachments` to read per-socket state
 - `yield* client.send(...)` for one-client events
-- `yield* TicTacToeActor.sendAll(...)` for broadcasts
-- `yield* client.disconnect` or `yield* TicTacToeActor.disconnectAll` for disconnects
+- `yield* TicTacToeActor.all.send(...)` for broadcasts
+- `yield* TicTacToeActor.others.send(...)` to broadcast to everyone except `currentClient`
+- `yield* client.disconnect` or `yield* TicTacToeActor.all.disconnect` for disconnects
 
 ## Back the actor with durable state
 
 Actors are not a database. For anything that must survive hibernation or eviction, persist state externally. The
-tic-tac-toe example uses Cloudflare D1 through `liminal-cloudflare`'s `D1.Service(...)` wrapper:
+tic-tac-toe example persists its board through Effect's `KeyValueStore`, backed by an R2 bucket via
+`liminal-cloudflare`'s `KeyValueStore.layerR2`:
 
 ```ts
-// Database.ts
-import { D1 } from "liminal-cloudflare/bindings"
+// KvLive.ts
+import { Layer } from "effect"
+import { R2 } from "liminal-cloudflare/bindings"
+import { KeyValueStore } from "liminal-cloudflare/platform"
 
-export class Database extends D1.Service<Database>()("Database", {
-  binding: "TIC_TAC_TOE_D1",
-}) {}
+export const KvLive = KeyValueStore.layerR2().pipe(Layer.provide(R2.layer("BUCKET")))
 ```
 
-Wrap your schema access in plain Effects that depend on `Database`:
+Wrap your storage access in plain Effects that depend on `KeyValueStore`:
 
 ```ts
 // Games.ts
 import { Effect } from "effect"
-
-import { Database } from "./Database.ts"
+import { KeyValueStore } from "effect/unstable/persistence"
 
 export const getBoard = (gameId: string) =>
   Effect.gen(function* () {
-    const db = yield* Database
-    // read + decode rows from D1
+    const kv = yield* KeyValueStore.KeyValueStore
+    // read + decode the stored board
     // ...
   })
 
 export const setBoard = (config: { readonly turn: "X" | "O"; readonly board: Board }) =>
   Effect.gen(function* () {
-    const db = yield* Database
+    const kv = yield* KeyValueStore.KeyValueStore
     // write the updated board
     // ...
   })
@@ -188,29 +189,29 @@ export const setBoard = (config: { readonly turn: "X" | "O"; readonly board: Boa
 import { Effect, Layer } from "effect"
 import { ActorRegistry } from "liminal-cloudflare"
 
-import { Database } from "./Database.ts"
 import { handleMove } from "./handleMove.ts"
+import { KvLive } from "./KvLive.ts"
 import { onConnect } from "./onConnect.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("examples/TicTacToeRegistry", {
   actor: TicTacToeActor,
-  binding: "TicTacToe",
   handlers: { Move: handleMove },
   onConnect,
-  preludeLayer: Database.layer,
+  prelude: KvLive,
   runLayer: Layer.empty,
 }) {}
 ```
 
 The shape maps cleanly onto runtime concerns:
 
-- `binding` is the Durable Object binding name from Wrangler.
 - `actor` is the Liminal actor definition.
-- `preludeLayer` is long-lived infrastructure (databases, config, asset bindings).
+- `prelude` is long-lived infrastructure (databases, config, asset bindings).
 - `runLayer` is short-lived, request-local context derived from actor context.
 - `handlers` is the method implementation table.
 - `onConnect` runs for every newly upgraded socket.
+
+The Durable Object binding name is supplied later, when the registry's `.layer(...)` is applied.
 
 ## Upgrade from an HTTP route
 
@@ -223,8 +224,8 @@ import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http
 import { Assets, Worker } from "liminal-cloudflare/bindings"
 
 import { TicTacToeRegistry } from "./ActorRegistry.ts"
-import { Database } from "./Database.ts"
 import * as GameState from "./Games.ts"
+import { KvLive } from "./KvLive.ts"
 
 export { TicTacToeRegistry }
 
@@ -251,7 +252,13 @@ export default Worker.make({
     Layer.provide(HttpServer.layerServices),
     HttpRouter.toHttpEffect,
     Effect.flatMap((v) => v),
-    Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
+    Effect.provide(
+      Layer.mergeAll(
+        KvLive,
+        TicTacToeRegistry.layer("TICTACTOE_REGISTRY"),
+        Assets.layer("ASSETS"),
+      ),
+    ),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
   prelude: Layer.empty,
@@ -263,7 +270,10 @@ A few things worth pointing out:
 - `HttpRouter.add(method, path, effect)` mounts a single route.
 - `HttpRouter.cors(...)` wires up CORS for every route in the router.
 - `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
-- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class re-export, it is everything your Worker entrypoint needs.
+- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class
+  re-export, it is everything your Worker entrypoint needs.
+- Each binding is supplied as a layer by calling `.layer("ENV_NAME")` with the matching Wrangler binding name. For the
+  registry, `TicTacToeRegistry.layer("TICTACTOE_REGISTRY")` points at the Durable Object binding.
 - Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client
@@ -309,5 +319,5 @@ Effect.gen(function* () {
 Liminal preserves actor identity and connected sockets across hibernation-friendly Durable Object lifecycles, but it
 does not make your whole domain model durable.
 
-Keep the real game state in storage such as D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments
+Keep the real game state in storage such as R2, D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments
 only for per-client session state.

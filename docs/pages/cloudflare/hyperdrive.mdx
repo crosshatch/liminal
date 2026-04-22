@@ -1,39 +1,35 @@
 # Cloudflare Hyperdrive
 
-`Hyperdrive.Service(...)` is the `liminal-cloudflare` wrapper around a Cloudflare Hyperdrive binding.
+`Hyperdrive` is the `liminal-cloudflare` wrapper around a Cloudflare Hyperdrive binding.
 
 It is intentionally small. Its main job is to expose the binding as a typed Effect service and surface the connection
 string as a redacted value.
 
-## Define a Hyperdrive service
+## Provide the Hyperdrive binding
+
+`Hyperdrive` is a single class that you import and provide a layer for using the Cloudflare env binding name:
 
 ```ts
-import { Effect, Redacted } from "effect"
 import { Hyperdrive } from "liminal-cloudflare/bindings"
 
-export class AppHyperdrive extends Hyperdrive.Service<AppHyperdrive>()("Database", {
-  binding: "HYPERDRIVE",
-}) {}
+const HyperdriveLive = Hyperdrive.layer("HYPERDRIVE")
 ```
-
-The only required definition field is the Cloudflare binding name.
 
 ## What the wrapper gives you
 
-From `Hyperdrive.ts`, the wrapper exposes:
-
-- `.layer` from the shared binding helper
-- `.binding` with the Cloudflare env binding name
-- `.connectionString` as `Effect<Redacted<string>, never, Self>`
+- `.layer(binding)` — build a layer from the Cloudflare env binding name
+- `.connectionString` as `Effect<Redacted<string>, never, Hyperdrive>`
 
 ```ts
-const connectionString = AppHyperdrive.connectionString
+import { Hyperdrive } from "liminal-cloudflare/bindings"
+
+const connectionString = Hyperdrive.connectionString
 ```
 
 Internally, that is just:
 
 ```ts
-tag.asEffect().pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
+Hyperdrive.asEffect().pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
 ```
 
 So the wrapper is a thin typed shell over the raw Hyperdrive binding.
@@ -51,27 +47,28 @@ Use Hyperdrive in production, but swap to a local Postgres URL in development:
 
 ```ts
 import { Effect, Redacted } from "effect"
+import { Hyperdrive } from "liminal-cloudflare/bindings"
 
 import { AppConfig } from "./AppConfig.ts"
 
 export const connectionString = Effect.flatMap(AppConfig, ({ dev }) =>
-  dev ? Effect.succeed(Redacted.make("postgres://dev:dev@localhost:5432/myapp")) : AppHyperdrive.connectionString,
+  dev ? Effect.succeed(Redacted.make("postgres://dev:dev@localhost:5432/myapp")) : Hyperdrive.connectionString,
 )
 ```
 
 This is a good default pattern if you want the same application wiring in local dev and Cloudflare deploys.
 
-## Provide the binding with `.layer`
+## Provide the binding with `.layer(binding)`
 
 ```ts
 export const PreludeLive = Layer.mergeAll(
-  Db.layer.pipe(Layer.provideMerge(Layer.mergeAll(AppHyperdrive.layer, AppConfig.layer))),
+  Db.layer.pipe(Layer.provideMerge(Layer.mergeAll(Hyperdrive.layer("HYPERDRIVE"), AppConfig.layer))),
 )
 ```
 
 ## What this wrapper does not do
 
-`Hyperdrive.Service(...)` does not:
+`Hyperdrive` does not:
 
 - Create a database client.
 - Manage pooling for you.
@@ -95,4 +92,4 @@ Your Wrangler config must declare the Hyperdrive binding:
 }
 ```
 
-The `binding` field here must match the `binding` value in your `Hyperdrive.Service(...)` definition.
+The `binding` field here must match the name you pass to `Hyperdrive.layer(binding)`.

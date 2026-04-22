@@ -10,15 +10,16 @@ export class SlotTakenError extends S.TaggedErrorClass<SlotTakenError>()("SlotTa
 
 export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
   events: {
-    GameEnded: {
-      winner: S.optional(Player),
-    },
+    AwaitingPartner: {},
     GameStarted: {
       player: Player,
     },
     MoveMade: {
       player: Player,
       position: Coordinates,
+    },
+    GameEnded: {
+      winner: S.optional(Player),
     },
   },
   methods: {

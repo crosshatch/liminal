@@ -1,21 +1,18 @@
 import { Effect, Schema as S, Option } from "effect"
 
-import * as Binding from "./Binding.ts"
+import { Binding } from "./Binding.ts"
 
 const TypeId = "~liminal/cloudflare/Kv" as const
 
-export interface KvDefinition<Binding_ extends string, KeyA, ValueA, ValueI> {
-  readonly binding: Binding_
-
+export interface KvDefinition<KeyA, ValueA, ValueI> {
   readonly key: S.Codec<KeyA, string>
 
   readonly value: S.Codec<ValueA, ValueI>
 }
 
-export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, ValueA, ValueI> extends Binding.Binding<
+export interface Kv<Self, Id extends string, KeyA, ValueA, ValueI> extends Binding<
   Self,
   Id,
-  Binding_,
   KVNamespace,
   never,
   never,
@@ -23,7 +20,7 @@ export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, Valu
 > {
   readonly [TypeId]: typeof TypeId
 
-  readonly definition: KvDefinition<Binding_, KeyA, ValueA, ValueI>
+  readonly definition: KvDefinition<KeyA, ValueA, ValueI>
 
   readonly put: (key: KeyA, value: ValueA) => Effect.Effect<void, S.SchemaError, Self>
 
@@ -32,17 +29,13 @@ export interface Kv<Self, Id extends string, Binding_ extends string, KeyA, Valu
   readonly remove: (key: KeyA) => Effect.Effect<void, S.SchemaError, Self>
 }
 
-export const Service =
+export const Kv =
   <Self>() =>
-  <Id extends string, Binding_ extends string, KeyA, ValueA, ValueI>(
+  <Id extends string, KeyA, ValueA, ValueI>(
     id: Id,
-    definition: KvDefinition<Binding_, KeyA, ValueA, ValueI>,
-  ): Kv<Self, Id, Binding_, KeyA, ValueA, ValueI> => {
-    const tag = Binding.Service<Self>()(
-      id,
-      definition.binding,
-      (v): v is KVNamespace => "put" in v && "get" in v && "delete" in v,
-    )
+    definition: KvDefinition<KeyA, ValueA, ValueI>,
+  ): Kv<Self, Id, KeyA, ValueA, ValueI> => {
+    const tag = Binding<Self>()(id, (v): v is KVNamespace => "put" in v && "get" in v && "delete" in v)
 
     const { key, value } = definition
     const encodeKey = S.encodeEffect(key)

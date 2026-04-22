@@ -22,6 +22,10 @@
       "types": "./bindings/index.ts",
       "default": "./dist/bindings/index.js"
     },
+    "./platform": {
+      "types": "./platform/index.ts",
+      "default": "./dist/platform/index.js"
+    },
     "./*": {
       "types": "./*.ts",
       "default": "./dist/*.js"

@@ -15,7 +15,7 @@ import {
   Encoding,
   Option,
 } from "effect"
-import { HttpServerResponse } from "effect/unstable/http"
+import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
 import { type Actor, type Method, ClientDirectory, type ActorTransport } from "liminal"
 import { SecWebSocketProtocol } from "liminal/_constants"
 import { boundLayer } from "liminal/_util/boundLayer"
@@ -24,7 +24,7 @@ import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal/_util/schema"
 
-import { Binding, DurableObjectState, NativeRequest, Intrinsic } from "./bindings/index.ts"
+import { Binding, DurableObjectState, NativeRequest } from "./bindings/index.ts"
 import { close } from "./close.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
@@ -32,7 +32,6 @@ const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
 export interface ActorRegistryDefinition<
-  Binding_ extends string,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -47,11 +46,9 @@ export interface ActorRegistryDefinition<
 > {
   readonly ""?: this["actor"]["definition"]["client"]["protocol"]
 
-  readonly binding: Binding_
-
   readonly actor: Actor.Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
 
-  readonly preludeLayer: Layer.Layer<
+  readonly prelude: Layer.Layer<
     | PreludeROut
     | NonNullable<this[""]>["F"]["Payload"]["DecodingServices"]
     | NonNullable<this[""]>["F"]["Success"]["EncodingServices"]
@@ -68,10 +65,14 @@ export interface ActorRegistryDefinition<
 
   readonly handlers: Method.Handlers<
     D["methods"],
-    ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope
+    ActorSelf | RunROut | HttpClient.HttpClient | PreludeROut | Scope.Scope
   >
 
-  readonly onConnect: Effect.Effect<void, never, ActorSelf | RunROut | Intrinsic.Intrinsic | PreludeROut | Scope.Scope>
+  readonly onConnect: Effect.Effect<
+    void,
+    never,
+    ActorSelf | RunROut | HttpClient.HttpClient | PreludeROut | Scope.Scope
+  >
 
   readonly hibernation?: Duration.Input | undefined
 }
@@ -79,7 +80,6 @@ export interface ActorRegistryDefinition<
 export interface ActorRegistry<
   RegistrySelf,
   RegistryId extends string,
-  Binding_ extends string,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -91,13 +91,12 @@ export interface ActorRegistry<
   PreludeE,
   RunROut,
   RunE,
-> extends Binding.Binding<RegistrySelf, RegistryId, Binding_, DurableObjectNamespace, never, never, never> {
+> extends Binding<RegistrySelf, RegistryId, DurableObjectNamespace, never, never, never> {
   new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
   readonly [TypeId]: typeof TypeId
 
   readonly definition: ActorRegistryDefinition<
-    Binding_,
     ActorSelf,
     ActorId,
     Name,
@@ -121,7 +120,6 @@ export const Service =
   <RegistrySelf>() =>
   <
     RegistryId extends string,
-    Binding_ extends string,
     ActorSelf,
     ActorId extends string,
     Name extends TopFromString,
@@ -136,7 +134,6 @@ export const Service =
   >(
     id: RegistryId,
     definition: ActorRegistryDefinition<
-      Binding_,
       ActorSelf,
       ActorId,
       Name,
@@ -152,7 +149,6 @@ export const Service =
   ): ActorRegistry<
     RegistrySelf,
     RegistryId,
-    Binding_,
     ActorSelf,
     ActorId,
     Name,
@@ -165,14 +161,11 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, preludeLayer, runLayer, handlers, binding, onConnect } = definition
+    const { hibernation, actor, prelude, runLayer, handlers, onConnect } = definition
     const {
       definition: {
         name: Name,
-        client: {
-          key: clientId,
-          protocol: { Audition, Event, F, Client: ClientM },
-        },
+        client: { key: clientId, protocol: P },
         attachments: AttachmentFields,
       },
     } = actor
@@ -186,13 +179,13 @@ export const Service =
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const decodeAttachmentsString = decodeJsonString(Attachments)
 
-    const encodeAuditionSuccess = encodeJsonString(Audition.Success)
-    const encodeAuditionFailure = encodeJsonString(Audition.Failure)
-    const decodeClientM = decodeJsonString(ClientM)
-    const encodeFSuccess = encodeJsonString(F.Success)
-    const encodeFFailure = encodeJsonString(F.Failure)
+    const encodeAuditionSuccess = encodeJsonString(P.Audition.Success)
+    const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
+    const decodeClientM = decodeJsonString(P.Client)
+    const encodeFSuccess = encodeJsonString(P.F.Success)
+    const encodeFFailure = encodeJsonString(P.F.Failure)
 
-    const encodeEvent = encodeJsonString(Event)
+    const encodeEvent = encodeJsonString(P.Event)
 
     const transport: ActorTransport<WebSocket, AttachmentFields, D> = {
       send: (socket, event) => encodeEvent(event).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
@@ -201,11 +194,7 @@ export const Service =
         encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
     }
 
-    class tag extends Binding.Service<RegistrySelf>()(
-      id,
-      binding,
-      (value): value is DurableObjectNamespace => "getByName" in value,
-    ) {
+    class tag extends Binding<RegistrySelf>()(id, (value): value is DurableObjectNamespace => "getByName" in value) {
       readonly runtime
       readonly directory = ClientDirectory.make(actor, transport)
 
@@ -221,8 +210,8 @@ export const Service =
         }
 
         const baseLayer = Layer.mergeAll(
-          preludeLayer.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
-          Intrinsic.layer,
+          prelude.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
+          FetchHttpClient.layer,
           Layer.succeed(DurableObjectState, state),
           Mutex.layer,
         )
