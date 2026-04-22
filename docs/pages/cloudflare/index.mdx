@@ -149,7 +149,7 @@ tic-tac-toe example uses Cloudflare D1 through `liminal-cloudflare`'s `D1.Servic
 
 ```ts
 // Database.ts
-import { D1 } from "liminal-cloudflare"
+import { D1 } from "liminal-cloudflare/bindings"
 
 export class Database extends D1.Service<Database>()("Database", {
   binding: "TIC_TAC_TOE_D1",
@@ -220,7 +220,7 @@ An HTTP route picks the actor name and initial attachments, then calls `upgrade(
 // main.ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Entry } from "liminal-cloudflare"
+import { Assets, Worker } from "liminal-cloudflare/bindings"
 
 import { TicTacToeRegistry } from "./ActorRegistry.ts"
 import { Database } from "./Database.ts"
@@ -246,14 +246,16 @@ const ApiLive = Layer.mergeAll(
   HttpRouter.add("*", "/*", Assets.forward),
 )
 
-export default ApiLive.pipe(
-  Layer.provide(HttpServer.layerServices),
-  HttpRouter.toHttpEffect,
-  Effect.flatMap((v) => v),
-  Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
-  Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  Entry.make(Layer.empty),
-)
+export default Worker.make({
+  handler: ApiLive.pipe(
+    Layer.provide(HttpServer.layerServices),
+    HttpRouter.toHttpEffect,
+    Effect.flatMap((v) => v),
+    Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
+    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
+  ),
+  layer: Layer.empty,
+})
 ```
 
 A few things worth pointing out:
@@ -261,7 +263,7 @@ A few things worth pointing out:
 - `HttpRouter.add(method, path, effect)` mounts a single route.
 - `HttpRouter.cors(...)` wires up CORS for every route in the router.
 - `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
-- `Entry.make(Layer.empty)` produces the Worker `fetch` export plus the Durable Object class re-export.
+- `Worker.make({ handler, layer })` produces the Worker `fetch` export; combined with the Durable Object class re-export, it is everything your Worker entrypoint needs.
 - Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client

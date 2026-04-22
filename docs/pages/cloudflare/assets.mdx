@@ -16,7 +16,7 @@ A typical pattern forwards unmatched requests to static assets:
 ```ts
 import { Layer } from "effect"
 import { HttpRouter } from "effect/unstable/http"
-import { Assets } from "liminal-cloudflare"
+import { Assets } from "liminal-cloudflare/bindings"
 
 export const ApiLive = Layer.mergeAll(HttpRouter.add("*", "/*", Assets.forward))
 ```
@@ -26,7 +26,7 @@ You can also add response headers before forwarding:
 ```ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
-import { Assets } from "liminal-cloudflare"
+import { Assets } from "liminal-cloudflare/bindings"
 
 export const ApiLive = Layer.mergeAll(
   HttpRouter.add(
@@ -42,7 +42,7 @@ export const ApiLive = Layer.mergeAll(
 Unlike `Hyperdrive`, `Kv` and various other bindings, `Assets` is intrinsic. That means it is automatically available
 inside the runtimes built by:
 
-- `Entry.make(...)`
+- `Worker.make(...)`
 - `ActorRegistry.Service(...)`
 
 So if you are using normal `liminal-cloudflare` entrypoints, you do not need to provide `Assets.layer` manually just to
