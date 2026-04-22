@@ -32,13 +32,13 @@ export const handleMove = TicTacToeActor.handler(
     if (board[position[0]][position[1]] !== undefined) {
       return yield* new SlotTakenError()
     }
-    yield* TicTacToeActor.sendAll("MoveMade", { player, position })
+    yield* TicTacToeActor.all.send("MoveMade", { player, position })
     if (LINES.some((line) => line.every(([r, c]) => board[r][c] === player))) {
-      yield* TicTacToeActor.sendAll("GameEnded", {
+      yield* TicTacToeActor.all.send("GameEnded", {
         winner: player,
       })
     } else if (board.every((row) => row.every((player) => player !== undefined))) {
-      yield* TicTacToeActor.sendAll("GameEnded", {})
+      yield* TicTacToeActor.all.send("GameEnded", {})
     } else {
       board[position[0]][position[1]] = player
       yield* setBoard({

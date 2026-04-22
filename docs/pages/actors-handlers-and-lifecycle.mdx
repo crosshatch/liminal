@@ -73,7 +73,7 @@ import { TicTacToeActor } from "./TicTacToeActor.ts"
 export const onConnect = Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
   const player = clients.size === 1 ? "X" : "O"
-  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
+  yield* TicTacToeActor.all.send("GameStarted", { player }).pipe(Effect.orDie)
 })
 ```
 
@@ -111,7 +111,7 @@ export const handleMove = TicTacToeActor.handler(
       return yield* new SlotTakenError()
     }
 
-    yield* TicTacToeActor.sendAll("MoveMade", { player, position })
+    yield* TicTacToeActor.all.send("MoveMade", { player, position })
 
     board[position[0]][position[1]] = player
     yield* setBoard({ board, turn: turn === "X" ? "O" : "X" })
@@ -133,8 +133,8 @@ Client handles support the core per-socket operations:
 
 Actors add the whole-actor operations:
 
-- `yield* TicTacToeActor.sendAll(...)` — broadcast to every connected client
-- `yield* TicTacToeActor.disconnectAll` — disconnect every connected client
+- `yield* TicTacToeActor.all.send(...)` — broadcast to every connected client
+- `yield* TicTacToeActor.all.disconnect` — disconnect every connected client
 
 Broadcast example:
 
@@ -191,5 +191,5 @@ Hyperdrive, and so on).
 Many handlers want convenient access to values derived from actor context.
 
 Use `runLayer` (on the Cloudflare `ActorRegistry`) to derive services like `CurrentUserId` or `Authorization` from the
-actor name and current client attachments. See
-[Cloudflare Registry and Routing](./cloudflare/registry-and-routing.mdx) for the full pattern.
+actor name and current client attachments. See [Cloudflare Registry and Routing](./cloudflare/registry-and-routing.mdx)
+for the full pattern.

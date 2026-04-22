@@ -66,7 +66,7 @@ export const make = <
   const register = Effect.fnUntraced(function* (raw: Raw, attachments: S.Struct<AttachmentFields>["Type"]) {
     yield* snapshot(raw, attachments)
     const attachmentsRef = yield* Ref.make(attachments)
-    const handle: Handle = ClientHandle.make({
+    const handle: Handle = {
       attachments: Ref.get(attachmentsRef),
       save: Effect.fnUntraced(function* (attachments) {
         yield* Ref.set(attachmentsRef, attachments)
@@ -85,7 +85,7 @@ export const make = <
           }),
         ),
       ),
-    })
+    }
     raws.set(raw, handle)
     handles.add(handle)
     return handle

@@ -93,7 +93,7 @@ import { TicTacToeActor } from "./TicTacToeActor.ts"
 export const onConnect = Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
   const player = clients.size === 1 ? "X" : "O"
-  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
+  yield* TicTacToeActor.all.send("GameStarted", { player }).pipe(Effect.orDie)
 })
 ```
 

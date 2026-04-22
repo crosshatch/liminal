@@ -11,7 +11,7 @@ const onConnect = Effect.gen(function* () {
     yield* currentClient.send("GameInitialized", {})
   } else {
     for (const client of clients) {
-      yield* TicTacToeActor.sendAll("GameStarted", {
+      yield* TicTacToeActor.all.send("GameStarted", {
         player: client === currentClient ? "O" : "X",
       })
     }

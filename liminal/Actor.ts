@@ -2,8 +2,7 @@ import { Context, Schema as S, Effect } from "effect"
 
 import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
-import type * as ClientHandle from "./ClientHandle.ts"
-import type { Send } from "./Send.ts"
+import type { ClientHandle, Sender } from "./ClientHandle.ts"
 
 import * as Diagnostic from "./_util/Diagnostic.ts"
 import * as Method from "./Method.ts"
@@ -21,9 +20,9 @@ export interface Service<
 > {
   readonly name: Name["Type"]
 
-  readonly currentClient: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
+  readonly currentClient: ClientHandle<ActorSelf, AttachmentFields, D>
 
-  readonly clients: ReadonlySet<ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>>
+  readonly clients: ReadonlySet<ClientHandle<ActorSelf, AttachmentFields, D>>
 }
 
 export interface ActorDefinition<
@@ -55,9 +54,9 @@ export interface Actor<
 
   readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly sendAll: Send<ActorSelf, D>
+  readonly all: Sender<ActorSelf, D>
 
-  readonly disconnectAll: Effect.Effect<void, never, ActorSelf>
+  readonly others: Sender<ActorSelf, D>
 
   readonly handler: <K extends keyof D["methods"], R>(
     tag: K,
@@ -80,18 +79,34 @@ export const Service =
   ): Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D> => {
     const tag = Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>>()(id)
 
-    const sendAll: Send<ActorSelf, D> = (key, payload) =>
-      tag.asEffect().pipe(
-        Effect.flatMap(({ clients }) =>
-          Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
+    const all: Sender<ActorSelf, D> = {
+      send: (key, payload) =>
+        tag.asEffect().pipe(
+          Effect.flatMap(({ clients }) =>
+            Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
+          ),
+          span("all.send"),
         ),
-        span("sendAll"),
-      )
+      disconnect: tag.asEffect().pipe(
+        Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
+        span("all.disconnect"),
+      ),
+    }
 
-    const disconnectAll = tag.asEffect().pipe(
-      Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
-      span("disconnectAll"),
-    )
+    const others: Sender<ActorSelf, D> = {
+      send: Effect.fnUntraced(function* (key, payload) {
+        const { clients, currentClient } = yield* tag
+        yield* Effect.forEach(
+          clients,
+          (client) => (client === currentClient ? Effect.void : client.send(key, payload)),
+          { concurrency: "unbounded" },
+        )
+      }, span("others.send")),
+      disconnect: Effect.gen(function* () {
+        const { clients, currentClient } = yield* tag
+        yield* Effect.forEach(clients, (client) => (client === currentClient ? Effect.void : client.disconnect))
+      }).pipe(span("others.disconnect")),
+    }
 
     const handler = <K extends keyof D["methods"], R>(
       _tag: K,
@@ -101,8 +116,8 @@ export const Service =
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
-      sendAll,
-      disconnectAll,
+      all,
+      others,
       handler,
     })
   }
