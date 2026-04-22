@@ -6,7 +6,6 @@
   "dependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
-    "liminal-cloudflare": "workspace:*",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",

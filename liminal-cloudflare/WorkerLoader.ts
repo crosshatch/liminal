@@ -1,4 +1,3 @@
-import { createWorker } from "@cloudflare/worker-bundler"
 import { absurd, Effect } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 

@@ -10,5 +10,5 @@ export default ApiLive.pipe(
   Effect.flatMap((v) => v),
   Effect.tapCause(Effect.logError),
   Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  Entry.make(ApiLive),
+  Entry.make(Layer.empty),
 )
