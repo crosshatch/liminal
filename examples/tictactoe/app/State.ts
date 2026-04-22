@@ -13,7 +13,7 @@ export class GameState extends Accumulator.Service<
 
 const reducer = GameState.reducer<Item>()
 
-const GameInitialized = reducer("GameInitialized", () => (state) => Effect.succeed(state))
+const AwaitingPartner = reducer("AwaitingPartner", () => (state) => Effect.succeed(state))
 
 const GameStarted = reducer(
   "GameStarted",
@@ -35,5 +35,5 @@ export const layer = GameState.layer({
     }
     return Option.none()
   }),
-  reduce: Match.valueTags({ GameInitialized, GameStarted, MoveMade, GameEnded }),
+  reduce: Match.valueTags({ AwaitingPartner, GameStarted, MoveMade, GameEnded }),
 })

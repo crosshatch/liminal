@@ -8,13 +8,14 @@ import { TicTacToeActor } from "./TicTacToeActor.ts"
 const onConnect = Effect.gen(function* () {
   const { clients, currentClient } = yield* TicTacToeActor
   if (clients.size === 1) {
-    yield* currentClient.send("GameInitialized", {})
+    yield* currentClient.send("AwaitingPartner", {})
   } else {
-    for (const client of clients) {
-      yield* TicTacToeActor.all.send("GameStarted", {
-        player: client === currentClient ? "O" : "X",
-      })
-    }
+    yield* TicTacToeActor.others.send("GameStarted", {
+      player: "X",
+    })
+    yield* currentClient.send("GameStarted", {
+      player: "O",
+    })
   }
 }).pipe(Effect.orDie)
 
