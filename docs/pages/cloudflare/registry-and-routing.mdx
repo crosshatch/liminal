@@ -23,7 +23,7 @@ import { onConnect } from "./lifecycle/onConnect.ts"
 export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatRegistry", {
   binding: "CHAT_ROOMS",
   actor: ChatActor,
-  preludeLayer: PreludeLive,
+  prelude: PreludeLive,
   runLayer: CurrentUserId.layerChat,
   onConnect,
   handlers,
@@ -34,20 +34,20 @@ export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatReg
 
 - `binding`: the Durable Object binding name from Wrangler
 - `actor`: the Liminal actor definition
-- `preludeLayer`: long-lived runtime dependencies for the Durable Object instance
+- `prelude`: long-lived runtime dependencies for the Durable Object instance
 - `runLayer`: short-lived, request-local dependencies derived from actor context
 - `onConnect`: logic that runs for newly upgraded sockets
 - `handlers`: the method implementation table
 - `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
 
-In practice, `runLayer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name
-and current client attachments.
+In practice, `runLayer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name and
+current client attachments.
 
-## `preludeLayer` versus `runLayer`
+## `prelude` versus `runLayer`
 
 This split is one of the most important concepts in Liminal Cloudflare.
 
-Use `preludeLayer` for long-lived infrastructure:
+Use `prelude` for long-lived infrastructure:
 
 - database access
 - config
@@ -174,8 +174,8 @@ export default Worker.make({
 `Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
 Durable Object runtime for actor messages.
 
-Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `preludeLayer`
-and providing it here, or by passing it to `Worker.make(...)` as its `prelude`.
+Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `prelude` and
+providing it here, or by passing it to `Worker.make(...)` as its `prelude`.
 
 ## Wrangler alignment matters
 

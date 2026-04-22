@@ -1,21 +1,27 @@
 import { Effect, Layer } from "effect"
 import { ActorRegistry } from "liminal-cloudflare"
 
-import { Database } from "./Database.ts"
 import { handleMove } from "./handleMove.ts"
+import { KvLive } from "./KvLive.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 const onConnect = Effect.gen(function* () {
-  const { clients } = yield* TicTacToeActor
-  const player = clients.size === 1 ? "X" : "O"
-  yield* TicTacToeActor.sendAll("GameStarted", { player }).pipe(Effect.orDie)
-})
+  const { clients, currentClient } = yield* TicTacToeActor
+  if (clients.size === 1) {
+    yield* currentClient.send("GameInitialized", {})
+  } else {
+    for (const client of clients) {
+      yield* TicTacToeActor.sendAll("GameStarted", {
+        player: client === currentClient ? "O" : "X",
+      })
+    }
+  }
+}).pipe(Effect.orDie)
 
-export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("examples/TicTacToeRegistry", {
+export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("TicTacToeRegistry", {
   actor: TicTacToeActor,
-  binding: "TicTacToe",
   handlers: { Move: handleMove },
   onConnect,
-  preludeLayer: Database.layer,
+  prelude: KvLive,
   runLayer: Layer.empty,
 }) {}

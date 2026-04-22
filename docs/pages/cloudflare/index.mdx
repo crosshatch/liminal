@@ -97,8 +97,8 @@ export const onConnect = Effect.gen(function* () {
 })
 ```
 
-Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas —
-see [Accumulator](../accumulator.mdx).
+Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas — see
+[Accumulator](../accumulator.mdx).
 
 ## Implement method handlers
 
@@ -198,7 +198,7 @@ export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>(
   binding: "TicTacToe",
   handlers: { Move: handleMove },
   onConnect,
-  preludeLayer: Database.layer,
+  prelude: Database.layer,
   runLayer: Layer.empty,
 }) {}
 ```
@@ -207,7 +207,7 @@ The shape maps cleanly onto runtime concerns:
 
 - `binding` is the Durable Object binding name from Wrangler.
 - `actor` is the Liminal actor definition.
-- `preludeLayer` is long-lived infrastructure (databases, config, asset bindings).
+- `prelude` is long-lived infrastructure (databases, config, asset bindings).
 - `runLayer` is short-lived, request-local context derived from actor context.
 - `handlers` is the method implementation table.
 - `onConnect` runs for every newly upgraded socket.
@@ -263,7 +263,8 @@ A few things worth pointing out:
 - `HttpRouter.add(method, path, effect)` mounts a single route.
 - `HttpRouter.cors(...)` wires up CORS for every route in the router.
 - `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
-- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class re-export, it is everything your Worker entrypoint needs.
+- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class
+  re-export, it is everything your Worker entrypoint needs.
 - Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client
@@ -309,5 +310,5 @@ Effect.gen(function* () {
 Liminal preserves actor identity and connected sockets across hibernation-friendly Durable Object lifecycles, but it
 does not make your whole domain model durable.
 
-Keep the real game state in storage such as D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments
-only for per-client session state.
+Keep the real game state in storage such as D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments only
+for per-client session state.

@@ -1,11 +1,10 @@
 import { absurd, Effect } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 
-import * as Binding from "./Binding.ts"
+import { Binding } from "./Binding.ts"
 
-export class WorkerLoader extends Binding.Service<WorkerLoader>()(
+export class WorkerLoader extends Binding<WorkerLoader>()(
   "liminal/cloudflare/WorkerLoader",
-  "LOADER",
   (value): value is globalThis.WorkerLoader => "load" in value,
 ) {
   static readonly loader = (id: string, code: string) =>
