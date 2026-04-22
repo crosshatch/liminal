@@ -1,6 +1,6 @@
 {
   "name": "liminal-cloudflare",
-  "version": "0.17.7",
+  "version": "0.17.8",
   "description": "Actors x Effects on Cloudflare",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
