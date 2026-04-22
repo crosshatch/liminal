@@ -1,19 +1,24 @@
-import { Layer, Effect } from "effect";
-import { HttpRouter, HttpServerResponse } from "effect/unstable/http";
-import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
-import { Assets } from "liminal-cloudflare";
+import { Layer, Effect } from "effect"
+import { HttpRouter } from "effect/unstable/http"
+import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi"
 
-import { Api } from "./Api.ts";
-import { FacilitatorLive } from "./FacilitatorLive/FacilitatorLive.ts";
-import { SessionApiLive } from "./SessionApiLive.ts";
+import { Api } from "./Api.ts"
 
 export const ApiLive = Layer.mergeAll(
-  HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("crosshatch.dev"))),
   HttpApiBuilder.layer(Api, {
     openapiPath: "/openapi.json",
   }).pipe(
     Layer.provide(
-      FacilitatorLive.pipe(
+      HttpApiBuilder.group(Api, "workers", (_) =>
+        Effect.succeed(
+          _.handle(
+            "make",
+            Effect.fn(function* ({}) {
+              return { id: "" }
+            }),
+          ),
+        ),
+      ).pipe(
         Layer.provide(
           HttpRouter.cors({
             allowedHeaders: ["*"],
@@ -26,4 +31,4 @@ export const ApiLive = Layer.mergeAll(
     ),
     Layer.merge(HttpApiScalar.layer(Api, { path: "/reference" })),
   ),
-);
+)

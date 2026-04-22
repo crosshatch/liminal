@@ -1,9 +1,8 @@
-import { Layer, Effect } from "effect";
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http";
-import { Entry } from "cloudflare";
-import { boundLayer } from "liminal/_util/boundLayer";
+import { Layer, Effect } from "effect"
+import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
+import { Entry } from "liminal-cloudflare"
 
-import { ApiLive } from "./ApiLive.ts";
+import { ApiLive } from "./ApiLive.ts"
 
 export default ApiLive.pipe(
   Layer.provide(HttpServer.layerServices),
@@ -11,9 +10,5 @@ export default ApiLive.pipe(
   Effect.flatMap((v) => v),
   Effect.tapCause(Effect.logError),
   Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  // Entry.make(
-  //   Layer.mergeAll().pipe(
-  //     boundLayer("worker"),
-  //   ),
-  // ),
-);
+  Entry.make(ApiLive),
+)

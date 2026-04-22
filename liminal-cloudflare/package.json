@@ -25,6 +25,7 @@
     "./package.json": "./package.json"
   },
   "peerDependencies": {
+    "@cloudflare/worker-bundler": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",

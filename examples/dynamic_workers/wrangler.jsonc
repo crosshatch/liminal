@@ -11,11 +11,6 @@
   "placement": {
     "mode": "smart",
   },
-  "assets": {
-    "directory": "dist",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-  },
   "vars": {
     "DEV": true,
   },
