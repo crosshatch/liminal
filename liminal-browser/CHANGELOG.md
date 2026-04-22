@@ -1,5 +1,13 @@
 # liminal-browser
 
+## 0.17.8
+
+### Patch Changes
+
+- 5c2a730: Move cloudflare bindings into subdir in preparation for extraction into different package."
+- Updated dependencies [5c2a730]
+  - liminal@0.17.8
+
 ## 0.17.7
 
 ### Patch Changes
