@@ -1,5 +1,11 @@
 # liminal
 
+## 0.17.9
+
+### Patch Changes
+
+- 2c5c785: Simplify API for client event emission and disconnection. Move binding specificity to layer provision step.
+
 ## 0.17.8
 
 ### Patch Changes
