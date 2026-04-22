@@ -11,7 +11,7 @@ import { NativeRequest } from "./NativeRequest.ts"
 const { span } = Diagnostic.module("cloudflare.Entry")
 
 export interface WorkerConfig<ROut, E> {
-  readonly layer: Layer.Layer<ROut, E>
+  readonly prelude: Layer.Layer<ROut, E>
   readonly handler: Effect.Effect<
     HttpServerResponse.HttpServerResponse,
     HttpServerError.HttpServerError,
@@ -19,7 +19,7 @@ export interface WorkerConfig<ROut, E> {
   >
 }
 
-export const make = <ROut, E>({ handler, layer }: WorkerConfig<ROut, E>) => {
+export const make = <ROut, E>({ handler, prelude: layer }: WorkerConfig<ROut, E>) => {
   const runtime = ManagedRuntime.make(
     Layer.mergeAll(Intrinsic.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
   )

@@ -5,5 +5,5 @@ import * as Worker from "./bindings/Worker.ts"
 
 export default Worker.make({
   handler: Assets.forward,
-  layer: Layer.empty,
+  prelude: Layer.empty,
 })

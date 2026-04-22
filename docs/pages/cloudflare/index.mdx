@@ -254,7 +254,7 @@ export default Worker.make({
     Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
-  layer: Layer.empty,
+  prelude: Layer.empty,
 })
 ```
 
@@ -263,7 +263,7 @@ A few things worth pointing out:
 - `HttpRouter.add(method, path, effect)` mounts a single route.
 - `HttpRouter.cors(...)` wires up CORS for every route in the router.
 - `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
-- `Worker.make({ handler, layer })` produces the Worker `fetch` export; combined with the Durable Object class re-export, it is everything your Worker entrypoint needs.
+- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class re-export, it is everything your Worker entrypoint needs.
 - Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client

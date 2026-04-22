@@ -167,7 +167,7 @@ export default Worker.make({
     Effect.provide(Layer.mergeAll(ChatRegistry.layer, LobbyRegistry.layer, PreludeLive)),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
-  layer: Layer.empty,
+  prelude: Layer.empty,
 })
 ```
 
@@ -175,7 +175,7 @@ export default Worker.make({
 Durable Object runtime for actor messages.
 
 Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `preludeLayer`
-and providing it here, or by passing it to `Worker.make(...)` as its `layer`.
+and providing it here, or by passing it to `Worker.make(...)` as its `prelude`.
 
 ## Wrangler alignment matters
 

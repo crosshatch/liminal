@@ -34,5 +34,5 @@ export default Worker.make({
     Effect.provide(Layer.mergeAll(TicTacToeRegistry.layer, Database.layer)),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
-  layer: Layer.empty,
+  prelude: Layer.empty,
 })
