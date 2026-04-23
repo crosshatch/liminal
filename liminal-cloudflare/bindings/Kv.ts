@@ -1,55 +1,50 @@
-import { Effect, Schema as S, Option } from "effect"
+import { Effect, Schema as S, Option, Context, Layer } from "effect"
 
-import { Binding } from "./Binding.ts"
+import * as Binding from "./Binding.ts"
 
-const TypeId = "~liminal/cloudflare/Kv" as const
-
-export interface KvDefinition<KeyA, ValueA, ValueI> {
-  readonly key: S.Codec<KeyA, string>
-
-  readonly value: S.Codec<ValueA, ValueI>
-}
-
-export interface Kv<Self, Id extends string, KeyA, ValueA, ValueI> extends Binding<
+export interface Kv<
   Self,
-  Id,
-  KVNamespace,
-  never,
-  never,
-  never
-> {
-  readonly [TypeId]: typeof TypeId
+  Id extends string,
+  Key extends S.Top & { Encoded: string },
+  Value extends S.Top,
+> extends Context.Service<Self, KVNamespace> {
+  new (_: never): Context.ServiceClass<Self, Id, KVNamespace>
 
-  readonly definition: KvDefinition<KeyA, ValueA, ValueI>
+  ""?: [Key, Value]
 
-  readonly put: (key: KeyA, value: ValueA) => Effect.Effect<void, S.SchemaError, Self>
+  readonly put: (key: Key["Type"], value: Value["Type"]) => Effect.Effect<void, S.SchemaError, Self>
 
-  readonly get: (key: KeyA) => Effect.Effect<Option.Option<ValueA>, S.SchemaError, Self>
+  readonly get: (key: Key["Type"]) => Effect.Effect<Option.Option<Value["Type"]>, S.SchemaError, Self>
 
-  readonly remove: (key: KeyA) => Effect.Effect<void, S.SchemaError, Self>
+  readonly remove: (key: Key["Type"]) => Effect.Effect<void, S.SchemaError, Self>
+
+  readonly layer: (binding: string) => Layer.Layer<Self, S.SchemaError>
 }
 
 export const Kv =
   <Self>() =>
-  <Id extends string, KeyA, ValueA, ValueI>(
+  <Id extends string, Key extends S.Top & { Encoded: string }, Value extends S.Top>(
     id: Id,
-    definition: KvDefinition<KeyA, ValueA, ValueI>,
-  ): Kv<Self, Id, KeyA, ValueA, ValueI> => {
-    const tag = Binding<Self>()(id, (v): v is KVNamespace => "put" in v && "get" in v && "delete" in v)
+    definition: {
+      readonly key: Key
+      readonly value: Value
+    },
+  ): Kv<Self, Id, Key, Value> => {
+    const tag = Context.Service<Self, KVNamespace>()(id)
 
     const { key, value } = definition
     const encodeKey = S.encodeEffect(key)
     const encodeValue = S.encodeEffect(S.fromJsonString(S.toCodecJson(value)))
     const decodeValue = S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(value)))
 
-    const put = Effect.fnUntraced(function* (key: KeyA, value: ValueA) {
+    const put = Effect.fnUntraced(function* (key: Key["Type"], value: Value["Type"]) {
       const kv = yield* tag
       const keyEncoded = yield* encodeKey(key)
       const valueEncoded = yield* encodeValue(value)
       yield* Effect.promise(() => kv.put(keyEncoded, valueEncoded))
     })
 
-    const get = Effect.fnUntraced(function* (key: KeyA) {
+    const get = Effect.fnUntraced(function* (key: Key["Type"]) {
       const kv = yield* tag
       const keyEncoded = yield* encodeKey(key)
       const valueEncoded = yield* Effect.promise(() => kv.get(keyEncoded))
@@ -59,11 +54,12 @@ export const Kv =
       return Option.none()
     })
 
-    const remove = Effect.fnUntraced(function* (key: KeyA) {
+    const remove = Effect.fnUntraced(function* (key: Key["Type"]) {
       const kv = yield* tag
       const keyEncoded = yield* encodeKey(key)
       yield* Effect.promise(() => kv.delete(keyEncoded))
     })
 
-    return Object.assign(tag, { [TypeId]: TypeId, definition, put, get, remove })
+    const layer = Binding.layer(tag, ["put", "get", "delete"])
+    return Object.assign(tag, { definition, put, get, remove, layer }) as never
   }

@@ -29,7 +29,7 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "TIC_TAC_TOE",
+        "name": "TICTACTOE",
         "class_name": "TicTacToeRegistry",
       },
     ],
@@ -43,11 +43,4 @@
   "vars": {
     "DEV": true,
   },
-  "d1_databases": [
-    {
-      "binding": "TIC_TAC_TOE_D1",
-      "database_name": "tictactoe",
-      "database_id": "4257ef71-66f7-498c-8a41-e4d9acebf667",
-    },
-  ],
 }

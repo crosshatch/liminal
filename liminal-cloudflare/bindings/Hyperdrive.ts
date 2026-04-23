@@ -1,12 +1,13 @@
-import { Effect, Redacted } from "effect"
+import { Effect, Redacted, Context } from "effect"
 
-import { Binding } from "./Binding.ts"
+import * as Binding from "./Binding.ts"
 
-export class Hyperdrive extends Binding<Hyperdrive>()(
-  "liminal/cloudflare/Hyperdrive",
-  (v): v is globalThis.Hyperdrive => "connectionString" in v,
-) {
-  static readonly connectionString: Effect.Effect<Redacted.Redacted<string>, never, Hyperdrive> = this.asEffect().pipe(
-    Effect.map(({ connectionString }) => Redacted.make(connectionString)),
-  )
-}
+export class Hyperdrive extends Context.Service<Hyperdrive, globalThis.Hyperdrive>()(
+  "liminal-cloudflare/bindings/Hyperdrive",
+) {}
+
+export const layer = Binding.layer(Hyperdrive, ["connectionString"])
+
+export const connectionString = Hyperdrive.asEffect().pipe(
+  Effect.map(({ connectionString }) => Redacted.make(connectionString)),
+)

@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 
-import { Assets } from "./bindings/Assets.ts"
+import * as Assets from "./bindings/Assets.ts"
 import * as Worker from "./bindings/Worker.ts"
 
 export default Worker.make({

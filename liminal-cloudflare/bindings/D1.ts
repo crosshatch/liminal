@@ -1,9 +1,8 @@
 import { D1Client } from "@effect/sql-d1"
+import { Context } from "effect"
 
-import { Binding } from "./Binding.ts"
+import * as Binding from "./Binding.ts"
 
-export class D1 extends Binding<D1>()(
-  "liminal/cloudflare/D1",
-  (v): v is D1Database => "exec" in v,
-  (db) => D1Client.layer({ db }),
-) {}
+export class D1 extends Context.Service<D1, D1Database>()("liminal/bindings/D1") {}
+
+export const layer = Binding.layer(D1, ["exec"], (db) => D1Client.layer({ db }))

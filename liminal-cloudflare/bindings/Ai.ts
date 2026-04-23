@@ -1,3 +1,7 @@
-import { Binding } from "./Binding.ts"
+import { Context } from "effect"
 
-export class Ai extends Binding<Ai>()("liminal/cloudflare/Ai", (v): v is globalThis.Ai => "run" in v) {}
+import * as Binding from "./Binding.ts"
+
+export class Ai extends Context.Service<Ai, globalThis.Ai>()("liminal/cloudflare/Ai") {}
+
+export const layer = Binding.layer(Ai, ["run"])
