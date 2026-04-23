@@ -17,7 +17,9 @@ const HyperdriveLive = Hyperdrive.layer("HYPERDRIVE")
 
 ## What the wrapper gives you
 
-- `.layer(binding)` — build a layer from the Cloudflare env binding name
+- `Hyperdrive.layer(binding)` — build a layer from the Cloudflare env binding name
+- `Hyperdrive.connectionString` — an `Effect<Redacted<string>, never, Hyperdrive.Hyperdrive>` that yields the binding's
+  connection string as a `Redacted<string>`
 
 ```ts
 import { Hyperdrive } from "liminal-cloudflare/bindings"

@@ -1,12 +1,12 @@
 # Cloudflare KV
 
-`Kv(...)` is the `liminal-cloudflare` wrapper for Cloudflare KV.
+`Kv.Kv(...)` is the `liminal-cloudflare` wrapper for Cloudflare KV.
 
 It turns a KV namespace into a typed Effect service with schema-driven key encoding and value encoding/decoding.
 
 ## Define a KV service
 
-`Kv(...)` needs two things:
+`Kv.Kv(...)` needs two things:
 
 - a schema whose encoded form is a string key
 - a schema for the stored value
@@ -22,7 +22,7 @@ const SessionValue = S.Struct({
   expiresAt: S.Date,
 })
 
-export class SessionKv extends Kv<SessionKv>()("SessionKv", {
+export class SessionKv extends Kv.Kv<SessionKv>()("SessionKv", {
   key: SessionId,
   value: SessionValue,
 }) {}

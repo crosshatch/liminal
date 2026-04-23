@@ -63,7 +63,7 @@ If you need lower-level behavior than `forward`, you can use the raw asset bindi
 Effect.gen(function* () {
   // ...
 
-  const assets = yield* Assets
+  const assets = yield* Assets.Assets
   const response = yield* Effect.promise(() => assets.fetch(request))
 })
 ```
