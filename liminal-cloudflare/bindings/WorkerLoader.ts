@@ -9,7 +9,7 @@ export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.Worke
 
 export const layer = Binding.layer(WorkerLoader, ["load"])
 
-export const loader = (id: string, code: string) =>
+export const load = (id: string, code: string) =>
   Effect.gen({ self: this }, function* () {
     const loader = yield* WorkerLoader
     return loader.get(id, () => ({
