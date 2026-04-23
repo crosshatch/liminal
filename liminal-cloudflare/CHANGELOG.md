@@ -1,5 +1,13 @@
 # liminal-cloudflare
 
+## 0.17.10
+
+### Patch Changes
+
+- 9583d0e: Rework the module structure for bindings.
+- Updated dependencies [9583d0e]
+  - liminal@0.17.10
+
 ## 0.17.9
 
 ### Patch Changes
