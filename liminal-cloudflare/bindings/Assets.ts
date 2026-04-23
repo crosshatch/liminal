@@ -1,4 +1,4 @@
-import { Effect, Context, Schema as S } from "effect"
+import { Effect, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 
 import * as Binding from "./Binding.ts"
@@ -11,7 +11,7 @@ export class Assets extends Context.Service<
   }
 >()("liminal/cloudflare/Assets") {}
 
-export const layer = Binding.layer(Assets, S.Struct({ fetch: S.Unknown }))
+export const layer = Binding.layer(Assets, ["fetch"])
 
 export const forward = Effect.gen({ self: this }, function* () {
   const assets = yield* Assets

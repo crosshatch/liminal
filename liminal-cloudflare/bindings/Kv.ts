@@ -18,7 +18,7 @@ export interface Kv<
 
   readonly remove: (key: Key["Type"]) => Effect.Effect<void, S.SchemaError, Self>
 
-  readonly layer: (binding: string) => Layer.Layer<Self, Binding.BindingError | S.SchemaError>
+  readonly layer: (binding: string) => Layer.Layer<Self, S.SchemaError>
 }
 
 export const Kv =
@@ -60,13 +60,6 @@ export const Kv =
       yield* Effect.promise(() => kv.delete(keyEncoded))
     })
 
-    const layer = Binding.layer(
-      tag,
-      S.Struct({
-        put: S.Unknown,
-        get: S.Unknown,
-        delete: S.Unknown,
-      }),
-    )
+    const layer = Binding.layer(tag, ["put", "get", "delete"])
     return Object.assign(tag, { definition, put, get, remove, layer }) as never
   }

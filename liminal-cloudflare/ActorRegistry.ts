@@ -111,7 +111,7 @@ export interface ActorRegistry<
     attachments: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest.NativeRequest>
 
-  readonly layer: (binding: string) => Layer.Layer<RegistrySelf, Binding.BindingError | S.SchemaError, never>
+  readonly layer: (binding: string) => Layer.Layer<RegistrySelf, S.SchemaError, never>
 }
 
 export const Service =
@@ -351,7 +351,7 @@ export const Service =
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 
-    const layer = Binding.layer(tag, S.Struct({ getByName: S.Unknown }))
+    const layer = Binding.layer(tag, ["getByName"])
 
     return Object.assign(tag, { definition, upgrade, layer }) as never
   }

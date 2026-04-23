@@ -1,4 +1,4 @@
-import { absurd, Effect, Schema as S, Context } from "effect"
+import { absurd, Effect, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 
 import * as Binding from "./Binding.ts"
@@ -7,7 +7,7 @@ export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.Worke
   "liminal/cloudflare/WorkerLoader",
 ) {}
 
-export const layer = Binding.layer(WorkerLoader, S.Struct({ load: S.Unknown }))
+export const layer = Binding.layer(WorkerLoader, ["load"])
 
 export const loader = (id: string, code: string) =>
   Effect.gen({ self: this }, function* () {

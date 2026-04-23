@@ -1,8 +1,8 @@
 import { D1Client } from "@effect/sql-d1"
-import { Context, Schema as S } from "effect"
+import { Context } from "effect"
 
 import * as Binding from "./Binding.ts"
 
 export class D1 extends Context.Service<D1, D1Database>()("liminal/bindings/D1") {}
 
-export const layer = Binding.layer(D1, S.Struct({ exec: S.Unknown }), (db) => D1Client.layer({ db }))
+export const layer = Binding.layer(D1, ["exec"], (db) => D1Client.layer({ db }))
