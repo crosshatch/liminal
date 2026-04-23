@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers"
-import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
+import { Context, Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
 import {
   HttpServerRequest,
   HttpServerResponse,
@@ -10,10 +10,13 @@ import {
 import * as Diagnostic from "liminal/_util/Diagnostic"
 import { logCause } from "liminal/_util/logCause"
 
-import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 
 const { span } = Diagnostic.module("cloudflare.Entry")
+
+export class ExecutionContext extends Context.Service<ExecutionContext, globalThis.ExecutionContext>()(
+  "liminal/cloudflare/ExecutionContext",
+) {}
 
 export interface WorkerConfig<ROut, E> {
   readonly prelude: Layer.Layer<ROut, E>

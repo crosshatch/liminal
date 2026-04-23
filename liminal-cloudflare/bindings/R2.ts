@@ -1,3 +1,13 @@
-import { Binding } from "./Binding.ts"
+import { Context, Schema as S } from "effect"
 
-export class R2 extends Binding<R2>()("liminal/cloudflare/R2", (v): v is R2Bucket => "put" in v && "get" in v) {}
+import * as Binding from "./Binding.ts"
+
+export class R2 extends Context.Service<R2, R2Bucket>()("liminal/cloudflare/R2") {}
+
+export const layer = Binding.layer(
+  R2,
+  S.Struct({
+    put: S.Unknown,
+    get: S.Unknown,
+  }),
+)

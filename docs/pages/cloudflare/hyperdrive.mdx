@@ -18,21 +18,12 @@ const HyperdriveLive = Hyperdrive.layer("HYPERDRIVE")
 ## What the wrapper gives you
 
 - `.layer(binding)` — build a layer from the Cloudflare env binding name
-- `.connectionString` as `Effect<Redacted<string>, never, Hyperdrive>`
 
 ```ts
 import { Hyperdrive } from "liminal-cloudflare/bindings"
 
-const connectionString = Hyperdrive.connectionString
+Hyperdrive.connectionString
 ```
-
-Internally, that is just:
-
-```ts
-Hyperdrive.asEffect().pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))
-```
-
-So the wrapper is a thin typed shell over the raw Hyperdrive binding.
 
 ## Why the connection string is redacted
 

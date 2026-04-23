@@ -1,30 +1,31 @@
-import { absurd, Effect } from "effect"
+import { absurd, Effect, Schema as S, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 
-import { Binding } from "./Binding.ts"
+import * as Binding from "./Binding.ts"
 
-export class WorkerLoader extends Binding<WorkerLoader>()(
+export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.WorkerLoader>()(
   "liminal/cloudflare/WorkerLoader",
-  (value): value is globalThis.WorkerLoader => "load" in value,
-) {
-  static readonly loader = (id: string, code: string) =>
-    Effect.gen({ self: this }, function* () {
-      const loader = yield* this
-      return loader.get(id, () => ({
-        compatibilityDate: "2026-04-21",
-        mainModule: "main.js",
-        modules: { "main.js": code },
-        allowExperimental: true,
-        globalOutbound: null,
-      }))
-    })
+) {}
 
-  static readonly run = (id: string, request: Request) =>
-    Effect.gen({ self: this }, function* () {
-      const loader = yield* this
-      const worker = loader.get(id, () => absurd<never>(null!))
-      return yield* Effect.tryPromise(() => worker.getEntrypoint().fetch(request)).pipe(
-        Effect.map(HttpServerResponse.fromWeb),
-      )
-    })
-}
+export const layer = Binding.layer(WorkerLoader, S.Struct({ load: S.Unknown }))
+
+export const loader = (id: string, code: string) =>
+  Effect.gen({ self: this }, function* () {
+    const loader = yield* WorkerLoader
+    return loader.get(id, () => ({
+      compatibilityDate: "2026-04-21",
+      mainModule: "main.js",
+      modules: { "main.js": code },
+      allowExperimental: true,
+      globalOutbound: null,
+    }))
+  })
+
+export const run = (id: string, request: Request) =>
+  Effect.gen({ self: this }, function* () {
+    const loader = yield* WorkerLoader
+    const worker = loader.get(id, () => absurd<never>(null!))
+    return yield* Effect.tryPromise(() => worker.getEntrypoint().fetch(request)).pipe(
+      Effect.map(HttpServerResponse.fromWeb),
+    )
+  })

@@ -24,12 +24,10 @@ import { logCause } from "liminal/_util/logCause"
 import * as Mutex from "liminal/_util/Mutex"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal/_util/schema"
 
-import { Binding, DurableObjectState, NativeRequest } from "./bindings/index.ts"
+import { DoState, NativeRequest, Binding } from "./bindings/index.ts"
 import { close } from "./close.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
-
-const TypeId = "~liminal/cloudflare/ActorRegistry" as const
 
 export interface ActorRegistryDefinition<
   ActorSelf,
@@ -91,10 +89,8 @@ export interface ActorRegistry<
   PreludeE,
   RunROut,
   RunE,
-> extends Binding<RegistrySelf, RegistryId, DurableObjectNamespace, never, never, never> {
+> extends Context.Service<RegistrySelf, DurableObjectNamespace> {
   new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
-
-  readonly [TypeId]: typeof TypeId
 
   readonly definition: ActorRegistryDefinition<
     ActorSelf,
@@ -113,7 +109,9 @@ export interface ActorRegistry<
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest>
+  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest.NativeRequest>
+
+  readonly layer: (binding: string) => Layer.Layer<RegistrySelf, Binding.BindingError | S.SchemaError, never>
 }
 
 export const Service =
@@ -194,13 +192,13 @@ export const Service =
         encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
     }
 
-    class tag extends Binding<RegistrySelf>()(id, (value): value is DurableObjectNamespace => "getByName" in value) {
+    const tag = class tag extends Context.Service<RegistrySelf, DurableObjectNamespace>()(id) {
       readonly runtime
       readonly directory = ClientDirectory.make(actor, transport)
 
-      constructor(state: globalThis.DurableObjectState<{}>, env: unknown) {
-        // @ts-ignore
-        super(state, env)
+      constructor(...args: [never]) {
+        super(...args)
+        const [state, env] = args as never as [state: globalThis.DurableObjectState<{}>, env: unknown]
 
         if (hibernation) {
           Option.andThen(
@@ -212,7 +210,7 @@ export const Service =
         const baseLayer = Layer.mergeAll(
           prelude.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
           FetchHttpClient.layer,
-          Layer.succeed(DurableObjectState, state),
+          Layer.succeed(DoState.DoState, state),
           Mutex.layer,
         )
 
@@ -242,12 +240,12 @@ export const Service =
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
           if (!this.#name) {
             this.#name = name
-            const state = yield* DurableObjectState
+            const state = yield* DoState.DoState
             const encoded = yield* S.encodeEffect(Name)(name)
             yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
           }
           const { 0: webSocket, 1: server } = new WebSocketPair()
-          const state = yield* DurableObjectState
+          const state = yield* DoState.DoState
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const currentClient = yield* this.directory.register(server, attachments)
@@ -330,7 +328,7 @@ export const Service =
       const namespace = yield* tag
       const nameEncoded = yield* encodeName(name)
       const stub = namespace.getByName(nameEncoded)
-      const request = yield* NativeRequest
+      const request = yield* NativeRequest.NativeRequest
       const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
         Effect.map(flow(String.split(","), Array.map(String.trim))),
       )
@@ -353,5 +351,7 @@ export const Service =
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 
-    return Object.assign(tag, { [TypeId]: TypeId, definition, upgrade }) as never
+    const layer = Binding.layer(tag, S.Struct({ getByName: S.Unknown }))
+
+    return Object.assign(tag, { definition, upgrade, layer }) as never
   }
