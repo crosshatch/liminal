@@ -1,6 +1,6 @@
 # Quickstart: Cloudflare
 
-Let's cover the simplest complete path through `liminal` and `liminal-cloudflare`.
+Let's cover the simplest complete path through `liminal`.
 
 We'll implement a trimmed-down Tic-Tac-Toe example:
 
@@ -21,7 +21,7 @@ Start with the protocol the browser and actor will share.
 ```ts
 // TicTacToeClient.ts
 import { Schema as S } from "effect"
-import { Client } from "liminal"
+import { Client } from "liminal/actor"
 
 export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])
@@ -62,7 +62,7 @@ The actor ties a durable name to that client protocol and defines the per-client
 ```ts
 // TicTacToeActor.ts
 import { Schema as S } from "effect"
-import { Actor } from "liminal"
+import { Actor } from "liminal/actor"
 
 import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
 
@@ -147,13 +147,13 @@ The main server-side APIs used here are:
 
 Actors are not a database. For anything that must survive hibernation or eviction, persist state externally. The
 tic-tac-toe example persists its board through Effect's `KeyValueStore`, backed by an R2 bucket via
-`liminal-cloudflare`'s `KeyValueStore.layerR2`:
+`KeyValueStore.layerR2` from `liminal/platform`:
 
 ```ts
 // KvLive.ts
 import { Layer } from "effect"
-import { R2 } from "liminal-cloudflare/bindings"
-import { KeyValueStore } from "liminal-cloudflare/platform"
+import { R2 } from "liminal"
+import { KeyValueStore } from "liminal/platform"
 
 export const KvLive = KeyValueStore.layerR2().pipe(Layer.provide(R2.layer("BUCKET")))
 ```
@@ -185,9 +185,9 @@ export const setBoard = (config: { readonly turn: "X" | "O"; readonly board: Boa
 `ActorRegistry` is the Cloudflare Durable Object wrapper around your actor.
 
 ```ts
-// ActorRegistry.ts
-import { Effect, Layer } from "effect"
-import { ActorRegistry } from "liminal-cloudflare"
+// TicTacToeRegistry.ts
+import { Layer } from "effect"
+import { ActorRegistry } from "liminal/actor"
 
 import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"
@@ -221,9 +221,9 @@ An HTTP route picks the actor name and initial attachments, then calls `upgrade(
 // main.ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Worker } from "liminal-cloudflare/bindings"
+import { Assets, Worker } from "liminal"
 
-import { TicTacToeRegistry } from "./ActorRegistry.ts"
+import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
 
@@ -277,7 +277,7 @@ A few things worth pointing out:
 ```ts
 import { BrowserSocket } from "@effect/platform-browser"
 import { Layer, Stream, Effect } from "effect"
-import { Client } from "liminal"
+import { Client } from "liminal/actor"
 
 import { TicTacToeClient } from "./TicTacToeClient.ts"
 
@@ -307,11 +307,3 @@ Effect.gen(function* () {
   yield* TicTacToeClient.f("Move")({ position: [2, 1] })
 }).pipe(Effect.provide(TicTacToeClientLive))
 ```
-
-## Keep durable state durable
-
-Liminal preserves actor identity and connected sockets across hibernation-friendly Durable Object lifecycles, but it
-does not make your whole domain model durable.
-
-Keep the real game state in storage such as R2, D1, Postgres via Hyperdrive, or Durable Object storage. Use attachments
-only for per-client session state.

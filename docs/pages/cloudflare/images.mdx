@@ -1,0 +1,86 @@
+# Cloudflare Images
+
+`Images` is the `liminal` wrapper around the Cloudflare Images binding.
+
+It does two things:
+
+- exposes the binding as a typed Effect service
+- gives you a small pipeline DSL (`transform`, `draw`, `process`) for composing image operations
+
+## Provide the Images binding
+
+```ts
+import { Images } from "liminal"
+
+const ImagesLive = Images.layer("IMAGES")
+```
+
+The string passed to `.layer(...)` must match the `binding` field in your Wrangler config.
+
+## Build a transformation pipeline
+
+Pipelines are composed from a starting `Images.empty` value using `transform` and `draw`:
+
+```ts
+import { Effect } from "effect"
+import { Images } from "liminal"
+
+const thumbnail = (input: ReadableStream<Uint8Array>) =>
+  Images.empty.pipe(
+    Images.transform({ width: 320, height: 320, fit: "cover" }),
+    Images.process({
+      stream: input,
+      outputOptions: { format: "image/webp", quality: 80 },
+    }),
+  )
+```
+
+`process(...)` yields an `Effect<ImageTransformationResult, never, Images>` — provide `Images.layer(binding)` to run it.
+
+## Compose multiple steps
+
+Each `transform` or `draw` returns a new pipeline value, so they pipe naturally:
+
+```ts
+import { Images } from "liminal"
+
+const watermarked = (input: ReadableStream<Uint8Array>, watermark: ImageTransformer) =>
+  Images.empty.pipe(
+    Images.transform({ width: 1024 }),
+    Images.draw({ image: watermark, options: { opacity: 0.5, bottom: 16, right: 16 } }),
+    Images.process({
+      stream: input,
+      outputOptions: { format: "image/png" },
+    }),
+  )
+```
+
+`draw` accepts either a `ReadableStream<Uint8Array>` or an `ImageTransformer` returned from another pipeline, so you can
+nest pipelines together.
+
+## Access the raw binding
+
+If the DSL does not cover what you need, yield the service directly:
+
+```ts
+import { Effect } from "effect"
+import { Images } from "liminal"
+
+Effect.gen(function* () {
+  const images = yield* Images.Images
+
+  const result = yield* Effect.promise(() => images.input(stream).output({ format: "image/avif" }))
+})
+```
+
+## Wrangler configuration
+
+```jsonc
+{
+  "images": {
+    "binding": "IMAGES",
+  },
+}
+```
+
+The `binding` field must match the name you pass to `Images.layer(binding)`.

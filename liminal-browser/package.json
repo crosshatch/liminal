@@ -1,7 +1,7 @@
 {
   "name": "liminal-browser",
   "version": "0.17.10",
-  "description": "Actors x Effects on Cloudflare",
+  "description": "Effect x Actors x Message Channels",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
   },

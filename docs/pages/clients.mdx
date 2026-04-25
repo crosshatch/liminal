@@ -14,7 +14,7 @@ A client is just a named set of methods and events.
 
 ```ts
 import { Schema as S } from "effect"
-import { Client } from "liminal"
+import { Client } from "liminal/actor"
 
 export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])
@@ -57,7 +57,7 @@ For anything beyond a toy example, you may want to define methods separately.
 
 ```ts
 import { Schema as S } from "effect"
-import { Method } from "liminal"
+import { Method } from "liminal/actor"
 
 export const SendMessage = Method.make({
   payload: S.Struct({
@@ -80,7 +80,7 @@ If a method is shared, its handler can be shared too.
 
 ```ts
 import { Effect } from "effect"
-import { Method } from "liminal"
+import { Method } from "liminal/actor"
 
 import { UpdateProfile } from "../shared/methods/UpdateProfile.ts"
 
@@ -157,7 +157,7 @@ Liminal ships two client transports:
 - `Client.layerWorker(...)` for workers or other `MessagePort` transports
 
 ```ts
-import { Client } from "liminal"
+import { Client } from "liminal/actor"
 
 const TicTacToeClientLive = Client.layerSocket({
   client: TicTacToeClient,
@@ -168,6 +168,10 @@ const NotificationClientLive = Client.layerWorker({
   client: NotificationClient,
 })
 ```
+
+`layerWorker` requires a `Worker.WorkerPlatform` and `Worker.Spawner` in the environment (both from
+`effect/unstable/workers`). The exact provider depends on whether you are spawning a real worker, bridging through a
+platform adapter, or forwarding a `MessagePort`.
 
 Both transports support the same method and event surface. They also share the same optional replay configuration.
 

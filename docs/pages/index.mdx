@@ -2,14 +2,17 @@
 
 ## Overview
 
-Liminal is a typed actor framework built on [Effect](https://effect.website). It gives you schema-driven RPC methods,
-event streams, and per-client attachment state — all wired through a single client/actor contract.
+Liminal is a typed actor framework built on [Effect](https://effect.website), optimized for Cloudflare Durable Objects
+over hibernatable WebSockets. It gives you schema-driven RPC methods, event streams, and per-client attachment state —
+all wired through a single client/actor contract.
 
 - [Clients and Methods](./clients) — define the wire protocol.
 - [Actors, Handlers, and Lifecycle](./actors-handlers-and-lifecycle) — implement server-side behavior.
 - [Accumulator](./accumulator) — derive stable client-side state from event streams.
 - [Audition](./audition) — merge multiple clients into one call surface.
 - [Cloudflare Quickstart](./cloudflare) — deploy actors onto Cloudflare Durable Objects.
+- [Registry and Routing](./cloudflare/registry-and-routing) — wire actors into Workers.
+- [Bindings](./cloudflare/ai) — typed Effect services for AI, Assets, D1, Hyperdrive, Images, KV, R2, and more.
 
 ## Install
 
@@ -28,3 +31,14 @@ bun add liminal
 ```
 
 :::
+
+## Module layout
+
+`liminal` has a small set of subpath exports.
+
+- `liminal` — Cloudflare bindings (`Ai`, `Assets`, `D1`, `DoState`, `Hyperdrive`, `Images`, `Kv`, `NativeRequest`, `R2`,
+  `Worker`, `WorkerLoader`).
+- `liminal/actor` — actor model APIs (`Actor`, `ActorRegistry`, `Audition`, `Client`, `ClientDirectory`, `ClientHandle`,
+  `Method`, `Protocol`).
+- `liminal/platform` — Effect Platform adapters (`KeyValueStore.layerR2`).
+- `liminal/util/Accumulator` — the `Accumulator` state container.
