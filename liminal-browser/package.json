@@ -1,6 +1,6 @@
 {
   "name": "liminal-browser",
-  "version": "0.17.10",
+  "version": "0.17.11",
   "description": "Effect x Actors x Message Channels",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
