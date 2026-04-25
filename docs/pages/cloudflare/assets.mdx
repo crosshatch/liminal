@@ -1,6 +1,6 @@
 # Cloudflare Assets
 
-`Assets` is the `liminal-cloudflare` wrapper around Cloudflare's static asset binding.
+`Assets` is the `liminal` wrapper around Cloudflare's static asset binding.
 
 It gives you two things:
 
@@ -12,7 +12,7 @@ It gives you two things:
 The Cloudflare env binding name is supplied when you build the layer:
 
 ```ts
-import { Assets } from "liminal-cloudflare/bindings"
+import { Assets } from "liminal"
 
 const AssetsLive = Assets.layer("ASSETS")
 ```
@@ -26,7 +26,7 @@ A typical pattern forwards unmatched requests to static assets:
 ```ts
 import { Layer } from "effect"
 import { HttpRouter } from "effect/unstable/http"
-import { Assets } from "liminal-cloudflare/bindings"
+import { Assets } from "liminal"
 
 export const ApiLive = Layer.mergeAll(HttpRouter.add("*", "/*", Assets.forward))
 ```
@@ -36,7 +36,7 @@ You can also add response headers before forwarding:
 ```ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
-import { Assets } from "liminal-cloudflare/bindings"
+import { Assets } from "liminal"
 
 export const ApiLive = Layer.mergeAll(
   HttpRouter.add(
@@ -50,16 +50,14 @@ export const ApiLive = Layer.mergeAll(
 For either pattern to run, `Assets.layer("ASSETS")` needs to be included in the Worker runtime alongside the rest of
 your bindings.
 
-## `Assets.forward` only makes sense in HTTP request handling
+## Access the raw binding
 
-Because `Assets.forward` needs the native request, it is designed for Worker HTTP routes. Use it when you want unmatched
-requests to fall through to your static asset bundle.
-
-## Access the raw binding when needed
-
-If you need lower-level behavior than `forward`, you can use the raw asset binding directly:
+For lower-level behavior than `forward`, yield the binding directly:
 
 ```ts
+import { Effect } from "effect"
+import { Assets } from "liminal"
+
 Effect.gen(function* () {
   // ...
 
@@ -67,11 +65,3 @@ Effect.gen(function* () {
   const response = yield* Effect.promise(() => assets.fetch(request))
 })
 ```
-
-That is all `Assets.forward` does internally, plus converting the result into an Effect Platform `HttpServerResponse`.
-
-## Wrangler expectation
-
-This guide assumes your Worker has an `ASSETS` binding configured the normal Cloudflare way for your asset pipeline.
-
-`Assets` does not configure assets for you; it only exposes the binding as an Effect service.

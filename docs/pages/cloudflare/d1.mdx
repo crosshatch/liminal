@@ -1,0 +1,70 @@
+# Cloudflare D1
+
+`D1` is the `liminal` wrapper around a Cloudflare D1 database binding.
+
+It does two things:
+
+- exposes the raw `D1Database` as a typed Effect service
+- automatically provides `@effect/sql-d1`'s `D1Client.layer({ db })` so you can use Effect SQL on top
+
+## Provide the D1 binding
+
+```ts
+import { D1 } from "liminal"
+
+const DbLive = D1.layer("DB")
+```
+
+The string passed to `.layer(...)` must match the `binding` field in your Wrangler config.
+
+## Use Effect SQL on top of D1
+
+Because `D1.layer(...)` also provides `D1Client`, you can yield the SQL client directly:
+
+```ts
+import { Effect } from "effect"
+import { D1Client } from "@effect/sql-d1"
+
+const listUsers = Effect.gen(function* () {
+  const sql = yield* D1Client.D1Client
+  return yield* sql`SELECT id, name FROM users`
+})
+```
+
+To run it, provide the D1 layer once at the worker boundary:
+
+```ts
+listUsers.pipe(Effect.provide(D1.layer("DB")))
+```
+
+## Access the raw D1 database when needed
+
+If you need to call `prepare`, `batch`, or other low-level D1 APIs, yield `D1.D1` directly:
+
+```ts
+import { Effect } from "effect"
+import { D1 } from "liminal"
+
+Effect.gen(function* () {
+  const db = yield* D1.D1
+
+  const stmt = db.prepare("SELECT * FROM users WHERE id = ?")
+  const { results } = yield* Effect.promise(() => stmt.bind(userId).all())
+})
+```
+
+## Wrangler configuration
+
+```jsonc
+{
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "my-app",
+      "database_id": "<your-d1-id>",
+    },
+  ],
+}
+```
+
+The `binding` field must match the name you pass to `D1.layer(binding)`.

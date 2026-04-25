@@ -1,6 +1,6 @@
-# Cloudflare Registry and Routing
+# Registry and Routing
 
-`liminal` defines the actor model. `liminal-cloudflare` mounts that model onto Cloudflare Workers and Durable Objects.
+`liminal/actor` defines the actor model. `liminal` mounts that model onto Cloudflare Workers and Durable Objects.
 
 This guide covers:
 
@@ -12,7 +12,7 @@ This guide covers:
 An actor registry wraps one actor type as one Durable Object class.
 
 ```ts
-import { ActorRegistry } from "liminal-cloudflare"
+import { ActorRegistry } from "liminal/actor"
 
 import * as CurrentUserId from "../context/CurrentUserId.ts"
 import { PreludeLive } from "../PreludeLive.ts"
@@ -46,7 +46,7 @@ current client attachments.
 
 ## `prelude` versus `runLayer`
 
-This split is one of the most important concepts in Liminal Cloudflare.
+This split is one of the most important concepts to internalize.
 
 Use `prelude` for long-lived infrastructure:
 
@@ -151,7 +151,7 @@ The Worker entrypoint usually exports:
 ```ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Worker } from "liminal-cloudflare/bindings"
+import { Worker } from "liminal"
 
 import { ApiLive } from "./ApiLive.ts"
 import { ChatRegistry } from "./chat/ChatRegistry.ts"
@@ -177,7 +177,7 @@ lives at the layer call site rather than in the registry definition, which makes
 under different bindings.
 
 `Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
-Durable Object runtime for actor messages.
+Durable Object runtime for actor messages. See [Worker](./worker.mdx) for more on `Worker.make(...)`.
 
 Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `prelude` and
 providing it here, or by passing it to `Worker.make(...)` as its `prelude`.

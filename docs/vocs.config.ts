@@ -25,52 +25,94 @@ export default defineConfig({
         text: "Quickstart",
       },
       {
-        link: "/clients",
-        text: "Clients",
+        link: "/cloudflare",
+        text: "Cloudflare Quickstart",
       },
       {
-        link: "/actors-handlers-and-lifecycle",
-        text: "Actors, Handlers, and Lifecycle",
-      },
-      {
-        link: "/accumulator",
-        text: "Accumulator",
-      },
-      {
-        link: "/audition",
-        text: "Audition",
-      },
-      {
-        text: "Browser",
+        text: "Worker Runtime",
         items: [
           {
-            link: "/browser/transports",
-            text: "Transports",
+            link: "/cloudflare/worker",
+            text: "Worker",
+          },
+          {
+            link: "/cloudflare/native-request",
+            text: "NativeRequest",
           },
         ],
       },
       {
-        text: "Cloudflare",
+        text: "Bindings",
         items: [
           {
-            link: "/cloudflare",
-            text: "Introduction",
+            link: "/cloudflare/ai",
+            text: "AI",
           },
           {
             link: "/cloudflare/assets",
             text: "Assets",
           },
           {
-            link: "/cloudflare/kv",
-            text: "KV",
+            link: "/cloudflare/d1",
+            text: "D1",
           },
           {
-            link: "/cloudflare/registry-and-routing",
-            text: "Registry and Routing",
+            link: "/cloudflare/do-state",
+            text: "Durable Object State",
           },
           {
             link: "/cloudflare/hyperdrive",
             text: "Hyperdrive",
+          },
+          {
+            link: "/cloudflare/images",
+            text: "Images",
+          },
+          {
+            link: "/cloudflare/kv",
+            text: "KV",
+          },
+          {
+            link: "/cloudflare/r2",
+            text: "R2",
+          },
+          {
+            link: "/cloudflare/worker-loader",
+            text: "Worker Loader",
+          },
+        ],
+      },
+      {
+        text: "Persistence",
+        items: [
+          {
+            link: "/cloudflare/key-value-store",
+            text: "KeyValueStore on R2",
+          },
+        ],
+      },
+      {
+        text: "Actor System",
+        items: [
+          {
+            link: "/clients",
+            text: "Clients",
+          },
+          {
+            link: "/actors-handlers-and-lifecycle",
+            text: "Actors, Handlers, and Lifecycle",
+          },
+          {
+            link: "/accumulator",
+            text: "Accumulator",
+          },
+          {
+            link: "/audition",
+            text: "Audition",
+          },
+          {
+            link: "/cloudflare/registry-and-routing",
+            text: "Registry and Routing",
           },
         ],
       },

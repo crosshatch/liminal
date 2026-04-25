@@ -1,6 +1,6 @@
 import { TicTacToeClient, Player } from "@liminal-examples/tictactoe/TicTacToeClient"
 import { Effect, Stream, Option, Match } from "effect"
-import { Accumulator } from "liminal"
+import * as Accumulator from "liminal/util/Accumulator"
 
 type Item = Stream.Success<typeof TicTacToeClient.events>
 

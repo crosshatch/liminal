@@ -1,0 +1,55 @@
+# Worker Loader
+
+`WorkerLoader` is the `liminal` wrapper around Cloudflare's experimental dynamic Worker Loader binding.
+
+It lets a Worker construct and execute another Worker at runtime from inline module source.
+
+## Provide the loader binding
+
+```ts
+import { WorkerLoader } from "liminal"
+
+const LoaderLive = WorkerLoader.layer("LOADER")
+```
+
+The string passed to `.layer(...)` must match the `binding` field in your Wrangler config.
+
+## Load and run an inline Worker
+
+`WorkerLoader.load(id, code)` registers a Worker module under a stable id. `WorkerLoader.run(id, request)` invokes a
+previously-loaded Worker on a `Request` and returns the Effect Platform response.
+
+```ts
+import { Effect } from "effect"
+import { WorkerLoader } from "liminal"
+
+const handle = (request: Request) =>
+  Effect.gen(function* () {
+    yield* WorkerLoader.load(
+      "hello",
+      `export default { fetch() { return new Response("hello from a dynamic worker") } }`,
+    )
+    return yield* WorkerLoader.run("hello", request)
+  })
+```
+
+The first call to `load(id, ...)` registers the module; subsequent calls with the same id reuse the cached entry. `run`
+fails fast if no module has been loaded for the id.
+
+## Defaults baked into the loader
+
+`WorkerLoader.load(...)` uses these defaults when constructing the dynamic worker:
+
+- `compatibilityDate: "2026-04-21"`
+- `mainModule: "main.js"`
+- a single-module bundle keyed by `"main.js"`
+- `allowExperimental: true`
+- `globalOutbound: null`
+
+If you need more control, yield `WorkerLoader.WorkerLoader` directly and call `loader.get(...)` yourself.
+
+## Wrangler configuration
+
+`WorkerLoader` is currently an experimental Cloudflare feature. Configure it in `wrangler.jsonc` per the
+[official docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/worker-loader/), and ensure the binding
+name matches what you pass to `WorkerLoader.layer(binding)`.

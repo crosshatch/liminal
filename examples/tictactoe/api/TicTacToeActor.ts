@@ -1,6 +1,6 @@
 import { Schema as S } from "effect"
 import {} from "effect/unstable/httpapi"
-import { Actor } from "liminal"
+import { Actor } from "liminal/actor"
 
 import { TicTacToeClient, Player } from "./TicTacToeClient.ts"
 

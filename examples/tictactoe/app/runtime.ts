@@ -2,7 +2,7 @@ import { BrowserSocket } from "@effect/platform-browser"
 import { TicTacToeClient } from "@liminal-examples/tictactoe/TicTacToeClient"
 import { Layer } from "effect"
 import { Atom } from "effect/unstable/reactivity"
-import { Client } from "liminal"
+import { Client } from "liminal/actor"
 
 import * as State from "./State"
 

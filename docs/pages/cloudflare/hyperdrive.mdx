@@ -1,46 +1,31 @@
 # Cloudflare Hyperdrive
 
-`Hyperdrive` is the `liminal-cloudflare` wrapper around a Cloudflare Hyperdrive binding.
-
-It is intentionally small. Its main job is to expose the binding as a typed Effect service and surface the connection
-string as a redacted value.
+`Hyperdrive` is the `liminal` wrapper around a Cloudflare Hyperdrive binding. It exposes the binding as a typed Effect
+service and surfaces the connection string as a `Redacted<string>`.
 
 ## Provide the Hyperdrive binding
 
-`Hyperdrive` is a single class that you import and provide a layer for using the Cloudflare env binding name:
-
 ```ts
-import { Hyperdrive } from "liminal-cloudflare/bindings"
+import { Hyperdrive } from "liminal"
 
 const HyperdriveLive = Hyperdrive.layer("HYPERDRIVE")
 ```
 
-## What the wrapper gives you
-
-- `Hyperdrive.layer(binding)` — build a layer from the Cloudflare env binding name
-- `Hyperdrive.connectionString` — an `Effect<Redacted<string>, never, Hyperdrive.Hyperdrive>` that yields the binding's
-  connection string as a `Redacted<string>`
+## Read the connection string
 
 ```ts
-import { Hyperdrive } from "liminal-cloudflare/bindings"
+import { Hyperdrive } from "liminal"
 
 Hyperdrive.connectionString
 ```
 
-## Why the connection string is redacted
-
-The raw Hyperdrive connection string is sensitive configuration.
-
-Exposing it as `Redacted<string>` makes it harder to leak accidentally through logs or error output while still being
-easy to thread into database clients.
-
-## Common pattern: local dev fallback
+## Local dev fallback
 
 Use Hyperdrive in production, but swap to a local Postgres URL in development:
 
 ```ts
 import { Effect, Redacted } from "effect"
-import { Hyperdrive } from "liminal-cloudflare/bindings"
+import { Hyperdrive } from "liminal"
 
 import { AppConfig } from "./AppConfig.ts"
 
@@ -48,27 +33,6 @@ export const connectionString = Effect.flatMap(AppConfig, ({ dev }) =>
   dev ? Effect.succeed(Redacted.make("postgres://dev:dev@localhost:5432/myapp")) : Hyperdrive.connectionString,
 )
 ```
-
-This is a good default pattern if you want the same application wiring in local dev and Cloudflare deploys.
-
-## Provide the binding with `.layer(binding)`
-
-```ts
-export const PreludeLive = Layer.mergeAll(
-  Db.layer.pipe(Layer.provideMerge(Layer.mergeAll(Hyperdrive.layer("HYPERDRIVE"), AppConfig.layer))),
-)
-```
-
-## What this wrapper does not do
-
-`Hyperdrive` does not:
-
-- Create a database client.
-- Manage pooling for you.
-- Run migrations.
-- Abstract SQL libraries.
-
-It only turns the Cloudflare binding into a typed Effect service and exposes the connection string safely.
 
 ## Wrangler configuration
 

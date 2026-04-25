@@ -1,6 +1,6 @@
 # Cloudflare KV
 
-`Kv.Kv(...)` is the `liminal-cloudflare` wrapper for Cloudflare KV.
+`Kv.Kv(...)` is the `liminal` wrapper for Cloudflare KV.
 
 It turns a KV namespace into a typed Effect service with schema-driven key encoding and value encoding/decoding.
 
@@ -13,7 +13,7 @@ It turns a KV namespace into a typed Effect service with schema-driven key encod
 
 ```ts
 import { Schema as S } from "effect"
-import { Kv } from "liminal-cloudflare/bindings"
+import { Kv } from "liminal"
 
 const SessionId = S.String.pipe(S.brand("SessionId"))
 
@@ -34,15 +34,6 @@ The Cloudflare binding name is not part of the definition — it is supplied whe
 SessionKv.layer("SESSIONS")
 ```
 
-## What the wrapper gives you
-
-The service exposes:
-
-- `.layer(binding)` — build a layer from a Cloudflare env binding name
-- `.put(key, value)`
-- `.get(key)`
-- `.remove(key)`
-
 ## Write values with `put`
 
 ```ts
@@ -58,11 +49,18 @@ Effect.gen(function* () {
 
 ## Read values with `get`
 
+`get` returns an `Option` — `Option.none()` for missing keys, `Option.some(value)` otherwise.
+
 ```ts
+import { Option } from "effect"
+
 Effect.gen(function* () {
   // ...
 
   const session = yield* SessionKv.get(sessionId)
+  if (Option.isSome(session)) {
+    // session.value is SessionValue
+  }
 })
 ```
 
@@ -76,16 +74,9 @@ Effect.gen(function* () {
 })
 ```
 
-## Access the raw KV namespace when you need more than the wrapper
+## Access the raw KV namespace
 
-The wrapper currently does not currently provide effectful functionality for other operations such as:
-
-- `list`
-- expiration options
-- metadata options
-- cache TTL options
-
-If you need those, yield the raw service directly:
+For operations the wrapper does not cover (`list`, expiration, metadata, cache TTL), yield the raw service:
 
 ```ts
 Effect.gen(function* () {

@@ -5,9 +5,9 @@ import { Effect } from "effect"
 import { Command } from "effect/unstable/cli"
 import { FetchHttpClient } from "effect/unstable/http"
 
-import { logCause } from "./_util/logCause.ts"
 import { syncEnv } from "./commands/sync-env.ts"
 import PackageJson from "./package.json" with { type: "json" }
+import { logCause } from "./util/logCause.ts"
 
 Command.make("liminal").pipe(
   Command.withSubcommands([syncEnv]),
