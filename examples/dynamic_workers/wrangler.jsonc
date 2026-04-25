@@ -11,8 +11,5 @@
   "placement": {
     "mode": "smart",
   },
-  "vars": {
-    "DEV": true,
-  },
   "worker_loaders": [{ "binding": "LOADER" }],
 }

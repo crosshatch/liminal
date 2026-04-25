@@ -6,5 +6,5 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["."],
-  "exclude": ["dist", "cloudflare.gen.ts"]
+  "exclude": ["dist"]
 }

@@ -7,7 +7,6 @@
 .turbo/
 .wrangler/
 dist/
-liminal-cloudflare/cloudflare.gen.ts
 node_modules/
 repomix-output.xml
 repos

@@ -165,13 +165,7 @@ export default Worker.make({
     Layer.provide(HttpServer.layerServices),
     HttpRouter.toHttpEffect,
     Effect.flatMap((handler) => handler),
-    Effect.provide(
-      Layer.mergeAll(
-        ChatRegistry.layer("CHAT_ROOMS"),
-        LobbyRegistry.layer("LOBBY"),
-        PreludeLive,
-      ),
-    ),
+    Effect.provide(Layer.mergeAll(ChatRegistry.layer("CHAT_ROOMS"), LobbyRegistry.layer("LOBBY"), PreludeLive)),
     Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
   ),
   prelude: Layer.empty,
