@@ -203,9 +203,6 @@ importers:
       liminal:
         specifier: workspace:*
         version: link:../liminal
-      liminal-browser:
-        specifier: workspace:*
-        version: link:../liminal-browser
       portless:
         specifier: 'catalog:'
         version: 0.9.6
