@@ -40,7 +40,4 @@
       "new_classes": ["TicTacToeRegistry"],
     },
   ],
-  "vars": {
-    "DEV": true,
-  },
 }

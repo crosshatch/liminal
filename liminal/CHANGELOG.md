@@ -34,7 +34,8 @@
 
 ### Patch Changes
 
-- 7a05f2b: Improve built-in logging. Add AI resource. Resolve issue in which client listener suspense propagated suspense to streams and calls.
+- 7a05f2b: Improve built-in logging. Add AI resource. Resolve issue in which client listener suspense propagated
+  suspense to streams and calls.
 
 ## 0.17.4
 

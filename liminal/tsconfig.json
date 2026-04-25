@@ -4,6 +4,6 @@
     "noEmit": false,
     "outDir": "dist"
   },
-  "include": ["."],
+  "include": [".", "package.json"],
   "exclude": ["dist"]
 }
