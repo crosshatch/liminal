@@ -1,12 +1,12 @@
-import type { TopFromString } from "liminal/_util/schema"
-import type { ProtocolDefinition } from "liminal/Protocol"
+import type { Protocol } from "liminal/actor"
+import type { TopFromString } from "liminal/util/schema"
 
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
-import { type Actor, type ClientHandle, type Method, ClientDirectory, type ActorTransport } from "liminal"
-import * as Diagnostic from "liminal/_util/Diagnostic"
-import { logCause } from "liminal/_util/logCause"
+import { type Actor, type ClientHandle, type Method, ClientDirectory, type ActorTransport } from "liminal/actor"
+import * as Diagnostic from "liminal/util/Diagnostic"
+import { logCause } from "liminal/util/logCause"
 
 const { debug, span } = Diagnostic.module("browser.ActorRegistry")
 
@@ -23,7 +23,7 @@ export const make = Effect.fnUntraced(function* <
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  D extends ProtocolDefinition,
+  D extends Protocol.ProtocolDefinition,
   const Handlers extends Method.Handlers<D["methods"], any>,
   A,
   E,

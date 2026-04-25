@@ -1,5 +1,3 @@
-import type { ProtocolDefinition } from "liminal/Protocol"
-
 import {
   Layer,
   Effect,
@@ -16,16 +14,22 @@ import {
   Option,
 } from "effect"
 import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
-import { type Actor, type Method, ClientDirectory, type ActorTransport } from "liminal"
-import { SecWebSocketProtocol } from "liminal/_constants"
-import { boundLayer } from "liminal/_util/boundLayer"
-import * as Diagnostic from "liminal/_util/Diagnostic"
-import { logCause } from "liminal/_util/logCause"
-import * as Mutex from "liminal/_util/Mutex"
-import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal/_util/schema"
 
-import { DoState, NativeRequest, Binding } from "./bindings/index.ts"
-import { close } from "./close.ts"
+import type { ActorTransport } from "./ActorTransport.ts"
+import type * as Method from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
+
+import * as Binding from "../Binding.ts"
+import * as DoState from "../DoState.ts"
+import * as NativeRequest from "../NativeRequest.ts"
+import { SecWebSocketProtocol, close } from "../socket_util.ts"
+import { boundLayer } from "../util/boundLayer.ts"
+import * as Diagnostic from "../util/Diagnostic.ts"
+import { logCause } from "../util/logCause.ts"
+import * as Mutex from "../util/Mutex.ts"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "../util/schema.ts"
+import * as Actor from "./Actor.ts"
+import * as ClientDirectory from "./ClientDirectory.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 

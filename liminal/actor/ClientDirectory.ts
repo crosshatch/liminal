@@ -1,12 +1,12 @@
 import { Schema as S, Effect, Cause, Ref } from "effect"
 
-import type { TopFromString } from "./_util/schema.ts"
+import type { TopFromString } from "../util/schema.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 
-import * as Diagnostic from "./_util/Diagnostic.ts"
-import { phantom } from "./_util/phantom.ts"
+import * as Diagnostic from "../util/Diagnostic.ts"
+import { phantom } from "../util/phantom.ts"
 import * as ClientHandle from "./ClientHandle.ts"
 
 const { span } = Diagnostic.module("ClientDirectory")

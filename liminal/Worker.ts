@@ -7,15 +7,15 @@ import {
   HttpClient,
   FetchHttpClient,
 } from "effect/unstable/http"
-import * as Diagnostic from "liminal/_util/Diagnostic"
-import { logCause } from "liminal/_util/logCause"
 
 import { NativeRequest } from "./NativeRequest.ts"
+import * as Diagnostic from "./util/Diagnostic.ts"
+import { logCause } from "./util/logCause.ts"
 
 const { span } = Diagnostic.module("cloudflare.Entry")
 
 export class ExecutionContext extends Context.Service<ExecutionContext, globalThis.ExecutionContext>()(
-  "liminal/cloudflare/ExecutionContext",
+  "liminal/ExecutionContext",
 ) {}
 
 export interface WorkerConfig<ROut, E> {

@@ -3,7 +3,7 @@ import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
 import type { F } from "./F.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
 
-import * as Diagnostic from "./_util/Diagnostic.ts"
+import * as Diagnostic from "../util/Diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 

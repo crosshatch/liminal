@@ -2,7 +2,8 @@
   "extends": "../konfik/tsconfig.base",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["@cloudflare/workers-types"]
   },
   "include": [".", "package.json"],
   "exclude": ["dist"]

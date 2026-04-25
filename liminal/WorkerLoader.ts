@@ -3,9 +3,7 @@ import { HttpServerResponse } from "effect/unstable/http"
 
 import * as Binding from "./Binding.ts"
 
-export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.WorkerLoader>()(
-  "liminal/cloudflare/WorkerLoader",
-) {}
+export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.WorkerLoader>()("liminal/WorkerLoader") {}
 
 export const layer = Binding.layer(WorkerLoader, ["load"])
 

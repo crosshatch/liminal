@@ -1,6 +1,6 @@
 import { Deferred, Types, Option, Ref, PubSub, Stream, Effect, Context, Layer, Semaphore } from "effect"
 
-import * as Diagnostic from "./_util/Diagnostic.ts"
+import * as Diagnostic from "./Diagnostic.ts"
 
 const { debug } = Diagnostic.module("Accumulator")
 

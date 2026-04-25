@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Worker } from "liminal-cloudflare/bindings"
+import { Worker } from "liminal"
 
 import { ApiLive } from "./ApiLive.ts"
 

@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect"
 import { KeyValueStore } from "effect/unstable/persistence"
 
-import { R2 } from "../bindings/R2.ts"
+import { R2 } from "../R2.ts"
 
 export const layerR2 = ({ root }: { readonly root?: string | undefined } = {}) => {
   const prefix = root === undefined ? "" : root.endsWith("/") ? root : `${root}/`

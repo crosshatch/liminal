@@ -4,7 +4,6 @@ packages:
   - examples/*/*
   - liminal
   - liminal-browser
-  - liminal-cloudflare
   - scripts
 
 catalog:

@@ -5,7 +5,6 @@
     { "path": "./examples" },
     { "path": "./liminal" },
     { "path": "./liminal-browser" },
-    { "path": "./liminal-cloudflare" },
     { "path": "./scripts" }
   ]
 }

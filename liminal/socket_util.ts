@@ -1,6 +1,7 @@
 import { flow } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
-import { SecWebSocketProtocol } from "liminal/_constants"
+
+export const SecWebSocketProtocol = "Sec-WebSocket-Protocol" as const
 
 export const closeRaw = (event?: string | undefined) => {
   const { 0: webSocket, 1: server } = new WebSocketPair()

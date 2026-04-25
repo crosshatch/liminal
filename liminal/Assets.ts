@@ -9,7 +9,7 @@ export class Assets extends Context.Service<
   {
     readonly fetch: typeof fetch
   }
->()("liminal/cloudflare/Assets") {}
+>()("liminal/Assets") {}
 
 export const layer = Binding.layer(Assets, ["fetch"])
 

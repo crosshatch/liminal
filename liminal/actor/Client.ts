@@ -25,8 +25,8 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
-import * as Diagnostic from "./_util/Diagnostic.ts"
-import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
+import * as Diagnostic from "../util/Diagnostic.ts"
+import { decodeJsonString, encodeJsonString } from "../util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"

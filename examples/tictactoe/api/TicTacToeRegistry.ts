@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect"
-import { ActorRegistry } from "liminal-cloudflare"
+import { ActorRegistry } from "liminal/actor"
 
 import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"

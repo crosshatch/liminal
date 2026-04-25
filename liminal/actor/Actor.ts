@@ -1,10 +1,10 @@
 import { Context, Schema as S, Effect } from "effect"
 
-import type { TopFromString } from "./_util/schema.ts"
+import type { TopFromString } from "../util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
 
-import * as Diagnostic from "./_util/Diagnostic.ts"
+import * as Diagnostic from "../util/Diagnostic.ts"
 import * as Method from "./Method.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"
 

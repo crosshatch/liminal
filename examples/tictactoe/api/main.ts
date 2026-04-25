@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Worker } from "liminal-cloudflare/bindings"
+import { Assets, Worker } from "liminal"
 
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"

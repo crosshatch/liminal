@@ -12,7 +12,7 @@
     "@types/react": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",
-    "liminal-cloudflare": "workspace:*",
+    "liminal-browser": "workspace:*",
     "portless": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
