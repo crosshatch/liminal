@@ -29,4 +29,4 @@ runs:
       run: |
         eval "$(printf '%s' "$ALL_SECRETS" | jq -r 'to_entries[] | "export \(.key)=\(.value | @sh)"')"
         cd "$WORKER"
-        pnpm exec liminal sync-env . "$GITHUB_WORKSPACE/$CONFIG_FILE"
+        node "$GITHUB_WORKSPACE/kit/liminal/liminal/main.ts" sync-env . "$GITHUB_WORKSPACE/$CONFIG_FILE"
