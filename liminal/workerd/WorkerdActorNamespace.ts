@@ -14,6 +14,7 @@ import {
   Option,
 } from "effect"
 import { Binding, DoState, NativeRequest } from "effect-workerd"
+import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
@@ -25,7 +26,6 @@ import type { ProtocolDefinition } from "../Protocol.ts"
 import { diagnostic } from "../_diagnostic.ts"
 import * as Mutex from "../_util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
-import { SecWebSocketProtocol, close } from "../_util/socket.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
