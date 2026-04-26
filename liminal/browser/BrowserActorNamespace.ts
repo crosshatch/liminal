@@ -13,7 +13,7 @@ import { diagnostic } from "../_diagnostic.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { debug, span } = diagnostic("browser.ActorNamespace")
+const { debug, span } = diagnostic("browser.BrowserActorNamespace")
 
 export interface Introduction<Name extends TopFromString, AttachmentFields extends S.Struct.Fields> {
   readonly port: MessagePort

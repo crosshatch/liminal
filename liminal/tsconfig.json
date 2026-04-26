@@ -5,7 +5,7 @@
     "outDir": "dist",
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["."],
+  "include": [".", "package.json"],
   "exclude": ["dist"],
   "references": [{ "path": "../effect-workerd" }, { "path": "../liminal-util" }]
 }

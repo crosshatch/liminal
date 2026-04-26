@@ -3,7 +3,7 @@ import { Context, Effect, Layer, Semaphore } from "effect"
 export class Mutex extends Context.Service<
   Mutex,
   <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>
->()("liminal-util/Mutex") {}
+>()("liminal/Mutex") {}
 
 export const layer = Effect.gen(function* () {
   const mutex = yield* Semaphore.make(1)

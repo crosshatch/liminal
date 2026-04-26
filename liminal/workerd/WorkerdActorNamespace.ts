@@ -29,7 +29,7 @@ import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { debug, span } = diagnostic("workerd.ActorNamespace")
+const { debug, span } = diagnostic("workerd.WorkerdActorNamespace")
 
 export interface ActorNamespaceDefinition<
   ActorSelf,
@@ -43,7 +43,6 @@ export interface ActorNamespaceDefinition<
   PreludeE,
   RunROut,
   RunE,
-  H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
 > {
   readonly ""?: this["actor"]["definition"]["client"]["protocol"]
 
@@ -64,7 +63,10 @@ export interface ActorNamespaceDefinition<
 
   readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
 
-  readonly handlers: H
+  readonly handlers: Method.Handlers<
+    D["methods"],
+    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
+  >
 
   readonly onConnect: Effect.Effect<
     void,
@@ -89,7 +91,6 @@ export interface ActorNamespace<
   PreludeE,
   RunROut,
   RunE,
-  H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
 > extends Context.Service<NamespaceSelf, DurableObjectNamespace> {
   new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
 
@@ -104,8 +105,7 @@ export interface ActorNamespace<
     PreludeROut,
     PreludeE,
     RunROut,
-    RunE,
-    H
+    RunE
   >
 
   readonly upgrade: (
@@ -131,7 +131,6 @@ export const Service =
     PreludeE,
     RunROut,
     RunE,
-    H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
   >(
     id: NamespaceId,
     definition: ActorNamespaceDefinition<
@@ -145,8 +144,7 @@ export const Service =
       PreludeROut,
       PreludeE,
       RunROut,
-      RunE,
-      H
+      RunE
     >,
   ): ActorNamespace<
     NamespaceSelf,
@@ -161,8 +159,7 @@ export const Service =
     PreludeROut,
     PreludeE,
     RunROut,
-    RunE,
-    H
+    RunE
   > => {
     const { hibernation, actor, prelude, handlers, layer: runLayer, onConnect } = definition
     const {
