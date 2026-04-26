@@ -15,7 +15,7 @@ import {
 } from "effect"
 import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
 
-import { Actor, type ActorTransport, Method, Protocol, ClientDirectory } from "./actor/index.ts"
+import { Actor, type ActorTransport, Protocol, ClientDirectory } from "./actor/index.ts"
 import * as Binding from "./Binding.ts"
 import * as DoState from "./DoState.ts"
 import * as NativeRequest from "./NativeRequest.ts"
@@ -38,8 +38,6 @@ export interface ActorRegistryDefinition<
   D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
-  RunROut,
-  RunE,
 > {
   readonly ""?: this["actor"]["definition"]["client"]["protocol"]
 
@@ -58,18 +56,15 @@ export interface ActorRegistryDefinition<
     PreludeE
   >
 
-  readonly runLayer: Layer.Layer<RunROut, RunE, ActorSelf | PreludeROut>
-
-  readonly handlers: Method.Handlers<
-    D["methods"],
-    ActorSelf | RunROut | HttpClient.HttpClient | PreludeROut | Scope.Scope
+  readonly handler: (
+    payload: Protocol.Protocol<D>["F"]["Payload"]["Type"]["payload"],
+  ) => Effect.Effect<
+    D["methods"][keyof D["methods"]]["success"]["Type"],
+    D["methods"][keyof D["methods"]]["failure"]["Type"],
+    ActorSelf | HttpClient.HttpClient | PreludeROut | Scope.Scope
   >
 
-  readonly onConnect: Effect.Effect<
-    void,
-    never,
-    ActorSelf | RunROut | HttpClient.HttpClient | PreludeROut | Scope.Scope
-  >
+  readonly onConnect: Effect.Effect<void, never, ActorSelf | HttpClient.HttpClient | PreludeROut | Scope.Scope>
 
   readonly hibernation?: Duration.Input | undefined
 }
@@ -86,8 +81,6 @@ export interface ActorRegistry<
   D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
-  RunROut,
-  RunE,
 > extends Context.Service<RegistrySelf, DurableObjectNamespace> {
   new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
@@ -100,9 +93,7 @@ export interface ActorRegistry<
     ClientId,
     D,
     PreludeROut,
-    PreludeE,
-    RunROut,
-    RunE
+    PreludeE
   >
 
   readonly upgrade: (
@@ -126,8 +117,6 @@ export const Service =
     D extends Protocol.ProtocolDefinition,
     PreludeROut,
     PreludeE,
-    RunROut,
-    RunE,
   >(
     id: RegistryId,
     definition: ActorRegistryDefinition<
@@ -139,9 +128,7 @@ export const Service =
       ClientId,
       D,
       PreludeROut,
-      PreludeE,
-      RunROut,
-      RunE
+      PreludeE
     >,
   ): ActorRegistry<
     RegistrySelf,
@@ -154,11 +141,9 @@ export const Service =
     ClientId,
     D,
     PreludeROut,
-    PreludeE,
-    RunROut,
-    RunE
+    PreludeE
   > => {
-    const { hibernation, actor, prelude, runLayer, handlers, onConnect } = definition
+    const { hibernation, actor, prelude, handler, onConnect } = definition
     const {
       definition: {
         name: Name,
@@ -253,11 +238,8 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          yield* onConnect.pipe(
-            Effect.scoped,
-            span("onConnect"),
-            Effect.provide([ActorLive, runLayer.pipe(Layer.provideMerge(ActorLive))]),
-          )
+          yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
+          yield* debug("ClientRegistered")
           return new Response(null, {
             status: 101,
             webSocket,
@@ -270,7 +252,7 @@ export const Service =
         Effect.gen({ self: this }, function* () {
           const currentClient = yield* this.directory.get(socket)
           const name = yield* Effect.fromNullishOr(this.#name)
-          const layer = Layer.succeed(actor, {
+          const ActorLive = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
             currentClient,
@@ -284,9 +266,9 @@ export const Service =
             return yield* currentClient.disconnect
           }
           const { id, payload } = message
-          const { _tag, value } = payload as never
-          yield* handlers[_tag]!(value).pipe(
-            Effect.provide(runLayer.pipe(Layer.provideMerge(layer))),
+          const { _tag } = payload as never
+          yield* handler(payload).pipe(
+            Effect.provide(ActorLive),
             Effect.matchEffect({
               onSuccess: (value) =>
                 encodeFSuccess({

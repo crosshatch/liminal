@@ -8,7 +8,7 @@ export interface Kv<
   Key extends S.Top & { Encoded: string },
   Value extends S.Top,
 > extends Context.Service<Self, KVNamespace> {
-  new (_: never): Context.ServiceClass<Self, Id, KVNamespace>
+  new (_: never): Context.ServiceClass.Shape<Id, KVNamespace>
 
   ""?: [Key, Value]
 

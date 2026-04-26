@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect"
+import { Effect } from "effect"
 import { ActorRegistry } from "liminal"
 
 import { handleMove } from "./handleMove.ts"
@@ -21,8 +21,9 @@ const onConnect = Effect.gen(function* () {
 
 export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("TicTacToeRegistry", {
   actor: TicTacToeActor,
-  handlers: { Move: handleMove },
+  handler: TicTacToeActor.mergeHandlers({
+    Move: handleMove,
+  }),
   onConnect,
   prelude: KvLive,
-  runLayer: Layer.empty,
 }) {}

@@ -16,7 +16,7 @@ export const layer =
             new SchemaIssue.Pointer(
               [binding],
               new SchemaIssue.MissingKey({
-                messageMissingKey: `Missing binding "${binding}" on env`,
+                messageMissingKey: `Missing binding \`${binding}\` on env.`,
               }),
             ),
           ),
@@ -29,7 +29,7 @@ export const layer =
               new SchemaIssue.Pointer(
                 [key],
                 new SchemaIssue.MissingKey({
-                  messageMissingKey: `Expected key \`${key}\` on binding \`${binding}\``,
+                  messageMissingKey: `Expected key \`${key}\` on binding \`${binding}\`.`,
                 }),
               ),
             ),

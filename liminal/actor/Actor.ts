@@ -6,7 +6,7 @@ import type { ClientHandle, Sender } from "./ClientHandle.ts"
 
 import * as Diagnostic from "../util/Diagnostic.ts"
 import * as Method from "./Method.ts"
-import { type ProtocolDefinition } from "./Protocol.ts"
+import { type ProtocolDefinition, Protocol } from "./Protocol.ts"
 
 const { span } = Diagnostic.module("Actor")
 
@@ -62,6 +62,16 @@ export interface Actor<
     tag: K,
     f: Method.Handler<D["methods"][K], R>,
   ) => Method.Handler<D["methods"][K], R>
+
+  readonly mergeHandlers: <H extends Method.Handlers<D["methods"], any>>(
+    handlers: H,
+  ) => (
+    payload: Protocol<D>["F"]["Payload"]["Type"]["payload"],
+  ) => Effect.Effect<
+    D["methods"][keyof D["methods"]]["success"]["Type"],
+    D["methods"][keyof D["methods"]]["failure"]["Type"],
+    Effect.Services<ReturnType<H[keyof H]>>
+  >
 }
 
 export const Service =
@@ -113,11 +123,26 @@ export const Service =
       f: Method.Handler<D["methods"][K], R>,
     ): Method.Handler<D["methods"][K], R> => f
 
+    const mergeHandlers =
+      <H extends Method.Handlers<D["methods"], any>>(handlers: H) =>
+      (
+        payload_: Protocol<D>["F"]["Payload"]["Type"]["payload"],
+      ): Effect.Effect<
+        D["methods"][keyof D["methods"]]["success"]["Type"],
+        D["methods"][keyof D["methods"]]["failure"]["Type"],
+        Effect.Services<ReturnType<H[keyof H]>>
+      > => {
+        const { _tag, value: payload } = payload_ as never
+        const handler = handlers[_tag]!
+        return handler(payload)
+      }
+
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       all,
       others,
       handler,
+      mergeHandlers,
     })
   }

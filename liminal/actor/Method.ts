@@ -18,12 +18,12 @@ export const make = <Payload extends S.Top, Success extends S.Top, Failure exten
   readonly failure: Failure
 }): MethodDefinition<Payload, Success, Failure> => ({ payload, success, failure })
 
-export type Handler<MethodDefinition extends Any, R> = (
-  payload: MethodDefinition["payload"]["Type"],
-) => Effect.Effect<MethodDefinition["success"]["Type"], MethodDefinition["failure"]["Type"], R>
+export type Handler<Methods extends Any, R> = (
+  payload: Methods["payload"]["Type"],
+) => Effect.Effect<Methods["success"]["Type"], Methods["failure"]["Type"], R>
 
-export type Handlers<MethodDefinitions extends Record<string, Any>, R> = {
-  [K in keyof MethodDefinitions]: Handler<MethodDefinitions[K], R>
+export type Handlers<Methods extends Record<string, Any>, R> = {
+  [K in keyof Methods]: Handler<Methods[K], R>
 }
 
-export const handler = <M extends Any, R>(_method: M, f: Handler<M, R>): Handler<M, R> => f
+export const handler = <Method extends Any, R>(_method: Method, f: Handler<Method, R>): Handler<Method, R> => f
