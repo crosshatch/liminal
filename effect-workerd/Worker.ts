@@ -9,8 +9,9 @@ import { NativeRequest } from "./NativeRequest.ts"
 
 const { span } = diagnostic("Entry")
 
-export interface WorkerConfig<PreludeROut, PreludeE, E> {
+export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>
+
   readonly handler: Effect.Effect<
     HttpServerResponse.HttpServerResponse,
     E,
@@ -24,7 +25,7 @@ export interface WorkerConfig<PreludeROut, PreludeE, E> {
   >
 }
 
-export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerConfig<PreludeROut, PreludeE, E>) => {
+export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
   const runtime = ManagedRuntime.make(
     Layer.mergeAll(FetchHttpClient.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
   )

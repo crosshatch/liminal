@@ -1,4 +1,4 @@
-import { Effect, Schema as S, Option, Context, Layer } from "effect"
+import { SchemaAST, Effect, Schema as S, Option, Context } from "effect"
 
 import * as Binding from "./Binding.ts"
 
@@ -13,13 +13,18 @@ export interface Kv<Self, Id extends string, D extends KvDefinition> extends Con
 
   readonly definition: D
 
-  readonly put: (key: D["key"]["Type"], value: D["value"]["Type"]) => Effect.Effect<void, S.SchemaError, Self>
-
-  readonly get: (key: D["key"]["Type"]) => Effect.Effect<Option.Option<D["value"]["Type"]>, S.SchemaError, Self>
-
-  readonly remove: (key: D["key"]["Type"]) => Effect.Effect<void, S.SchemaError, Self>
-
-  readonly layer: (binding: string) => Layer.Layer<Self, S.SchemaError>
+  readonly transcoders: {
+    readonly encodeKey: ReturnType<typeof S.encodeEffect<D["key"]>>
+    readonly decodeKey: ReturnType<typeof S.decodeEffect<D["key"]>>
+    readonly encodeValue: (
+      input: unknown,
+      options?: SchemaAST.ParseOptions | undefined,
+    ) => Effect.Effect<string, S.SchemaError, D["value"]["EncodingServices"]>
+    readonly decodeValue: (
+      input: unknown,
+      options?: SchemaAST.ParseOptions,
+    ) => Effect.Effect<D["value"]["Type"], S.SchemaError, D["value"]["DecodingServices"]>
+  }
 }
 
 export const Kv =
@@ -28,34 +33,48 @@ export const Kv =
     const tag = Context.Service<Self, KVNamespace>()(id)
 
     const { key, value } = definition
-    const encodeKey = S.encodeEffect(key)
-    const encodeValue = S.encodeEffect(S.fromJsonString(S.toCodecJson(value)))
-    const decodeValue = S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(value)))
 
-    const put = Effect.fnUntraced(function* (key: D["key"]["Type"], value: D["value"]["Type"]) {
-      const kv = yield* tag
-      const keyEncoded = yield* encodeKey(key)
-      const valueEncoded = yield* encodeValue(value)
-      yield* Effect.promise(() => kv.put(keyEncoded, valueEncoded))
-    })
-
-    const get = Effect.fnUntraced(function* (key: D["key"]["Type"]) {
-      const kv = yield* tag
-      const keyEncoded = yield* encodeKey(key)
-      const valueEncoded = yield* Effect.promise(() => kv.get(keyEncoded))
-      if (valueEncoded) {
-        return yield* decodeValue(valueEncoded).pipe(Effect.map(Option.some))
-      }
-      return Option.none()
-    })
-
-    const remove = Effect.fnUntraced(function* (key: D["key"]["Type"]) {
-      const kv = yield* tag
-      const keyEncoded = yield* encodeKey(key)
-      yield* Effect.promise(() => kv.delete(keyEncoded))
-    })
+    const transcoders = {
+      encodeKey: S.encodeEffect(key),
+      decodeKey: S.decodeEffect(key),
+      encodeValue: S.encodeEffect(S.fromJsonString(S.toCodecJson(value))),
+      decodeValue: S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(value))),
+    }
 
     const layer = Binding.layer(tag, ["put", "get", "delete"])
 
-    return Object.assign(tag, { definition, put, get, remove, layer }) as never
+    return Object.assign(tag, { definition, transcoders, layer })
   }
+
+export const put = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(
+  kv: Kv<Self, Id, D>,
+  key: D["key"]["Type"],
+  value: D["value"]["Type"],
+) {
+  const resolved = yield* kv
+  const keyEncoded = yield* kv.transcoders.encodeKey(key)
+  const valueEncoded = yield* kv.transcoders.encodeValue(value)
+  yield* Effect.promise(() => resolved.put(keyEncoded, valueEncoded))
+})
+
+export const get = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(
+  kv: Kv<Self, Id, D>,
+  key: D["key"]["Type"],
+) {
+  const resolved = yield* kv
+  const keyEncoded = yield* kv.transcoders.encodeKey(key)
+  const value = yield* Effect.promise(() => resolved.get(keyEncoded))
+  if (value === null) {
+    return Option.none()
+  }
+  return yield* kv.transcoders.decodeValue(value).pipe(Effect.map(Option.some))
+})
+
+export const remove = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(
+  kv: Kv<Self, Id, D>,
+  key: D["key"]["Type"],
+) {
+  const resolved = yield* kv
+  const keyEncoded = yield* kv.transcoders.encodeKey(key)
+  yield* Effect.promise(() => resolved.delete(keyEncoded))
+})
