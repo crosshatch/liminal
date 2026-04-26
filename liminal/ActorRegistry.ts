@@ -15,7 +15,7 @@ import {
 } from "effect"
 import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
 
-import { Actor, type ActorTransport, Protocol, ClientDirectory } from "./actor/index.ts"
+import { Actor, type ActorTransport, Protocol, ClientDirectory, Method } from "./actor/index.ts"
 import * as Binding from "./Binding.ts"
 import * as DoState from "./DoState.ts"
 import * as NativeRequest from "./NativeRequest.ts"
@@ -38,6 +38,9 @@ export interface ActorRegistryDefinition<
   D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
+  RunROut,
+  RunE,
+  H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
 > {
   readonly ""?: this["actor"]["definition"]["client"]["protocol"]
 
@@ -56,15 +59,16 @@ export interface ActorRegistryDefinition<
     PreludeE
   >
 
-  readonly handler: (
-    payload: Protocol.Protocol<D>["F"]["Payload"]["Type"]["payload"],
-  ) => Effect.Effect<
-    D["methods"][keyof D["methods"]]["success"]["Type"],
-    D["methods"][keyof D["methods"]]["failure"]["Type"],
-    ActorSelf | HttpClient.HttpClient | PreludeROut | Scope.Scope
-  >
+  // TODO: actually provide this layer with the prelude
+  readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
 
-  readonly onConnect: Effect.Effect<void, never, ActorSelf | HttpClient.HttpClient | PreludeROut | Scope.Scope>
+  readonly handlers: H
+
+  readonly onConnect: Effect.Effect<
+    void,
+    never,
+    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
+  >
 
   readonly hibernation?: Duration.Input | undefined
 }
@@ -81,6 +85,9 @@ export interface ActorRegistry<
   D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
+  RunROut,
+  RunE,
+  H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
 > extends Context.Service<RegistrySelf, DurableObjectNamespace> {
   new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
 
@@ -93,7 +100,10 @@ export interface ActorRegistry<
     ClientId,
     D,
     PreludeROut,
-    PreludeE
+    PreludeE,
+    RunROut,
+    RunE,
+    H
   >
 
   readonly upgrade: (
@@ -117,6 +127,9 @@ export const Service =
     D extends Protocol.ProtocolDefinition,
     PreludeROut,
     PreludeE,
+    RunROut,
+    RunE,
+    H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
   >(
     id: RegistryId,
     definition: ActorRegistryDefinition<
@@ -128,7 +141,10 @@ export const Service =
       ClientId,
       D,
       PreludeROut,
-      PreludeE
+      PreludeE,
+      RunROut,
+      RunE,
+      H
     >,
   ): ActorRegistry<
     RegistrySelf,
@@ -141,9 +157,12 @@ export const Service =
     ClientId,
     D,
     PreludeROut,
-    PreludeE
+    PreludeE,
+    RunROut,
+    RunE,
+    H
   > => {
-    const { hibernation, actor, prelude, handler, onConnect } = definition
+    const { hibernation, actor, prelude, handlers, layer: runLayer, onConnect } = definition
     const {
       definition: {
         name: Name,
@@ -238,14 +257,19 @@ export const Service =
             clients: this.directory.handles,
             currentClient,
           })
-          yield* onConnect.pipe(Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
+          yield* onConnect.pipe(
+            Effect.scoped,
+            span("onConnect"),
+            Effect.scoped,
+            Effect.provide(Layer.provideMerge(runLayer, ActorLive)),
+          )
           yield* debug("ClientRegistered")
           return new Response(null, {
             status: 101,
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(Effect.scoped, Effect.tapCause(logCause), span("fetch"), this.runtime.runPromise)
+        }).pipe(Effect.tapCause(logCause), span("fetch"), this.runtime.runPromise)
       }
 
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -266,9 +290,8 @@ export const Service =
             return yield* currentClient.disconnect
           }
           const { id, payload } = message
-          const { _tag } = payload as never
-          yield* handler(payload).pipe(
-            Effect.provide(ActorLive),
+          const { _tag, value } = payload as never
+          yield* handlers[_tag]!(value).pipe(
             Effect.matchEffect({
               onSuccess: (value) =>
                 encodeFSuccess({
@@ -286,6 +309,7 @@ export const Service =
             span("handler", { attributes: { _tag } }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
+            Effect.provide(Layer.provideMerge(runLayer, ActorLive)),
           )
         }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
       }
