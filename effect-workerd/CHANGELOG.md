@@ -1,5 +1,13 @@
 # effect-workerd
 
+## 0.0.3
+
+### Patch Changes
+
+- 6a6fe05: Debug publish of liminal-util.
+- Updated dependencies [6a6fe05]
+  - liminal-util@0.0.9
+
 ## 0.0.2
 
 ### Patch Changes
