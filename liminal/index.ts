@@ -1,4 +1,4 @@
-export * as ActorRegistry from "./ActorRegistry.ts"
+export * as ActorNamespace from "./ActorNamespace.ts"
 export * as Ai from "./Ai.ts"
 export * as Assets from "./Assets.ts"
 export * as Binding from "./Binding.ts"

@@ -1,1 +1,1 @@
-export * as BrowserActorRegistry from "./BrowserActorRegistry.ts"
+export * as BrowserActorNamespace from "./BrowserActorNamespace.ts"

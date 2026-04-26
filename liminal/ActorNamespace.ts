@@ -26,9 +26,9 @@ import { logCause } from "./util/logCause.ts"
 import * as Mutex from "./util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "./util/schema.ts"
 
-const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
+const { debug, span } = Diagnostic.module("cloudflare.ActorNamespace")
 
-export interface ActorRegistryDefinition<
+export interface ActorNamespaceDefinition<
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -72,9 +72,9 @@ export interface ActorRegistryDefinition<
   readonly hibernation?: Duration.Input | undefined
 }
 
-export interface ActorRegistry<
-  RegistrySelf,
-  RegistryId extends string,
+export interface ActorNamespace<
+  NamespaceSelf,
+  NamespaceId extends string,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -87,10 +87,10 @@ export interface ActorRegistry<
   RunROut,
   RunE,
   H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
-> extends Context.Service<RegistrySelf, DurableObjectNamespace> {
-  new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<RegistryId, DurableObjectNamespace>
+> extends Context.Service<NamespaceSelf, DurableObjectNamespace> {
+  new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
 
-  readonly definition: ActorRegistryDefinition<
+  readonly definition: ActorNamespaceDefinition<
     ActorSelf,
     ActorId,
     Name,
@@ -108,15 +108,15 @@ export interface ActorRegistry<
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, RegistrySelf | NativeRequest.NativeRequest>
+  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, NamespaceSelf | NativeRequest.NativeRequest>
 
-  readonly layer: (binding: string) => Layer.Layer<RegistrySelf, S.SchemaError, never>
+  readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
 export const Service =
-  <RegistrySelf>() =>
+  <NamespaceSelf>() =>
   <
-    RegistryId extends string,
+    NamespaceId extends string,
     ActorSelf,
     ActorId extends string,
     Name extends TopFromString,
@@ -130,8 +130,8 @@ export const Service =
     RunE,
     H extends Method.Handlers<D["methods"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>,
   >(
-    id: RegistryId,
-    definition: ActorRegistryDefinition<
+    id: NamespaceId,
+    definition: ActorNamespaceDefinition<
       ActorSelf,
       ActorId,
       Name,
@@ -145,9 +145,9 @@ export const Service =
       RunE,
       H
     >,
-  ): ActorRegistry<
-    RegistrySelf,
-    RegistryId,
+  ): ActorNamespace<
+    NamespaceSelf,
+    NamespaceId,
     ActorSelf,
     ActorId,
     Name,
@@ -194,7 +194,7 @@ export const Service =
         encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
     }
 
-    const tag = class tag extends Context.Service<RegistrySelf, DurableObjectNamespace>()(id) {
+    const tag = class tag extends Context.Service<NamespaceSelf, DurableObjectNamespace>()(id) {
       readonly runtime
       readonly directory = ClientDirectory.make(actor, transport)
 

@@ -4,9 +4,9 @@ import { Assets, Worker } from "liminal"
 
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
-import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
+import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
-export { TicTacToeRegistry }
+export { TicTacToeNamespace }
 
 const ApiLive = Layer.mergeAll(
   HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
@@ -15,7 +15,7 @@ const ApiLive = Layer.mergeAll(
     "/play",
     Effect.gen(function* () {
       const { gameId, player } = yield* GameState.init
-      return yield* TicTacToeRegistry.upgrade(gameId, { player })
+      return yield* TicTacToeNamespace.upgrade(gameId, { player })
     }),
   ),
   HttpRouter.cors({
@@ -28,5 +28,5 @@ const ApiLive = Layer.mergeAll(
 
 export default Worker.make({
   handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
-  prelude: Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE"), Assets.layer("ASSETS")),
+  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer("TICTACTOE"), Assets.layer("ASSETS")),
 })

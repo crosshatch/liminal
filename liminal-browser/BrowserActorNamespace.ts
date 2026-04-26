@@ -8,7 +8,7 @@ import { type Actor, type ClientHandle, type Method, ClientDirectory, type Actor
 import * as Diagnostic from "liminal/util/Diagnostic"
 import { logCause } from "liminal/util/logCause"
 
-const { debug, span } = Diagnostic.module("browser.ActorRegistry")
+const { debug, span } = Diagnostic.module("browser.ActorNamespace")
 
 export interface Introduction<Name extends TopFromString, AttachmentFields extends S.Struct.Fields> {
   readonly port: MessagePort
