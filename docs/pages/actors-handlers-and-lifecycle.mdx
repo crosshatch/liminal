@@ -18,7 +18,7 @@ An actor ties together three things:
 
 ```ts
 import { Schema as S } from "effect"
-import { Actor } from "liminal/actor"
+import { Actor } from "liminal"
 
 import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
 
@@ -190,13 +190,13 @@ That is useful for values like:
 - the caller's role in a game
 - per-socket cursors or last-seen sequence numbers
 
-Do not use attachments as whole-actor storage. Persist shared state elsewhere (D1, Durable Object storage, Postgres via
-Hyperdrive, and so on).
+Do not use attachments as whole-actor storage. Persist shared state elsewhere — for example, through Effect's
+`KeyValueStore` interface backed by an R2 bucket.
 
 ## Use `runLayer` for request-local services
 
 Many handlers want convenient access to values derived from actor context.
 
-Use `runLayer` (on the Cloudflare `ActorRegistry`) to derive services like `CurrentUserId` or `Authorization` from the
-actor name and current client attachments. See [Cloudflare Registry and Routing](./cloudflare/registry-and-routing.mdx)
-for the full pattern.
+Use `layer` (on the Cloudflare `WorkerdActorNamespace`) to derive services like `CurrentUserId` or `Authorization` from
+the actor name and current client attachments. See [Cloudflare Actor Namespace](./cloudflare/actor-namespace.mdx) for
+the full pattern.

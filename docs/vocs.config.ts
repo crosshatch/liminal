@@ -25,73 +25,6 @@ export default defineConfig({
         text: "Quickstart",
       },
       {
-        link: "/cloudflare",
-        text: "Cloudflare Quickstart",
-      },
-      {
-        text: "Worker Runtime",
-        items: [
-          {
-            link: "/cloudflare/worker",
-            text: "Worker",
-          },
-          {
-            link: "/cloudflare/native-request",
-            text: "NativeRequest",
-          },
-        ],
-      },
-      {
-        text: "Bindings",
-        items: [
-          {
-            link: "/cloudflare/ai",
-            text: "AI",
-          },
-          {
-            link: "/cloudflare/assets",
-            text: "Assets",
-          },
-          {
-            link: "/cloudflare/d1",
-            text: "D1",
-          },
-          {
-            link: "/cloudflare/do-state",
-            text: "Durable Object State",
-          },
-          {
-            link: "/cloudflare/hyperdrive",
-            text: "Hyperdrive",
-          },
-          {
-            link: "/cloudflare/images",
-            text: "Images",
-          },
-          {
-            link: "/cloudflare/kv",
-            text: "KV",
-          },
-          {
-            link: "/cloudflare/r2",
-            text: "R2",
-          },
-          {
-            link: "/cloudflare/worker-loader",
-            text: "Worker Loader",
-          },
-        ],
-      },
-      {
-        text: "Persistence",
-        items: [
-          {
-            link: "/cloudflare/key-value-store",
-            text: "KeyValueStore on R2",
-          },
-        ],
-      },
-      {
         text: "Actor System",
         items: [
           {
@@ -110,9 +43,18 @@ export default defineConfig({
             link: "/audition",
             text: "Audition",
           },
+        ],
+      },
+      {
+        text: "Cloudflare",
+        items: [
           {
-            link: "/cloudflare/registry-and-routing",
-            text: "Registry and Routing",
+            link: "/cloudflare",
+            text: "Quickstart",
+          },
+          {
+            link: "/cloudflare/actor-namespace",
+            text: "Actor Namespace",
           },
         ],
       },

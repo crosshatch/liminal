@@ -1,18 +1,19 @@
-# Registry and Routing
+# Cloudflare Actor Namespace
 
-`liminal/actor` defines the actor model. `liminal` mounts that model onto Cloudflare Workers and Durable Objects.
+`liminal` defines the actor model. `liminal/workerd` mounts that model onto Cloudflare Workers and Durable Objects;
+`effect-workerd` provides the Workerd-side glue (`Worker.make`, `Assets.forward`, and so on).
 
 This guide covers:
 
-- `ActorRegistry.Service(...)`
-- `Worker.make(...)`
+- `WorkerdActorNamespace.Service(...)` — wraps an actor as a Durable Object class.
+- `Worker.make(...)` — produces the Worker `fetch` entrypoint.
 
-## Define a registry with `ActorRegistry.Service(...)`
+## Define a namespace with `WorkerdActorNamespace.Service(...)`
 
-An actor registry wraps one actor type as one Durable Object class.
+A namespace wraps one actor type as one Durable Object class.
 
 ```ts
-import { ActorRegistry } from "liminal"
+import { WorkerdActorNamespace } from "liminal/workerd"
 
 import * as CurrentUserId from "../context/CurrentUserId.ts"
 import { PreludeLive } from "../PreludeLive.ts"
@@ -20,31 +21,31 @@ import { ChatActor } from "./ChatActor.ts"
 import * as handlers from "./handlers/handlers.ts"
 import { onConnect } from "./lifecycle/onConnect.ts"
 
-export class ChatRegistry extends ActorRegistry.Service<ChatRegistry>()("ChatRegistry", {
+export class ChatNamespace extends WorkerdActorNamespace.Service<ChatNamespace>()("ChatNamespace", {
   actor: ChatActor,
   prelude: PreludeLive,
-  runLayer: CurrentUserId.layerChat,
+  layer: CurrentUserId.layerChat,
   onConnect,
   handlers,
 }) {}
 ```
 
-## What each registry field means
+## What each namespace field means
 
 - `actor`: the Liminal actor definition
 - `prelude`: long-lived runtime dependencies for the Durable Object instance
-- `runLayer`: short-lived, request-local dependencies derived from actor context
+- `layer`: short-lived, request-local dependencies derived from actor context
 - `onConnect`: logic that runs for newly upgraded sockets
 - `handlers`: the method implementation table
 - `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
 
 The Durable Object binding name is not part of the definition — it is supplied later when you call
-`ChatRegistry.layer("CHAT_ROOMS")` to provide the registry to your Worker runtime.
+`ChatNamespace.layer("CHAT_ROOMS")` to provide the namespace to your Worker runtime.
 
-In practice, `runLayer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name and
+In practice, `layer` is where you derive conveniences like `CurrentUserId` or `Authorization` from the actor name and
 current client attachments.
 
-## `prelude` versus `runLayer`
+## `prelude` versus `layer`
 
 This split is one of the most important concepts to internalize.
 
@@ -56,13 +57,13 @@ Use `prelude` for long-lived infrastructure:
 - asset bindings
 - Cloudflare service bindings
 
-Use `runLayer` for short-lived context derived from the current client-specific actor invocation:
+Use `layer` for short-lived context derived from the current client-specific actor invocation:
 
 - current user id
 - current authorization
 
-The next example shows how to build a `runLayer` that provides an actor-specific `CurrentUserId` derived from two
-different actor definitions.
+The next example builds a `layer` that provides an actor-specific `CurrentUserId` derived from two different actor
+definitions.
 
 ```ts
 import { Context, Effect, Layer, Schema as S } from "effect"
@@ -93,14 +94,14 @@ export const layerChat = Effect.gen(function* () {
 
 ## Upgrade into an actor from HTTP
 
-`Registry.upgrade(name, attachments)` is the handoff from HTTP to the Durable Object.
+`Namespace.upgrade(name, attachments)` is the handoff from HTTP to the Durable Object.
 
 ```ts
 import { Effect, Layer } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 
-import { ChatRegistry } from "./chat/ChatRegistry.ts"
-import { LobbyRegistry } from "./lobby/LobbyRegistry.ts"
+import { ChatNamespace } from "./chat/ChatNamespace.ts"
+import { LobbyNamespace } from "./lobby/LobbyNamespace.ts"
 
 export const ApiLive = Layer.mergeAll(
   HttpRouter.add(
@@ -112,11 +113,11 @@ export const ApiLive = Layer.mergeAll(
 
       if (user) {
         const roomId = yield* getActiveRoom(user.id)
-        return yield* ChatRegistry.upgrade(roomId, { userId: user.id })
+        return yield* ChatNamespace.upgrade(roomId, { userId: user.id })
       }
 
-      return yield* LobbyRegistry.upgrade(sessionToken, {})
-    }).pipe(Effect.orDie),
+      return yield* LobbyNamespace.upgrade(sessionToken, {})
+    }),
   ),
 )
 ```
@@ -150,41 +151,32 @@ The Worker entrypoint usually exports:
 
 ```ts
 import { Effect, Layer } from "effect"
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Worker } from "liminal"
+import { Worker } from "effect-workerd"
+import { HttpRouter } from "effect/unstable/http"
 
 import { ApiLive } from "./ApiLive.ts"
-import { ChatRegistry } from "./chat/ChatRegistry.ts"
-import { LobbyRegistry } from "./lobby/LobbyRegistry.ts"
+import { ChatNamespace } from "./chat/ChatNamespace.ts"
+import { LobbyNamespace } from "./lobby/LobbyNamespace.ts"
 import { PreludeLive } from "./PreludeLive.ts"
 
-export { ChatRegistry, LobbyRegistry }
+export { ChatNamespace, LobbyNamespace }
 
 export default Worker.make({
-  handler: ApiLive.pipe(
-    Layer.provide(HttpServer.layerServices),
-    HttpRouter.toHttpEffect,
-    Effect.flatMap((handler) => handler),
-    Effect.provide(Layer.mergeAll(ChatRegistry.layer("CHAT_ROOMS"), LobbyRegistry.layer("LOBBY"), PreludeLive)),
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  ),
-  prelude: Layer.empty,
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(PreludeLive, ChatNamespace.layer("CHAT_ROOMS"), LobbyNamespace.layer("LOBBY")),
 })
 ```
 
-Each registry's `.layer(binding)` is what ties it to a specific Durable Object binding in Wrangler. The binding name
-lives at the layer call site rather than in the registry definition, which makes it easy to mount the same registry
+Each namespace's `.layer(binding)` is what ties it to a specific Durable Object binding in Wrangler. The binding name
+lives at the layer call site rather than in the namespace definition, which makes it easy to mount the same namespace
 under different bindings.
 
-`Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `ActorRegistry` separately manages the
-Durable Object runtime for actor messages. See [Worker](./worker.mdx) for more on `Worker.make(...)`.
-
-Both sides can share the same prelude layer — either by threading `PreludeLive` through the registry's `prelude` and
-providing it here, or by passing it to `Worker.make(...)` as its `prelude`.
+`Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `WorkerdActorNamespace` separately
+manages the Durable Object runtime for actor messages.
 
 ## Wrangler alignment matters
 
-The registry binding, named export, and Wrangler config must line up.
+The namespace binding, named export, and Wrangler config must line up.
 
 ```jsonc
 {
@@ -192,14 +184,14 @@ The registry binding, named export, and Wrangler config must line up.
     "bindings": [
       {
         "name": "CHAT_ROOMS",
-        "class_name": "ChatRegistry",
+        "class_name": "ChatNamespace",
       },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["ChatRegistry"],
+      "new_classes": ["ChatNamespace"],
     },
   ],
 }
@@ -207,7 +199,7 @@ The registry binding, named export, and Wrangler config must line up.
 
 The important correspondence is:
 
-- `ChatRegistry.layer("CHAT_ROOMS")` in the Worker runtime
+- `ChatNamespace.layer("CHAT_ROOMS")` in the Worker runtime
 - `name: "CHAT_ROOMS"` in Wrangler
-- `export { ChatRegistry }` in the Worker entrypoint
-- `class_name: "ChatRegistry"` in Wrangler
+- `export { ChatNamespace }` in the Worker entrypoint
+- `class_name: "ChatNamespace"` in Wrangler
