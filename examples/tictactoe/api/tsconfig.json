@@ -1,7 +1,11 @@
 {
   "extends": "../../../konfik/tsconfig.base",
   "include": ["."],
-  "references": [{ "path": "../../../liminal" }],
+  "references": [
+    { "path": "../../../effect-workerd" },
+    { "path": "../../../liminal" },
+    { "path": "../../../liminal-util" }
+  ],
   "exclude": ["dist"],
   "compilerOptions": {
     "noEmit": false,

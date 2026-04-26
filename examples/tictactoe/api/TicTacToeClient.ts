@@ -1,5 +1,5 @@
 import { Schema as S } from "effect"
-import { Client } from "liminal/actor"
+import { Client } from "liminal"
 
 export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])

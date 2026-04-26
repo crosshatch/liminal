@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
+import { Worker } from "effect-workerd"
 import { HttpRouter } from "effect/unstable/http"
-import { Worker } from "liminal"
 
 import { ApiLive } from "./ApiLive.ts"
 

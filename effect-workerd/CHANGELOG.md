@@ -1,0 +1,68 @@
+# liminal
+
+## 0.17.11
+
+### Patch Changes
+
+- 01eb088: Move everything cloudflare-related directly into liminal.
+
+## 0.17.10
+
+### Patch Changes
+
+- 9583d0e: Rework the module structure for bindings.
+
+## 0.17.9
+
+### Patch Changes
+
+- 2c5c785: Simplify API for client event emission and disconnection. Move binding specificity to layer provision step.
+
+## 0.17.8
+
+### Patch Changes
+
+- 5c2a730: Move cloudflare bindings into subdir in preparation for extraction into different package."
+
+## 0.17.7
+
+### Patch Changes
+
+- e5c54be: Decouple actor transport. Implement proper multi-actor instance browser registry.
+
+## 0.17.6
+
+### Patch Changes
+
+- d7b1da3: Simplify type-level representation of client protocol.
+
+## 0.17.5
+
+### Patch Changes
+
+- 7a05f2b: Improve built-in logging. Add AI resource. Resolve issue in which client listener suspense propagated
+  suspense to streams and calls.
+
+## 0.17.4
+
+### Patch Changes
+
+- 566bb30: Fix json transcoding. Implement R2-based Effect KV layer.
+
+## 0.17.3
+
+### Patch Changes
+
+- 2d7b56d: Fix broken event encoding.
+
+## 0.17.2
+
+### Patch Changes
+
+- 366c080: Migrate to Effect v4.
+
+## 0.17.1
+
+### Patch Changes
+
+- 17342eb: This version marks a complete reimagining of Liminal. More information coming soon.

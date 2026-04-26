@@ -8,7 +8,9 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
+    "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
+    "liminal-util": "workspace:*",
     "vitest": "catalog:",
     "wrangler": "catalog:"
   }

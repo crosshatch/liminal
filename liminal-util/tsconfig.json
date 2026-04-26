@@ -1,0 +1,9 @@
+{
+  "extends": "../konfik/tsconfig.base",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist"
+  },
+  "include": [".", "package.json"],
+  "exclude": ["dist"]
+}

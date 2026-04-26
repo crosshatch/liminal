@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect"
-import { ActorNamespace } from "liminal"
+import { WorkerdActorNamespace } from "liminal/workerd"
 
 import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"
@@ -19,7 +19,7 @@ const onConnect = Effect.gen(function* () {
   }
 }).pipe(Effect.orDie)
 
-export class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
+export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
   actor: TicTacToeActor,
   prelude: KvLive,
   onConnect,

@@ -1,6 +1,6 @@
 import { Layer, Effect } from "effect"
+import { Assets, Worker } from "effect-workerd"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Worker } from "liminal"
 
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
