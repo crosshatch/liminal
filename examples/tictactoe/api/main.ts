@@ -1,12 +1,12 @@
 import { Layer, Effect } from "effect"
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Worker } from "liminal"
+import { Assets, Worker } from "effect-workerd"
+import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
-import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
+import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
-export { TicTacToeRegistry }
+export { TicTacToeNamespace }
 
 const ApiLive = Layer.mergeAll(
   HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
@@ -15,7 +15,7 @@ const ApiLive = Layer.mergeAll(
     "/play",
     Effect.gen(function* () {
       const { gameId, player } = yield* GameState.init
-      return yield* TicTacToeRegistry.upgrade(gameId, { player })
+      return yield* TicTacToeNamespace.upgrade(gameId, { player })
     }),
   ),
   HttpRouter.cors({
@@ -27,12 +27,6 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(
-    Layer.provide(HttpServer.layerServices),
-    HttpRouter.toHttpEffect,
-    Effect.flatMap((v) => v),
-    Effect.provide(Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE"), Assets.layer("ASSETS"))),
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  ),
-  prelude: Layer.empty,
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer("TICTACTOE"), Assets.layer("ASSETS")),
 })

@@ -1,0 +1,32 @@
+{
+  "name": "effect-workerd",
+  "version": "0.0.1",
+  "description": "Effect x Cloudflare",
+  "bugs": {
+    "url": "https://github.com/crosshatch/liminal/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crosshatch/liminal.git",
+    "directory": "effect-workerd"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@effect/sql-d1": "catalog:",
+    "effect": "catalog:",
+    "liminal-util": "workspace:*"
+  }
+}

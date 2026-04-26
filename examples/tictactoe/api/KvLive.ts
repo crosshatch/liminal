@@ -1,5 +1,4 @@
 import { Layer } from "effect"
-import { R2 } from "liminal"
-import { KeyValueStore } from "liminal/platform"
+import { R2 } from "effect-workerd"
 
-export const KvLive = KeyValueStore.layerR2().pipe(Layer.provide(R2.layer("BUCKET")))
+export const KvLive = R2.layerKeyValueStore({ root: "kv" }).pipe(Layer.provide(R2.layer("BUCKET")))

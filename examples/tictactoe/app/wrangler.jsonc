@@ -30,14 +30,14 @@
     "bindings": [
       {
         "name": "TICTACTOE",
-        "class_name": "TicTacToeRegistry",
+        "class_name": "TicTacToeNamespace",
       },
     ],
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": ["TicTacToeRegistry"],
+      "new_classes": ["TicTacToeNamespace"],
     },
   ],
 }

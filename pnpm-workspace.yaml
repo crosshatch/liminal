@@ -2,8 +2,9 @@ packages:
   - docs
   - examples/*
   - examples/*/*
+  - effect-workerd
   - liminal
-  - liminal-browser
+  - liminal-util
   - scripts
 
 catalog:

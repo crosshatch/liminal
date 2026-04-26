@@ -1,16 +1,10 @@
 import { Layer, Effect } from "effect"
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Worker } from "liminal"
+import { Worker } from "effect-workerd"
+import { HttpRouter } from "effect/unstable/http"
 
 import { ApiLive } from "./ApiLive.ts"
 
 export default Worker.make({
-  handler: ApiLive.pipe(
-    Layer.provide(HttpServer.layerServices),
-    HttpRouter.toHttpEffect,
-    Effect.flatMap((v) => v),
-    Effect.tapCause(Effect.logError),
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  ),
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
   prelude: Layer.empty,
 })

@@ -1,7 +1,7 @@
 {
   "name": "liminal",
   "version": "0.17.11",
-  "description": "Effect x Cloudflare",
+  "description": "Effect x Actors",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
   },
@@ -10,9 +10,6 @@
     "type": "git",
     "url": "https://github.com/crosshatch/liminal.git",
     "directory": "liminal"
-  },
-  "bin": {
-    "liminal": "./dist/main.js"
   },
   "type": "module",
   "sideEffects": false,
@@ -25,27 +22,26 @@
       "types": "./*.ts",
       "default": "./dist/*.js"
     },
-    "./actor": {
-      "types": "./actor/index.ts",
-      "default": "./dist/actor/index.js"
+    "./browser": {
+      "types": "./browser/index.ts",
+      "default": "./dist/browser/index.js"
     },
     "./experimental": {
       "types": "./experimental/index.ts",
       "default": "./dist/experimental/index.js"
     },
-    "./platform": {
-      "types": "./platform/index.ts",
-      "default": "./dist/platform/index.js"
-    },
-    "./util/*": {
-      "types": "./util/*.ts",
-      "default": "./dist/util/*.js"
+    "./workerd": {
+      "types": "./workerd/index.ts",
+      "default": "./dist/workerd/index.js"
     },
     "./package.json": "./package.json"
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/platform-browser": "catalog:",
     "@effect/sql-d1": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "effect-workerd": "workspace:*",
+    "liminal-util": "workspace:*"
   }
 }

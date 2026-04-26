@@ -1,0 +1,24 @@
+{
+  "name": "liminal-util",
+  "version": "0.0.1",
+  "bugs": {
+    "url": "https://github.com/crosshatch/liminal/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crosshatch/liminal.git",
+    "directory": "liminal-util"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./*": {
+      "types": "./*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  }
+}

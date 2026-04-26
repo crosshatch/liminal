@@ -1,0 +1,11 @@
+{
+  "extends": "../konfik/tsconfig.base",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["."],
+  "exclude": ["dist"],
+  "references": [{ "path": "../liminal-util" }]
+}

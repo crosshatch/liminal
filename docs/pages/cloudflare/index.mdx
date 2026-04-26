@@ -1,17 +1,19 @@
 # Quickstart: Cloudflare
 
-Let's cover the simplest complete path through `liminal`.
+Liminal is a vendor-agnostic actor framework. To host actors on Cloudflare, pair `liminal` with `effect-workerd` — a
+small package of Effect services around the Workerd runtime (`Worker.make`, `Assets`, `R2`, and so on) that lets you
+mount actors onto Durable Objects.
 
-We'll implement a trimmed-down Tic-Tac-Toe example:
+This guide walks through the simplest complete path:
 
 - Define a typed client (the public protocol).
 - Define an actor with per-client attachments.
 - Implement one handler and one `onConnect` hook.
-- Register the actor within a Cloudflare Durable Object namespace.
-- Upgrade the client from an HTTP route.
+- Wrap the actor in a `WorkerdActorNamespace` (a Durable Object class).
+- Upgrade the client from an HTTP route via `Worker.make`.
 - Consume the client from a browser with `Client.layerSocket(...)`.
 
-For larger apps, split methods, events, handlers, and lifecycle files into separate modules. The next guides cover that
+For larger apps, split methods, events, handlers, and lifecycle into separate modules. The next guides cover that
 structure in more detail.
 
 ## Define the client
@@ -21,7 +23,7 @@ Start with the protocol the browser and actor will share.
 ```ts
 // TicTacToeClient.ts
 import { Schema as S } from "effect"
-import { Client } from "liminal/actor"
+import { Client } from "liminal"
 
 export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])
@@ -57,12 +59,12 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
 
 ## Define the actor
 
-The actor ties a durable name to that client protocol and defines the per-client attachment state.
+The actor ties a durable name to that client protocol and defines per-client attachment state.
 
 ```ts
 // TicTacToeActor.ts
 import { Schema as S } from "effect"
-import { Actor } from "liminal/actor"
+import { Actor } from "liminal"
 
 import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
 
@@ -73,9 +75,9 @@ export class TicTacToeActor extends Actor.Service<TicTacToeActor>()("examples/Ti
 }) {}
 ```
 
-The important split is:
+The important split:
 
-- `name` is the unique identifier for the actor within its registry. Use `S.String` or a branded string schema.
+- `name` is the unique identifier for the actor instance. Use `S.String` or a branded string schema.
 - `attachments` are per-connected-client state.
 
 For Tic-Tac-Toe, one actor represents one game, while attachments distinguish player `X` from player `O`.
@@ -97,8 +99,8 @@ export const onConnect = Effect.gen(function* () {
 })
 ```
 
-Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas — see
-[Accumulator](../accumulator.mdx).
+Pairing snapshot-on-connect with delta events keeps the UI story simple: connect, consume a snapshot, apply deltas —
+see [Accumulator](../accumulator.mdx).
 
 ## Implement method handlers
 
@@ -147,15 +149,14 @@ The main server-side APIs used here are:
 
 Actors are not a database. For anything that must survive hibernation or eviction, persist state externally. The
 tic-tac-toe example persists its board through Effect's `KeyValueStore`, backed by an R2 bucket via
-`KeyValueStore.layerR2` from `liminal/platform`:
+`R2.layerKeyValueStore` from `effect-workerd`:
 
 ```ts
 // KvLive.ts
 import { Layer } from "effect"
-import { R2 } from "liminal"
-import { KeyValueStore } from "liminal/platform"
+import { R2 } from "effect-workerd"
 
-export const KvLive = KeyValueStore.layerR2().pipe(Layer.provide(R2.layer("BUCKET")))
+export const KvLive = R2.layerKeyValueStore({ root: "kv" }).pipe(Layer.provide(R2.layer("BUCKET")))
 ```
 
 Wrap your storage access in plain Effects that depend on `KeyValueStore`:
@@ -180,38 +181,41 @@ export const setBoard = (config: { readonly turn: "X" | "O"; readonly board: Boa
   })
 ```
 
-## Register the actor with `ActorRegistry`
+## Wrap the actor with `WorkerdActorNamespace`
 
-`ActorRegistry` is the Cloudflare Durable Object wrapper around your actor.
+`WorkerdActorNamespace` is the Cloudflare Durable Object wrapper around your actor.
 
 ```ts
-// TicTacToeRegistry.ts
+// TicTacToeNamespace.ts
 import { Layer } from "effect"
-import { ActorRegistry } from "liminal/actor"
+import { WorkerdActorNamespace } from "liminal/workerd"
 
 import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"
 import { onConnect } from "./onConnect.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-export class TicTacToeRegistry extends ActorRegistry.Service<TicTacToeRegistry>()("examples/TicTacToeRegistry", {
-  actor: TicTacToeActor,
-  handlers: { Move: handleMove },
-  onConnect,
-  prelude: KvLive,
-  runLayer: Layer.empty,
-}) {}
+export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()(
+  "examples/TicTacToeNamespace",
+  {
+    actor: TicTacToeActor,
+    handlers: { Move: handleMove },
+    onConnect,
+    prelude: KvLive,
+    layer: Layer.empty,
+  },
+) {}
 ```
 
 The shape maps cleanly onto runtime concerns:
 
 - `actor` is the Liminal actor definition.
 - `prelude` is long-lived infrastructure (databases, config, asset bindings).
-- `runLayer` is short-lived, request-local context derived from actor context.
+- `layer` is short-lived, request-local context derived from actor context.
 - `handlers` is the method implementation table.
 - `onConnect` runs for every newly upgraded socket.
 
-The Durable Object binding name is supplied later, when the registry's `.layer(...)` is applied.
+The Durable Object binding name is supplied later, when the namespace's `.layer(...)` is applied.
 
 ## Upgrade from an HTTP route
 
@@ -220,14 +224,14 @@ An HTTP route picks the actor name and initial attachments, then calls `upgrade(
 ```ts
 // main.ts
 import { Effect, Layer } from "effect"
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
-import { Assets, Worker } from "liminal"
+import { Assets, Worker } from "effect-workerd"
+import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 
-import { TicTacToeRegistry } from "./TicTacToeRegistry.ts"
 import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
+import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
-export { TicTacToeRegistry }
+export { TicTacToeNamespace }
 
 const ApiLive = Layer.mergeAll(
   HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
@@ -236,8 +240,8 @@ const ApiLive = Layer.mergeAll(
     "/play",
     Effect.gen(function* () {
       const { gameId, player } = yield* GameState.init
-      return yield* TicTacToeRegistry.upgrade(gameId, { player })
-    }).pipe(Effect.orDie),
+      return yield* TicTacToeNamespace.upgrade(gameId, { player })
+    }),
   ),
   HttpRouter.cors({
     allowedHeaders: ["*"],
@@ -248,14 +252,8 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(
-    Layer.provide(HttpServer.layerServices),
-    HttpRouter.toHttpEffect,
-    Effect.flatMap((v) => v),
-    Effect.provide(Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE_REGISTRY"), Assets.layer("ASSETS"))),
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  ),
-  prelude: Layer.empty,
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer("TICTACTOE"), Assets.layer("ASSETS")),
 })
 ```
 
@@ -264,10 +262,10 @@ A few things worth pointing out:
 - `HttpRouter.add(method, path, effect)` mounts a single route.
 - `HttpRouter.cors(...)` wires up CORS for every route in the router.
 - `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
-- `Worker.make({ handler, prelude })` produces the Worker `fetch` export; combined with the Durable Object class
+- `Worker.make({ handler, prelude })` produces the Worker `fetch` export. Combined with the Durable Object class
   re-export, it is everything your Worker entrypoint needs.
 - Each binding is supplied as a layer by calling `.layer("ENV_NAME")` with the matching Wrangler binding name. For the
-  registry, `TicTacToeRegistry.layer("TICTACTOE_REGISTRY")` points at the Durable Object binding.
+  namespace, `TicTacToeNamespace.layer("TICTACTOE")` points at the Durable Object binding.
 - Every request that upgrades with the same actor name lands in the same Durable Object instance.
 
 ## Connect from the client
@@ -277,7 +275,7 @@ A few things worth pointing out:
 ```ts
 import { BrowserSocket } from "@effect/platform-browser"
 import { Layer, Stream, Effect } from "effect"
-import { Client } from "liminal/actor"
+import { Client } from "liminal"
 
 import { TicTacToeClient } from "./TicTacToeClient.ts"
 
