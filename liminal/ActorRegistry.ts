@@ -59,7 +59,6 @@ export interface ActorRegistryDefinition<
     PreludeE
   >
 
-  // TODO: actually provide this layer with the prelude
   readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
 
   readonly handlers: H
