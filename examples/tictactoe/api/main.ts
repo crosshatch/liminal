@@ -1,4 +1,4 @@
-import { Layer, Effect, identity } from "effect"
+import { Layer, Effect } from "effect"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 import { Assets, Worker } from "liminal"
 
@@ -27,6 +27,6 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatMap(identity)),
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
   prelude: Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE"), Assets.layer("ASSETS")),
 })
