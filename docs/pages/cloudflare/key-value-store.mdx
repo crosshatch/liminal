@@ -58,8 +58,8 @@ Available operations: `get`, `getUint8Array`, `set`, `remove`, `clear`, `size`. 
 ## When to choose this over `Kv`
 
 - Use [`Kv`](./kv.mdx) when you have small values and want Cloudflare KV's eventual-consistency edge cache.
-- Use this `KeyValueStore.layerR2` when you want the Effect Platform `KeyValueStore` interface — for example so the
-  same code can run against a filesystem-backed store in tests.
+- Use this `KeyValueStore.layerR2` when you want the Effect Platform `KeyValueStore` interface — for example so the same
+  code can run against a filesystem-backed store in tests.
 - Use the raw [`R2`](./r2.mdx) binding when you need streaming, multipart uploads, or other R2-specific features.
 
 ## Use it from inside an actor registry
@@ -68,8 +68,7 @@ Wire the layer through `prelude` so handlers can yield the store:
 
 ```ts
 import { Layer } from "effect"
-import { ActorRegistry } from "liminal/actor"
-import { R2 } from "liminal"
+import { ActorRegistry, R2 } from "liminal"
 import { KeyValueStore } from "liminal/platform"
 
 import { ChatActor } from "./ChatActor.ts"

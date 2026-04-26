@@ -1,5 +1,5 @@
-import { Layer, Effect } from "effect"
-import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
+import { Layer, Effect, identity } from "effect"
+import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 import { Assets, Worker } from "liminal"
 
 import * as GameState from "./Games.ts"
@@ -27,12 +27,6 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(
-    Layer.provide(HttpServer.layerServices),
-    HttpRouter.toHttpEffect,
-    Effect.flatMap((v) => v),
-    Effect.provide(Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE"), Assets.layer("ASSETS"))),
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-  ),
-  prelude: Layer.empty,
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatMap(identity)),
+  prelude: Layer.mergeAll(KvLive, TicTacToeRegistry.layer("TICTACTOE"), Assets.layer("ASSETS")),
 })

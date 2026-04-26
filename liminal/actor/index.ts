@@ -1,5 +1,4 @@
 export * as Actor from "./Actor.ts"
-export * as ActorRegistry from "./ActorRegistry.ts"
 export * as Audition from "./Audition.ts"
 export * as Client from "./Client.ts"
 export * as ClientDirectory from "./ClientDirectory.ts"

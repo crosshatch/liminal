@@ -15,21 +15,16 @@ import {
 } from "effect"
 import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
 
-import type { ActorTransport } from "./ActorTransport.ts"
-import type * as Method from "./Method.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
-
-import * as Binding from "../Binding.ts"
-import * as DoState from "../DoState.ts"
-import * as NativeRequest from "../NativeRequest.ts"
-import { SecWebSocketProtocol, close } from "../socket_util.ts"
-import { boundLayer } from "../util/boundLayer.ts"
-import * as Diagnostic from "../util/Diagnostic.ts"
-import { logCause } from "../util/logCause.ts"
-import * as Mutex from "../util/Mutex.ts"
-import { type TopFromString, encodeJsonString, decodeJsonString } from "../util/schema.ts"
-import * as Actor from "./Actor.ts"
-import * as ClientDirectory from "./ClientDirectory.ts"
+import { Actor, type ActorTransport, Method, Protocol, ClientDirectory } from "./actor/index.ts"
+import * as Binding from "./Binding.ts"
+import * as DoState from "./DoState.ts"
+import * as NativeRequest from "./NativeRequest.ts"
+import { SecWebSocketProtocol, close } from "./socket_util.ts"
+import { boundLayer } from "./util/boundLayer.ts"
+import * as Diagnostic from "./util/Diagnostic.ts"
+import { logCause } from "./util/logCause.ts"
+import * as Mutex from "./util/Mutex.ts"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "./util/schema.ts"
 
 const { debug, span } = Diagnostic.module("cloudflare.ActorRegistry")
 
@@ -40,7 +35,7 @@ export interface ActorRegistryDefinition<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  D extends ProtocolDefinition,
+  D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
@@ -88,7 +83,7 @@ export interface ActorRegistry<
   AttachmentFields extends S.Struct.Fields,
   ClientSelf,
   ClientId extends string,
-  D extends ProtocolDefinition,
+  D extends Protocol.ProtocolDefinition,
   PreludeROut,
   PreludeE,
   RunROut,
@@ -128,7 +123,7 @@ export const Service =
     AttachmentFields extends S.Struct.Fields,
     ClientSelf,
     ClientId extends string,
-    D extends ProtocolDefinition,
+    D extends Protocol.ProtocolDefinition,
     PreludeROut,
     PreludeE,
     RunROut,
