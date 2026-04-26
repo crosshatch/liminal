@@ -11,9 +11,6 @@
     "url": "https://github.com/crosshatch/liminal.git",
     "directory": "effect-workerd"
   },
-  "bin": {
-    "liminal": "./dist/main.js"
-  },
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -24,12 +21,7 @@
     "./*": {
       "types": "./*.ts",
       "default": "./dist/*.js"
-    },
-    "./util/*": {
-      "types": "./util/*.ts",
-      "default": "./dist/util/*.js"
-    },
-    "./package.json": "./package.json"
+    }
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
