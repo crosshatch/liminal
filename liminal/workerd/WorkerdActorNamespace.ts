@@ -12,6 +12,7 @@ import {
   Array,
   Encoding,
   Option,
+  Cause,
 } from "effect"
 import { Binding, DoState, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
@@ -92,7 +93,7 @@ export interface ActorNamespace<
   RunROut,
   RunE,
 > extends Context.Service<NamespaceSelf, DurableObjectNamespace> {
-  new (state: globalThis.DurableObjectState<{}>): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
+  new (_: never): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
 
   readonly definition: ActorNamespaceDefinition<
     ActorSelf,
@@ -111,7 +112,14 @@ export interface ActorNamespace<
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<HttpServerResponse.HttpServerResponse, S.SchemaError, NamespaceSelf | NativeRequest.NativeRequest>
+  ) => Effect.Effect<
+    HttpServerResponse.HttpServerResponse,
+    S.SchemaError | Encoding.EncodingError | Cause.NoSuchElementError,
+    | NamespaceSelf
+    | NativeRequest.NativeRequest
+    | Name["EncodingServices"]
+    | S.Struct<AttachmentFields>["EncodingServices"]
+  >
 
   readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
@@ -161,7 +169,7 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, prelude, handlers, layer: runLayer, onConnect } = definition
+    const { hibernation, actor, prelude, handlers, layer, onConnect } = definition
     const {
       definition: {
         name: Name,
@@ -171,7 +179,6 @@ export const Service =
     } = actor
 
     const encodeName = S.encodeEffect(Name)
-    const decodeName = S.decodeUnknownEffect(Name)
 
     const Attachments = S.Struct(AttachmentFields)
     const encodeAttachments = S.encodeEffect(S.toCodecJson(Attachments))
@@ -194,6 +201,10 @@ export const Service =
         encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
     }
 
+    class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()(
+      "liminal/WorkerdActorNamespace/NameDecoded",
+    ) {}
+
     const tag = class tag extends Context.Service<NamespaceSelf, DurableObjectNamespace>()(id) {
       readonly runtime
       readonly directory = ClientDirectory.make(actor, transport)
@@ -209,48 +220,35 @@ export const Service =
           )
         }
 
-        const baseLayer = Layer.mergeAll(
-          prelude.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))),
+        const Live = Layer.mergeAll(
           FetchHttpClient.layer,
           Layer.succeed(DoState.DoState, state),
           Mutex.layer,
-        )
+          Layer.effect(NameDecoded, S.decodeUnknownEffect(Name)(state.id.name)).pipe(
+            Layer.provideMerge(prelude.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env))))),
+          ),
+        ).pipe(boundLayer("actor"))
 
-        this.runtime = Effect.gen({ self: this }, function* () {
-          this.#name = yield* Effect.tryPromise(() => state.storage.get("__liminal_name")).pipe(
-            Effect.flatMap((v) => (typeof v === "string" ? decodeName(v) : Effect.succeed(undefined))),
-          )
+        const hydrateAttachments = Effect.gen({ self: this }, function* () {
           for (const socket of state.getWebSockets()) {
             const attachments = yield* decodeAttachments(socket.deserializeAttachment())
             yield* this.directory.register(socket, attachments)
           }
-        }).pipe(
-          Effect.tapCause(logCause),
-          span("make_runtime"),
-          Layer.effectDiscard,
-          Layer.provideMerge(baseLayer),
-          boundLayer("actor"),
-          ManagedRuntime.make,
-        )
+        }).pipe(span("hydrateAttachments"), Effect.tapCause(logCause))
+
+        this.runtime = hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live), ManagedRuntime.make)
       }
 
-      #name?: Name["Type"] | undefined
       fetch(request: Request): Promise<Response> {
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
-          const name = yield* decodeName(url.searchParams.get("__liminal_name"))
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
-          if (!this.#name) {
-            this.#name = name
-            const state = yield* DoState.DoState
-            const encoded = yield* S.encodeEffect(Name)(name)
-            yield* Effect.promise(() => state.storage.put("__liminal_name", encoded))
-          }
           const { 0: webSocket, 1: server } = new WebSocketPair()
           const state = yield* DoState.DoState
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const currentClient = yield* this.directory.register(server, attachments)
+          const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
@@ -260,7 +258,7 @@ export const Service =
             Effect.scoped,
             span("onConnect"),
             Effect.scoped,
-            Effect.provide(Layer.provideMerge(runLayer, ActorLive)),
+            Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
           yield* debug("ClientRegistered")
           return new Response(null, {
@@ -274,7 +272,7 @@ export const Service =
       webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen({ self: this }, function* () {
           const currentClient = yield* this.directory.get(socket)
-          const name = yield* Effect.fromNullishOr(this.#name)
+          const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
             clients: this.directory.handles,
@@ -308,7 +306,7 @@ export const Service =
             span("handler", { attributes: { _tag } }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
-            Effect.provide(Layer.provideMerge(runLayer, ActorLive)),
+            Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
         }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
       }
@@ -350,12 +348,13 @@ export const Service =
         )
       }
       const url = new URL(request.url)
-      url.searchParams.set("__liminal_name", nameEncoded)
       url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
       return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
     }, span("upgrade"))
 
-    const layer = Binding.layer(tag, ["getByName"])
-
-    return Object.assign(tag, { definition, upgrade, layer }) as never
+    return Object.assign(tag, {
+      definition,
+      upgrade,
+      layer: Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get"]),
+    })
   }
