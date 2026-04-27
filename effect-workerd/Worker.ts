@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers"
-import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Context } from "effect"
+import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
 import { HttpServerRequest, HttpServerResponse, HttpClient, FetchHttpClient, HttpServer } from "effect/unstable/http"
 import { logCause } from "liminal-util/logCause"
 
@@ -44,16 +44,15 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         ),
       ),
     )
-    const context = Context.empty().pipe(
-      Context.add(ExecutionContext, ctx),
-      Context.add(NativeRequest, request),
-      Context.add(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
-    )
     return handler.pipe(
       Effect.tapCause(logCause),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
-      Effect.provideContext(context),
+      Effect.provide([
+        Layer.succeed(ExecutionContext, ctx),
+        Layer.succeed(NativeRequest, request),
+        Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
+      ]),
       Effect.scoped,
       span("fetch"),
       // Solves crashes between HMRs.

@@ -19,26 +19,26 @@ catalogs:
       specifier: ^4.20260414.1
       version: 4.20260416.2
     '@effect/atom-react':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@effect/language-service':
       specifier: 0.85.1
       version: 0.85.1
     '@effect/openapi-generator':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@effect/platform-browser':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@effect/platform-node':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@effect/sql-d1':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@effect/vitest':
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     '@tailwindcss/vite':
       specifier: ^4.1.18
       version: 4.2.2
@@ -70,8 +70,8 @@ catalogs:
       specifier: ^1.0.0
       version: 1.0.0
     effect:
-      specifier: 4.0.0-beta.50
-      version: 4.0.0-beta.50
+      specifier: 4.0.0-beta.57
+      version: 4.0.0-beta.57
     happy-dom:
       specifier: ^20.9.0
       version: 20.9.0
@@ -113,7 +113,7 @@ catalogs:
       version: 2.8.3
 
 overrides:
-  '@effect/sql-pg': 4.0.0-beta.50
+  '@effect/sql-pg': 4.0.0-beta.57
   '@types/react': ^19.2.14
   '@types/react-dom': ^19.2.3
   react: ^19.2.4
@@ -139,10 +139,10 @@ importers:
         version: 0.85.1
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)(vitest@4.1.4)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.4)
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.0
@@ -166,7 +166,7 @@ importers:
         version: 4.1.4(vitest@4.1.4)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
@@ -199,7 +199,7 @@ importers:
         version: 19.2.14
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       liminal:
         specifier: workspace:*
         version: link:../liminal
@@ -226,10 +226,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       liminal-util:
         specifier: workspace:*
         version: link:../liminal-util
@@ -244,10 +244,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       effect-workerd:
         specifier: workspace:*
         version: link:../../effect-workerd
@@ -274,10 +274,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       effect-workerd:
         specifier: workspace:*
         version: link:../../../effect-workerd
@@ -301,10 +301,10 @@ importers:
         version: 1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))
       '@effect/atom-react':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)(react@19.2.5)(scheduler@0.27.0)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(react@19.2.5)(scheduler@0.27.0)
       '@effect/platform-browser':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       '@liminal-examples/tictactoe':
         specifier: workspace:*
         version: link:../api
@@ -331,7 +331,7 @@ importers:
         version: 1.0.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       liminal:
         specifier: workspace:*
         version: link:../../../liminal
@@ -355,13 +355,13 @@ importers:
         version: 4.20260416.2
       '@effect/platform-browser':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       effect-workerd:
         specifier: workspace:*
         version: link:../effect-workerd
@@ -373,19 +373,19 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
 
   scripts:
     dependencies:
       '@effect/openapi-generator':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(@effect/platform-node@4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1))(effect@4.0.0-beta.50)
+        version: 4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1))(effect@4.0.0-beta.57)
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.50
+        version: 4.0.0-beta.57
       swagger2openapi:
         specifier: 'catalog:'
         version: 7.0.8
@@ -648,10 +648,10 @@ packages:
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
 
-  '@effect/atom-react@4.0.0-beta.50':
-    resolution: {integrity: sha512-XzznOe8HQ6VF/Hwm96nLQZ12DfkwGVbYLd1bL0MoPLa3thMmA6UFnG0aMY5Ecrbll856D5suYGlHpCj6s7GDgg==}
+  '@effect/atom-react@4.0.0-beta.57':
+    resolution: {integrity: sha512-4QNSAW3HUh2x541Q2AFixOoWvVKegz/c7FzmRqpIDB7mntX/qG1fbN0qkNZ7CT9XuaadKe0yYNA9ck+0tB5ySQ==}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
       react: ^19.2.4
       scheduler: '*'
 
@@ -659,40 +659,40 @@ packages:
     resolution: {integrity: sha512-EXnJjIy6zQ3nUO/MZ+ynWUb8B895KZPotd1++oTs9JjDkplwM7cb6zo8Zq2zU6piwq+KflO7amXbEfj1UMpHkw==}
     hasBin: true
 
-  '@effect/openapi-generator@4.0.0-beta.50':
-    resolution: {integrity: sha512-rqvUMvxISIcCijdft5fnkhqieCukIgmSK22pFHaw3yp4UImu51HhafNzjOwzLfK2y3fPIJOt7MYIkaU0tMrc6g==}
+  '@effect/openapi-generator@4.0.0-beta.57':
+    resolution: {integrity: sha512-TZzvzPbznhI9hpc8HMUKpKfgZijWkKBd9FFhKWzLM/nnY09OAf9V0v5B/o2YjXt+zq9zemM2utNEFoNQwKEhsw==}
     hasBin: true
     peerDependencies:
-      '@effect/platform-node': ^4.0.0-beta.50
-      effect: ^4.0.0-beta.50
+      '@effect/platform-node': ^4.0.0-beta.57
+      effect: ^4.0.0-beta.57
 
-  '@effect/platform-browser@4.0.0-beta.50':
-    resolution: {integrity: sha512-tRQSDkHW9yD0Inav1r/sHgMEs4KLqFAggsPRl0RKKRIPt8+7O4YAeDzNKOilaWZI6bHMATrLp+hJfXQSGxVRxA==}
+  '@effect/platform-browser@4.0.0-beta.57':
+    resolution: {integrity: sha512-bB/6ekUTc+fAympM36hiSROg6jjHLU5zNEpf07oXSqAnZnJL+wGix/8cmY/KPTTIobMXteq0suslrOY1cWZL8Q==}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
 
-  '@effect/platform-node-shared@4.0.0-beta.50':
-    resolution: {integrity: sha512-aFHifdtDae0ih4d2m6j7cdEWLZcn/g8nmxn1XU2PwLezb5oAyu5ljibayYRIvJNTbmJXRk9sKjbl2NC0xQMTYg==}
+  '@effect/platform-node-shared@4.0.0-beta.57':
+    resolution: {integrity: sha512-C976X6f+qHUtLSqcqImuCrjhAHnJV17NC2RvvybsAuDfkyIWU4MyiO2XwgiBeijeNupyr1M/KPKnyjtkNxV9Hw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
 
-  '@effect/platform-node@4.0.0-beta.50':
-    resolution: {integrity: sha512-Ob6q3++CDe5zsxiZFm2sE3y1i1BRO/ejppjOVgy7GK6FO0dDmQAth1+IRHtRbvM+OZudX8yQRa8tHzFA76wxdg==}
+  '@effect/platform-node@4.0.0-beta.57':
+    resolution: {integrity: sha512-la0xxPSAYOsY0d+uVxEBxok3jYB31iPQmIaZZRUj2SNWqcGGHJc6KorKtI8guqSLuv9FGZ255kBWXRbG6hMeeg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
       ioredis: ^5.7.0
 
-  '@effect/sql-d1@4.0.0-beta.50':
-    resolution: {integrity: sha512-vPMCZT+6dfZhziZLjeqHDph4DBczpHWAS54jWk1UKPW/RF3e4N5AGpVbifk7Tvi1kF0xtK/uG789p+u+W7nfYg==}
+  '@effect/sql-d1@4.0.0-beta.57':
+    resolution: {integrity: sha512-P4SgaFJsO3jR9+FthlUY8IKbhrwNPdnWUJT307WxCzx5rcQkrCF9ikbv1Rb6Oa9btuOWWHl4I/cCUxlWW6naag==}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
 
-  '@effect/vitest@4.0.0-beta.50':
-    resolution: {integrity: sha512-bju/iCLZB8oHsVia1i6olo9ZntkZ5TrqmsINudFsRkZfHhu5UuTR3vjic29wykZpPXXONX1wKO0KZZCk+stcKg==}
+  '@effect/vitest@4.0.0-beta.57':
+    resolution: {integrity: sha512-XyGYv1zisrdP/N8+r4qaegyHZK4WS/1xBGlLPWqEoggBhgW7rD48cGUXDLEP7TlHcIJQiIlHtJlQUIwgVx3zWg==}
     peerDependencies:
-      effect: ^4.0.0-beta.50
+      effect: ^4.0.0-beta.57
       vitest: ^3.0.0 || ^4.0.0
 
   '@emnapi/core@1.9.2':
@@ -3707,8 +3707,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.0-beta.50:
-    resolution: {integrity: sha512-UsENighZms6LWDSnF/05F9JinDAewV3sGXHAt9M7+dL3VnoFZIwduFxXvmFc7QJm7iV1s7rB98hv1SD3ALA9qg==}
+  effect@4.0.0-beta.57:
+    resolution: {integrity: sha512-rg32VgXnLKaPRs9tbRDaZ5jxmzNY7ojXt85gSHGUTwdlbWH5Ik+OCUY2q14TXliygPGoHwCAvNWS4bQJOqf00g==}
 
   electron-to-chromium@1.5.339:
     resolution: {integrity: sha512-Is+0BBHJ4NrdpAYiperrmp53pLywG/yV/6lIMTAnhxvzj/Cmn5Q/ogSHC6AKe7X+8kPLxxFk0cs5oc/3j/fxIg==}
@@ -6222,37 +6222,37 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@effect/atom-react@4.0.0-beta.50(effect@4.0.0-beta.50)(react@19.2.5)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.0-beta.57(effect@4.0.0-beta.57)(react@19.2.5)(scheduler@0.27.0)':
     dependencies:
-      effect: 4.0.0-beta.50
+      effect: 4.0.0-beta.57
       react: 19.2.5
       scheduler: 0.27.0
 
   '@effect/language-service@0.85.1': {}
 
-  '@effect/openapi-generator@4.0.0-beta.50(@effect/platform-node@4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1))(effect@4.0.0-beta.50)':
+  '@effect/openapi-generator@4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1))(effect@4.0.0-beta.57)':
     dependencies:
-      '@effect/platform-node': 4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1)
-      effect: 4.0.0-beta.50
+      '@effect/platform-node': 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+      effect: 4.0.0-beta.57
 
-  '@effect/platform-browser@4.0.0-beta.50(effect@4.0.0-beta.50)':
+  '@effect/platform-browser@4.0.0-beta.57(effect@4.0.0-beta.57)':
     dependencies:
-      effect: 4.0.0-beta.50
+      effect: 4.0.0-beta.57
       multipasta: 0.2.7
 
-  '@effect/platform-node-shared@4.0.0-beta.50(effect@4.0.0-beta.50)':
+  '@effect/platform-node-shared@4.0.0-beta.57(effect@4.0.0-beta.57)':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.50
+      effect: 4.0.0-beta.57
       ws: 8.20.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.50(effect@4.0.0-beta.50)(ioredis@5.10.1)':
+  '@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.50(effect@4.0.0-beta.50)
-      effect: 4.0.0-beta.50
+      '@effect/platform-node-shared': 4.0.0-beta.57(effect@4.0.0-beta.57)
+      effect: 4.0.0-beta.57
       ioredis: 5.10.1
       mime: 4.1.0
       undici: 8.1.0
@@ -6260,14 +6260,14 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/sql-d1@4.0.0-beta.50(effect@4.0.0-beta.50)':
+  '@effect/sql-d1@4.0.0-beta.57(effect@4.0.0-beta.57)':
     dependencies:
       '@cloudflare/workers-types': 4.20260416.2
-      effect: 4.0.0-beta.50
+      effect: 4.0.0-beta.57
 
-  '@effect/vitest@4.0.0-beta.50(effect@4.0.0-beta.50)(vitest@4.1.4)':
+  '@effect/vitest@4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.4)':
     dependencies:
-      effect: 4.0.0-beta.50
+      effect: 4.0.0-beta.57
       vitest: 4.1.4(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   '@emnapi/core@1.9.2':
@@ -8984,7 +8984,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-beta.50:
+  effect@4.0.0-beta.57:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.6.0

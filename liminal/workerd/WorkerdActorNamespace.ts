@@ -1,3 +1,4 @@
+import { DurableObject } from "cloudflare:workers"
 import {
   Layer,
   Effect,
@@ -92,8 +93,10 @@ export interface ActorNamespace<
   PreludeE,
   RunROut,
   RunE,
-> extends Context.Service<NamespaceSelf, DurableObjectNamespace> {
-  new (_: never): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
+> {
+  new (state: DurableObjectState<{}>, env: Cloudflare.Env): DurableObject
+
+  readonly service: Context.ServiceClass<NamespaceSelf, NamespaceId, DurableObjectNamespace>
 
   readonly definition: ActorNamespaceDefinition<
     ActorSelf,
@@ -109,6 +112,8 @@ export interface ActorNamespace<
     RunE
   >
 
+  readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
+
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
@@ -120,8 +125,6 @@ export interface ActorNamespace<
     | Name["EncodingServices"]
     | S.Struct<AttachmentFields>["EncodingServices"]
   >
-
-  readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
 export const Service =
@@ -205,14 +208,16 @@ export const Service =
       "liminal/WorkerdActorNamespace/NameDecoded",
     ) {}
 
-    const tag = class tag extends Context.Service<NamespaceSelf, DurableObjectNamespace>()(id) {
+    return class extends DurableObject {
+      static definition = definition
+      static service = Context.Service<NamespaceSelf, DurableObjectNamespace>()(id)
+      static layer = Binding.layer(this.service, ["idFromName", "idFromString", "newUniqueId", "get"])
+
       readonly runtime
       readonly directory = ClientDirectory.make(actor, transport)
 
-      constructor(...args: [never]) {
-        super(...args)
-        const [state, env] = args as never as [state: globalThis.DurableObjectState<{}>, env: unknown]
-
+      constructor(state: DurableObjectState<{}>, env: Cloudflare.Env) {
+        super(state, env)
         if (hibernation) {
           Option.andThen(
             Duration.fromInput(hibernation),
@@ -239,7 +244,7 @@ export const Service =
         this.runtime = hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live), ManagedRuntime.make)
       }
 
-      fetch(request: Request): Promise<Response> {
+      override fetch(request: Request): Promise<Response> {
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -269,7 +274,7 @@ export const Service =
         }).pipe(Effect.tapCause(logCause), span("fetch"), this.runtime.runPromise)
       }
 
-      webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
+      override webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen({ self: this }, function* () {
           const currentClient = yield* this.directory.get(socket)
           const name = yield* NameDecoded
@@ -311,50 +316,47 @@ export const Service =
         }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
       }
 
-      webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
+      override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
         this.directory
           .unregister(socket)
           .pipe(Effect.tap(debug("SocketClosed")), Effect.tapCause(logCause), this.runtime.runFork)
       }
 
-      webSocketError(socket: WebSocket, cause: unknown) {
+      override webSocketError(socket: WebSocket, cause: unknown) {
         Effect.gen({ self: this }, function* () {
           yield* debug("SocketErrored", { cause })
           yield* this.directory.unregister(socket)
         }).pipe(Effect.tapCause(logCause), span("SocketErrored", { attributes: { cause } }), this.runtime.runFork)
       }
+
+      static readonly upgrade = (name: Name["Type"], attachments: (typeof Attachments)["Type"]) =>
+        Effect.gen({ self: this }, function* () {
+          yield* debug("UpgradeInitiated", { attachments })
+          const namespace = yield* this.service
+          const nameEncoded = yield* encodeName(name)
+          const stub = namespace.getByName(nameEncoded)
+          const request = yield* NativeRequest.NativeRequest
+          const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
+            Effect.map(flow(String.split(","), Array.map(String.trim))),
+          )
+          const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
+          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+            Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
+          )
+          if (requestClientId !== clientId) {
+            return close(
+              yield* encodeAuditionFailure({
+                _tag: "Audition.Failure",
+                expected: clientId,
+                actual: requestClientId,
+              }),
+            )
+          }
+          const url = new URL(request.url)
+          url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
+          return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
+            Effect.map(HttpServerResponse.raw),
+          )
+        }).pipe(span("upgrade"))
     }
-
-    const upgrade = Effect.fnUntraced(function* (name: Name["Type"], attachments: (typeof Attachments)["Type"]) {
-      yield* debug("UpgradeInitiated", { attachments })
-      const namespace = yield* tag
-      const nameEncoded = yield* encodeName(name)
-      const stub = namespace.getByName(nameEncoded)
-      const request = yield* NativeRequest.NativeRequest
-      const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
-        Effect.map(flow(String.split(","), Array.map(String.trim))),
-      )
-      const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-      const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
-        Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
-      )
-      if (requestClientId !== clientId) {
-        return close(
-          yield* encodeAuditionFailure({
-            _tag: "Audition.Failure",
-            expected: clientId,
-            actual: requestClientId,
-          }),
-        )
-      }
-      const url = new URL(request.url)
-      url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
-      return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(Effect.map(HttpServerResponse.raw))
-    }, span("upgrade"))
-
-    return Object.assign(tag, {
-      definition,
-      upgrade,
-      layer: Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get"]),
-    })
   }
