@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers"
-import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
+import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Context } from "effect"
 import { HttpServerRequest, HttpServerResponse, HttpClient, FetchHttpClient, HttpServer } from "effect/unstable/http"
 import { logCause } from "liminal-util/logCause"
 
@@ -26,22 +26,34 @@ export interface WorkerDefinition<PreludeROut, PreludeE, E> {
 }
 
 export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
-  const runtime = ManagedRuntime.make(
-    Layer.mergeAll(FetchHttpClient.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
-  )
-
-  const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> =>
-    handler.pipe(
+  let runtime:
+    | undefined
+    | ManagedRuntime.ManagedRuntime<
+        PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
+        PreludeE
+      >
+  const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
+    runtime ??= ManagedRuntime.make(
+      prelude.pipe(
+        Layer.provideMerge(
+          Layer.mergeAll(
+            FetchHttpClient.layer,
+            ConfigProvider.layer(ConfigProvider.fromUnknown(env)),
+            HttpServer.layerServices,
+          ),
+        ),
+      ),
+    )
+    const context = Context.empty().pipe(
+      Context.add(ExecutionContext, ctx),
+      Context.add(NativeRequest, request),
+      Context.add(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
+    )
+    return handler.pipe(
       Effect.tapCause(logCause),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
-      Effect.provide([
-        prelude,
-        HttpServer.layerServices,
-        Layer.succeed(ExecutionContext, ctx),
-        Layer.succeed(NativeRequest, request),
-        Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
-      ]),
+      Effect.provideContext(context),
       Effect.scoped,
       span("fetch"),
       // Solves crashes between HMRs.
@@ -51,6 +63,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
     )
+  }
 
   return { fetch }
 }
