@@ -112,8 +112,6 @@ export interface ActorNamespace<
     RunE
   >
 
-  readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
-
   readonly upgrade: (
     name: Name["Type"],
     attachments: S.Struct<AttachmentFields>["Type"],
@@ -125,6 +123,8 @@ export interface ActorNamespace<
     | Name["EncodingServices"]
     | S.Struct<AttachmentFields>["EncodingServices"]
   >
+
+  readonly layer: (binding: string) => Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
 export const Service =
