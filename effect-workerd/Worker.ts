@@ -26,18 +26,29 @@ export interface WorkerDefinition<PreludeROut, PreludeE, E> {
 }
 
 export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
-  const runtime = ManagedRuntime.make(
-    Layer.mergeAll(FetchHttpClient.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
-  )
-
-  const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> =>
-    handler.pipe(
+  let runtime:
+    | undefined
+    | ManagedRuntime.ManagedRuntime<
+        PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
+        PreludeE
+      >
+  const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
+    runtime ??= ManagedRuntime.make(
+      prelude.pipe(
+        Layer.provideMerge(
+          Layer.mergeAll(
+            FetchHttpClient.layer,
+            ConfigProvider.layer(ConfigProvider.fromUnknown(env)),
+            HttpServer.layerServices,
+          ),
+        ),
+      ),
+    )
+    return handler.pipe(
       Effect.tapCause(logCause),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
       Effect.provide([
-        prelude,
-        HttpServer.layerServices,
         Layer.succeed(ExecutionContext, ctx),
         Layer.succeed(NativeRequest, request),
         Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
@@ -51,6 +62,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
     )
+  }
 
   return { fetch }
 }

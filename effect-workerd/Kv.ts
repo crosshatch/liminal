@@ -41,9 +41,11 @@ export const Kv =
       decodeValue: S.decodeUnknownEffect(S.fromJsonString(S.toCodecJson(value))),
     }
 
-    const layer = Binding.layer(tag, ["put", "get", "delete"])
-
-    return Object.assign(tag, { definition, transcoders, layer })
+    return Object.assign(tag, {
+      definition,
+      transcoders,
+      layer: Binding.layer(tag, ["get", "put", "delete", "list", "getWithMetadata"]),
+    })
   }
 
 export const put = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(
