@@ -1,5 +1,13 @@
 # liminal
 
+## 0.17.14
+
+### Patch Changes
+
+- d082441: Actor now inherits from DurableObject. Effect updated to beta 57.
+- Updated dependencies [d082441]
+  - effect-workerd@0.0.4
+
 ## 0.17.13
 
 ### Patch Changes

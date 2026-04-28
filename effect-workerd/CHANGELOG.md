@@ -1,5 +1,11 @@
 # effect-workerd
 
+## 0.0.4
+
+### Patch Changes
+
+- d082441: Actor now inherits from DurableObject. Effect updated to beta 57.
+
 ## 0.0.3
 
 ### Patch Changes
