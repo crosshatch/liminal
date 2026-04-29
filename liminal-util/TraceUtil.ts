@@ -14,9 +14,9 @@ export const TraceSession = S.Struct({
 
 export const toTrace = S.decodeSync(S.toType(TraceEnvelope))
 
-export const current: Effect.Effect<Option.Option<typeof TraceEnvelope.Type>> = Effect.currentSpan.pipe(
+export const current = Effect.currentSpan.pipe(
   Effect.map(toTrace),
-  Effect.option,
+  Effect.catchTag("NoSuchElementError", () => Effect.undefined),
 )
 
 export const toLink = (

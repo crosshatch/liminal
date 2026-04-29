@@ -82,7 +82,7 @@ export const make = Effect.fnUntraced(function* <
         const trace = yield* TraceEnvelope.current
         yield* backing.send(0, {
           ...event,
-          ...(trace._tag === "Some" ? { trace: trace.value } : {}),
+          ...(trace && { trace }),
         })
       }).pipe(span("event.send", { attributes: { _tag }, kind: "producer" }))
     },

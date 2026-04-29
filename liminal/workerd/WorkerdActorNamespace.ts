@@ -250,7 +250,7 @@ export const Service =
               const trace = yield* TraceUtil.current
               const encoded = yield* encodeEvent({
                 ...event,
-                ...(trace._tag === "Some" ? { trace: trace.value } : {}),
+                ...(trace && { trace }),
               })
               yield* Effect.sync(() => socket.send(encoded))
             }).pipe(
