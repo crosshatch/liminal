@@ -265,7 +265,6 @@ export const Service =
 
       readonly runtime
       readonly directory = ClientDirectory.make(actor, {
-        key: ({ socket }) => socket,
         transport,
       })
 
@@ -297,7 +296,7 @@ export const Service =
           for (const socket of state.getWebSockets()) {
             const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
             yield* this.directory
-              .register({ socket, session }, attachments)
+              .register(socket, { socket, session }, attachments)
               .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
           }
         }).pipe(span("hydrateAttachments"), Effect.tapCause(logCause))
@@ -334,7 +333,7 @@ export const Service =
             sessionId: crypto.randomUUID(),
             trace: yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace)),
           }
-          const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
+          const currentClient = yield* this.directory.register(server, { socket: server, session }, attachments)
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,

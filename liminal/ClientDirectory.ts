@@ -32,6 +32,7 @@ export interface ClientDirectory<
   readonly handles: ReadonlySet<this[""]["Handle"]>
 
   readonly register: (
+    key: Key,
     client: Client,
     attachments: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<this[""]["Handle"], S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
@@ -66,10 +67,8 @@ export const make = <
 >(
   _actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
   {
-    key,
     transport: { send, close, snapshot },
   }: {
-    readonly key: (client: Client) => Key
     readonly transport: ActorTransport<Client, AttachmentFields, D>
   },
 ): ClientDirectory<Key, Client, ActorSelf, AttachmentFields, D> => {
@@ -93,8 +92,11 @@ export const make = <
       return Option.none()
     }).pipe(span("unregister"))
 
-  const register = Effect.fnUntraced(function* (client: Client, attachments: S.Struct<AttachmentFields>["Type"]) {
-    const clientKey = key(client)
+  const register = Effect.fnUntraced(function* (
+    clientKey: Key,
+    client: Client,
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) {
     yield* snapshot(client, attachments)
     const attachmentsRef = yield* Ref.make(attachments)
     const handle: Handle = {
