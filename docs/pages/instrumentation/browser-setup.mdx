@@ -56,6 +56,6 @@ export const runtime = Atom.runtime(
 )
 ```
 
-That is enough for client spans, client logs, outbound method-call trace envelopes, and inbound event enqueue spans.
-Those enqueue spans cover Liminal receiving an event and publishing it into `Client.events`; downstream stream consumers
-should add their own application spans when needed.
+That is enough for client acquire/listen/send/call spans, client logs, outbound method-call trace envelopes, and inbound
+event enqueue spans. Those enqueue spans cover Liminal receiving an event and publishing it into `Client.events`;
+downstream stream consumers should add their own application spans when needed.

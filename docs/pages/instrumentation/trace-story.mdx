@@ -9,10 +9,10 @@ A typical browser-to-actor method call produces a connected trace across client,
 3. The client encodes that span into `F.Payload.trace`.
 4. The Durable Object receives the WebSocket message and creates a
    `liminal.workerd.WorkerdActorNamespace.webSocketMessage` transport span.
-5. The actor handler span is parented to `F.Payload.trace` and linked to the transport span.
+5. The actor handler span is parented to `F.Payload.trace` and linked to the local transport span.
 6. If the handler emits an event, `event.send` creates a producer span and attaches `Event.trace`.
 7. The browser receives the event and creates an `event.enqueue` consumer span parented to `Event.trace`.
-8. The response listener completes the original call under the original client span.
+8. The response listener resolves the original call under the stored client span. There is no separate response span.
 
 `event.enqueue` covers Liminal publishing the event into the client's internal PubSub. It does not implicitly parent
 arbitrary `Client.events` stream consumers; app-level event processing should create its own spans if that distinction
@@ -24,8 +24,9 @@ The HTTP upgrade path also participates:
 
 1. `Worker.fetch` extracts incoming `traceparent` or B3 headers and creates a server span.
 2. `WorkerdActorNamespace.upgrade` runs under that span.
-3. The namespace forwards trace headers to `stub.fetch`.
+3. The namespace creates a `WorkerdActorNamespace.durableObjectFetch` client span and forwards trace headers to
+   `stub.fetch`.
 4. `WorkerdActorNamespace.fetch` extracts those headers inside the Durable Object and creates the Durable Object-side
-   server span.
+   server span. It also creates the socket session id and persists the session trace in the WebSocket attachment.
 
 Read [Propagation](/instrumentation/propagation) for the trace envelope details.

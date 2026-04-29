@@ -21,16 +21,18 @@ Instead, Liminal persists session metadata in the WebSocket attachment:
 }
 ```
 
-After hibernation, the Durable Object hydrates that metadata and uses it as a span link and attribute source.
+After hibernation, the Durable Object hydrates that metadata and links the registration work back to the stored session
+trace.
 
 Short spans still represent the actual work: message receive, handler execution, event send, close, error, and hydration.
-Session metadata ties those spans together without requiring a live span to survive hibernation.
+The session id is attached to actor-side spans when a socket is known. Handler, event-send, on-connect, and hydration
+paths also link back to the stored session trace.
 
 ## Useful attributes and links
 
 Look for these attributes and links in your telemetry backend:
 
 - `liminal.session.id`: stable per connected socket session
-- `liminal.link = session`: link from short work spans back to the session trace
-- `liminal.link = transport`: link from handler spans back to the local WebSocket receive span
+- `liminal.link = session`: link from handler, event-send, on-connect, and hydration spans back to the session trace
+- `liminal.link = transport`: link from handler spans back to the local message-receive span
 - `liminal.transport = websocket` or `worker`

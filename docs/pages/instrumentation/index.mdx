@@ -1,7 +1,7 @@
 # Instrumentation
 
-Liminal is instrumented with Effect spans and logs at every runtime boundary where a client, transport, Worker, Durable
-Object, or actor handler hands work to the next layer.
+Liminal is instrumented with Effect spans and logs at the runtime boundaries where a client, transport, Worker,
+Durable Object, or actor handler hands work to the next layer.
 
 If you provide an Effect OpenTelemetry layer, those built-in spans and logs are exported without changing your actor
 code.
@@ -11,8 +11,10 @@ code.
 Liminal uses Effect's tracing model. Every span is a normal Effect span, every diagnostic log is an Effect log, and
 propagation works through Effect's `Tracer` service.
 
-The built-in instrumentation covers Worker requests, Durable Object upgrades, socket messages, actor lifecycle hooks,
-method handlers, event sends, client calls, client-side event enqueueing, and response completion.
+The built-in instrumentation covers Worker requests, Durable Object upgrades, Durable Object fetches, socket messages,
+actor lifecycle hooks, method handlers, event sends, client calls, client send/listen loops, and client-side event
+enqueueing. Method responses complete the original client call under the stored client span; they do not create a
+separate response span.
 
 Read [Collectors](/instrumentation/collectors) for useful span names and attributes.
 

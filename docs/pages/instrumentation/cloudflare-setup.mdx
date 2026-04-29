@@ -1,6 +1,8 @@
 # Cloudflare Setup
 
-The Worker runtime and Durable Object actor runtime both need telemetry in their Effect layers.
+The Worker runtime and Durable Object actor runtime both need telemetry in their Effect layers. Both runtimes flush the
+OTLP exporter after Worker fetches and Durable Object fetch/message/close/error callbacks, so short-lived Worker
+executions can export the spans they just produced.
 
 The actor namespace has its own runtime, including after hibernation wakeups, so the telemetry layer should be fully
 provided with `FetchHttpClient.layer`.

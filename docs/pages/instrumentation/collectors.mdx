@@ -17,11 +17,29 @@ Useful span names:
 
 - `effect-workerd.Entry.fetch`
 - `liminal.Client.acquire`
+- `liminal.Client.listen`
+- `liminal.Client.send`
 - `liminal.Client.f`
 - `liminal.Client.event.enqueue`
+- `liminal.ClientDirectory.register`
+- `liminal.ClientDirectory.unregister`
+- `liminal.Actor.all.send`
+- `liminal.Actor.all.disconnect`
+- `liminal.Actor.others.send`
+- `liminal.Actor.others.disconnect`
+- `liminal.browser.BrowserActorNamespace.make`
+- `liminal.browser.BrowserActorNamespace.message`
+- `liminal.browser.BrowserActorNamespace.onConnect`
+- `liminal.browser.BrowserActorNamespace.handler`
+- `liminal.browser.BrowserActorNamespace.event.send`
 - `liminal.workerd.WorkerdActorNamespace.upgrade`
+- `liminal.workerd.WorkerdActorNamespace.durableObjectFetch`
 - `liminal.workerd.WorkerdActorNamespace.fetch`
+- `liminal.workerd.WorkerdActorNamespace.onConnect`
+- `liminal.workerd.WorkerdActorNamespace.hydrateAttachments`
 - `liminal.workerd.WorkerdActorNamespace.webSocketMessage`
+- `liminal.workerd.WorkerdActorNamespace.webSocketClose`
+- `liminal.workerd.WorkerdActorNamespace.webSocketError`
 - `liminal.workerd.WorkerdActorNamespace.handler`
 - `liminal.workerd.WorkerdActorNamespace.event.send`
 
@@ -33,6 +51,6 @@ Useful attributes:
 - `client`: Liminal client service id
 - `liminal.session.id`: durable socket-session id, persisted through hibernation
 - `liminal.link`: `session` or `transport`
-- `liminal.transport`: `websocket` or `worker`
+- `liminal.transport`: `websocket`, `worker`, or `durable-object-fetch`
 - `package`: `liminal` or `effect-workerd`
 - `module`: instrumentation source module
