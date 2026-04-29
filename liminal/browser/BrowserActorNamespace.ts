@@ -2,7 +2,7 @@ import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
-import * as TraceEnvelope from "liminal-util/TraceEnvelope"
+import * as TraceEnvelope from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"

@@ -1,5 +1,5 @@
 import { Schema as S, Record, Types } from "effect"
-import * as TraceEnvelope from "liminal-util/TraceEnvelope"
+import * as TraceEnvelope from "liminal-util/TraceUtil"
 
 import type * as Method from "./Method.ts"
 

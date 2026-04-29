@@ -22,7 +22,7 @@ export const toLink = (
   attributes,
 })
 
-export const ensureOtelFlushed = Effect.serviceOption(OtlpExporter.Exporters).pipe(
+export const flush = Effect.serviceOption(OtlpExporter.Exporters).pipe(
   Effect.flatMap(
     Option.match({
       onNone: () => Effect.void,

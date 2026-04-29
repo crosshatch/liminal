@@ -17,13 +17,12 @@ import {
   Tracer,
 } from "effect"
 import { Binding, DoState, NativeRequest } from "effect-workerd"
-import { ClockLive } from "effect-workerd/services/ClockLive"
+import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
-import { OtlpExporter } from "effect/unstable/observability"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
-import * as TraceEnvelope from "liminal-util/TraceEnvelope"
+import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
@@ -36,16 +35,6 @@ import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
 const { debug, span } = diagnostic("workerd.WorkerdActorNamespace")
-
-const flushTelemetry = Effect.serviceOption(OtlpExporter.Exporters).pipe(
-  Effect.flatMap(
-    Option.match({
-      onNone: () => Effect.void,
-      onSome: (exporters) => exporters.flush,
-    }),
-  ),
-  Effect.ignore,
-)
 
 export interface ActorNamespaceDefinition<
   ActorSelf,
@@ -201,7 +190,7 @@ export const Service =
     const Attachments = S.Struct(AttachmentFields)
     const SocketAttachment = S.Struct({
       attachments: S.toCodecJson(Attachments),
-      session: TraceEnvelope.TraceSession,
+      session: TraceUtil.TraceSession,
     })
     const encodeSocketAttachment = S.encodeEffect(SocketAttachment)
     const decodeSocketAttachment = S.decodeUnknownEffect(SocketAttachment)
@@ -216,7 +205,7 @@ export const Service =
 
     const encodeEvent = encodeJsonString(P.Event)
 
-    type Session = typeof TraceEnvelope.TraceSession.Type
+    type Session = typeof TraceUtil.TraceSession.Type
 
     interface WorkerdClient {
       readonly socket: WebSocket
@@ -229,7 +218,7 @@ export const Service =
     })
 
     const sessionLink = (session: Session, attributes: Record<string, unknown> = {}) =>
-      TraceEnvelope.toLink(session.trace, {
+      TraceUtil.toLink(session.trace, {
         "liminal.link": "session",
         ...sessionAttributes(session),
         ...attributes,
@@ -274,7 +263,7 @@ export const Service =
           Effect.gen(function* () {
             const eventTag = (event.event as { readonly _tag: string })._tag
             yield* Effect.gen(function* () {
-              const trace = yield* TraceEnvelope.current
+              const trace = yield* TraceUtil.current
               const encoded = yield* encodeEvent({
                 ...event,
                 ...(trace._tag === "Some" ? { trace: trace.value } : {}),
@@ -330,7 +319,7 @@ export const Service =
               ),
             ),
           ),
-        ).pipe(Layer.provideMerge(ClockLive), boundLayer("actor"))
+        ).pipe(Layer.provideMerge(Clock.layer), boundLayer("actor"))
 
         const hydrateAttachments = Effect.gen({ self: this }, function* () {
           for (const socket of state.getWebSockets()) {
@@ -341,11 +330,11 @@ export const Service =
           }
         }).pipe(span("hydrateAttachments"), Effect.tapCause(logCause))
 
-        this.runtime = hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live), ManagedRuntime.make)
+        this.runtime = ManagedRuntime.make(hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live)))
       }
 
       override fetch(request: Request): Promise<Response> {
-        const traceParent = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers))
+        const links = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers)).pipe(traceParentLinks)
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -378,8 +367,8 @@ export const Service =
           })
         }).pipe(
           Effect.tapCause(logCause),
-          span("fetch", { kind: "server", links: traceParentLinks(traceParent) }),
-          Effect.ensuring(flushTelemetry),
+          span("fetch", { kind: "server", links }),
+          Effect.ensuring(TraceUtil.flush),
           this.runtime.runPromise,
         )
       }
@@ -448,7 +437,7 @@ export const Service =
           Mutex.task,
           Effect.tapCause(logCause),
           span("webSocketMessage"),
-          Effect.ensuring(flushTelemetry),
+          Effect.ensuring(TraceUtil.flush),
           this.runtime.runFork,
         )
       }
@@ -468,7 +457,7 @@ export const Service =
               ),
           ),
           Effect.tapCause(logCause),
-          Effect.ensuring(flushTelemetry),
+          Effect.ensuring(TraceUtil.flush),
           this.runtime.runFork,
         )
       }
@@ -492,7 +481,7 @@ export const Service =
             )
           }),
           Effect.tapCause(logCause),
-          Effect.ensuring(flushTelemetry),
+          Effect.ensuring(TraceUtil.flush),
           this.runtime.runFork,
         )
       }
