@@ -21,6 +21,7 @@ import {
   Result,
   flow,
   Tracer,
+  identity,
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
@@ -228,7 +229,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 const inflight = inflights[id]
                 if (inflight) {
                   delete inflights[id]
-                  const complete = Effect.gen(function* () {
+                  return yield* Effect.gen(function* () {
                     switch (message._tag) {
                       case "F.Success": {
                         const { _tag, value } = message.success as never
@@ -243,10 +244,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                         return
                       }
                     }
-                  })
-                  return yield* inflight.span
-                    ? Effect.withParentSpan(complete, inflight.span, { captureStackTrace: false })
-                    : complete
+                  }).pipe(inflight.span ? Effect.withParentSpan(inflight.span, { captureStackTrace: false }) : identity)
                 }
                 return
               }

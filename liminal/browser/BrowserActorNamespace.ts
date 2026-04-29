@@ -134,7 +134,6 @@ export const make = Effect.fnUntraced(function* <
         const closeScope = Scope.close(scope, Exit.void)
 
         const backing = yield* BrowserWorkerRunner.make(port).start<typeof Actor.Type, typeof ClientM.Type>()
-        const browserClient: BrowserClient = { backing, close: closeScope }
 
         yield* Scope.addFinalizer(
           scope,
@@ -175,7 +174,11 @@ export const make = Effect.fnUntraced(function* <
                   }
                   const key = yield* encodeName(name)
                   const entry = yield* getEntry(key)
-                  const currentClient = yield* entry.directory.register(port, browserClient, attachments)
+                  const currentClient = yield* entry.directory.register(
+                    port,
+                    { backing, close: closeScope },
+                    attachments,
+                  )
                   const ActorLive = Layer.succeed(actor, {
                     name,
                     clients: entry.directory.handles,
