@@ -1,0 +1,61 @@
+# Browser Setup
+
+For Cloudflare and browsers, the simplest setup is Effect's lightweight OTLP exporter from
+`effect/unstable/observability`. It works with `FetchHttpClient` and does not require the Node OpenTelemetry SDK.
+
+```bash
+pnpm add effect
+```
+
+If you want to use the official OpenTelemetry JavaScript SDK in a browser or Node process, add `@effect/opentelemetry`
+and the relevant OpenTelemetry packages instead. The rest of this guide uses Effect's built-in OTLP layer because it
+fits Workers and browser runtimes directly.
+
+## Configure the client runtime
+
+Add an OTLP layer to the same runtime that provides your Liminal client.
+
+Browsers usually send OTLP through a same-origin proxy. See [Collectors](/instrumentation/collectors) for CORS and
+credential guidance.
+
+```ts
+// app/runtime.ts
+import { BrowserSocket } from "@effect/platform-browser"
+import { Layer } from "effect"
+import { FetchHttpClient } from "effect/unstable/http"
+import { Otlp } from "effect/unstable/observability"
+import { Atom } from "effect/unstable/reactivity"
+import { Client } from "liminal"
+
+import { TicTacToeClient } from "./TicTacToeClient.ts"
+import * as State from "./State.ts"
+
+const TelemetryLive = Otlp.layerJson({
+  baseUrl: "/otel",
+  resource: {
+    serviceName: "tic-tac-toe-web",
+    attributes: {
+      "deployment.environment": import.meta.env.MODE,
+    },
+  },
+  tracerExportInterval: "1 second",
+  loggerExportInterval: "1 second",
+}).pipe(Layer.provide(FetchHttpClient.layer))
+
+export const runtime = Atom.runtime(
+  State.layer.pipe(
+    Layer.provideMerge(
+      Client.layerSocket({
+        client: TicTacToeClient,
+        url: "/play",
+        replay: { mode: "startup" },
+      }).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor)),
+    ),
+    Layer.provideMerge(TelemetryLive),
+  ),
+)
+```
+
+That is enough for client spans, client logs, outbound method-call trace envelopes, and inbound event enqueue spans.
+Those enqueue spans cover Liminal receiving an event and publishing it into `Client.events`; downstream stream consumers
+should add their own application spans when needed.

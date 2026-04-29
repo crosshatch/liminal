@@ -1,0 +1,48 @@
+# Methods
+
+Methods describe request-response calls in a client protocol.
+
+For toy examples, defining methods inline inside a `Client` is fine. For larger apps, define methods separately
+with `Method.make(...)` so they can be reused across clients and actors.
+
+## Define a method
+
+```ts
+import { Schema as S } from "effect"
+import { Method } from "liminal"
+
+export const SendMessage = Method.make({
+  payload: S.Struct({
+    content: S.String,
+  }),
+  success: S.Struct({
+    messageId: S.String,
+    timestamp: S.Date,
+  }),
+  failure: S.Never,
+})
+```
+
+Shared methods such as `UpdateProfile` or `ReportUser` can live under a common `shared/methods` directory.
+
+## Implement a shared handler
+
+If a method is shared, its handler can be shared too.
+
+```ts
+import { Effect } from "effect"
+import { Method } from "liminal"
+
+import { UpdateProfile } from "../shared/methods/UpdateProfile.ts"
+
+export default Method.handler(
+  UpdateProfile,
+  Effect.fn(function* ({ displayName, avatarUrl }) {
+    // shared logic here
+    return { updated: true }
+  }),
+)
+```
+
+If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is usually simpler. See
+[Actor Handlers](/core/actor-handlers).

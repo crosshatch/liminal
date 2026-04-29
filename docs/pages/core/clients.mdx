@@ -1,0 +1,59 @@
+# Clients
+
+A `Client` defines the wire contract between clients and actors.
+
+Everything else in Liminal hangs off that contract:
+
+- actors point at a client definition
+- handlers implement the client's methods
+- `Audition`s can merge multiple clients into one event stream and call surface
+
+## Define a client
+
+A client is a named set of methods and events.
+
+```ts
+import { Schema as S } from "effect"
+import { Client } from "liminal"
+
+export const Player = S.Literals(["X", "O"])
+export const Coordinate = S.Literals([0, 1, 2])
+export const Coordinates = S.Tuple([Coordinate, Coordinate])
+
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
+  methods: {
+    Move: {
+      payload: S.Struct({
+        position: Coordinates,
+      }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+  events: {
+    GameStarted: {
+      player: Player,
+    },
+    MoveMade: {
+      player: Player,
+      position: Coordinates,
+    },
+    GameEnded: {
+      winner: S.optional(Player),
+    },
+  },
+}) {}
+```
+
+## Shape
+
+- `methods` is a record of `{ payload, success, failure }`, where each value is a schema.
+- `events` is a record of plain struct fields.
+- Liminal tags events automatically with `_tag`.
+
+## Next concepts
+
+- [Methods](/core/methods) covers reusable method definitions.
+- [Client Calls](/core/client-calls) covers `Client.f(...)`.
+- [Events](/core/events) covers `Client.events` and replay.
+- [Actors](/core/actors) covers the server-side runtime for this protocol.

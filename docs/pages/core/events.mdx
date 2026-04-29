@@ -1,0 +1,56 @@
+# Events
+
+`Client.events` is the event stream for a client protocol.
+
+Events arrive as a tagged union keyed by `_tag`.
+
+```ts
+Effect.gen(function* () {
+  yield* TicTacToeClient.events.pipe(
+    Stream.runForEach(
+      Effect.fn(function* (event) {
+        switch (event._tag) {
+          case "GameStarted": {
+            const { player } = event
+            break
+          }
+          case "MoveMade": {
+            const { player, position } = event
+            break
+          }
+          case "GameEnded": {
+            const { winner } = event
+            break
+          }
+        }
+      }),
+    ),
+  )
+})
+```
+
+For larger apps, many screens should not consume `Client.events` directly. Feed the event stream into an
+[Accumulator](/state/accumulator) instead.
+
+## Replay
+
+Replay only affects `client.events`.
+
+```ts
+Client.layerSocket({
+  client: TicTacToeClient,
+  url: "/play",
+  replay: {
+    mode: "startup",
+    limit: 16,
+  },
+})
+```
+
+Important details:
+
+- No `replay`: subscribers only see events once they are connected.
+- `mode: "startup"`: the first subscriber gets the buffered events once.
+- `mode: "all-subscribers"`: every subscriber gets the buffer.
+- `limit` caps buffer size. When omitted, the buffer is unbounded.
+- Method successes and failures are never replayed.

@@ -1,0 +1,53 @@
+# HTTP Upgrades
+
+`Namespace.upgrade(name, attachments)` is the handoff from HTTP to the Durable Object.
+
+An HTTP route decides:
+
+- which actor name to connect to
+- which actor type to use
+- what the initial attachments should be
+
+`upgrade(...)` handles the rest.
+
+## Upgrade from a route
+
+```ts
+import { Effect, Layer } from "effect"
+import { HttpRouter } from "effect/unstable/http"
+
+import { ChatNamespace } from "./chat/ChatNamespace.ts"
+import { LobbyNamespace } from "./lobby/LobbyNamespace.ts"
+
+export const ApiLive = Layer.mergeAll(
+  HttpRouter.add(
+    "GET",
+    "/connect",
+    Effect.gen(function* () {
+      const sessionToken = yield* readSessionToken
+      const user = yield* lookupUser(sessionToken)
+
+      if (user) {
+        const roomId = yield* getActiveRoom(user.id)
+        return yield* ChatNamespace.upgrade(roomId, { userId: user.id })
+      }
+
+      return yield* LobbyNamespace.upgrade(sessionToken, {})
+    }),
+  ),
+)
+```
+
+Every request that upgrades with the same actor name lands in the same Durable Object instance.
+
+## What upgrade does
+
+On the Cloudflare side, `upgrade(...)`:
+
+- resolves the Durable Object by actor name
+- validates that the connecting WebSocket is using the expected Liminal client id
+- serializes attachments onto the WebSocket
+- returns the `101 Switching Protocols` response
+
+The validation step is why client and actor definitions must line up. If the wrong client tries to connect, the session
+fails with an audition error rather than silently misbehaving.

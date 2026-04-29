@@ -1,0 +1,38 @@
+# Collectors
+
+For local development, run any OTLP HTTP collector and point both browser and Worker telemetry at it.
+
+The endpoint should accept:
+
+- `POST /v1/traces`
+- `POST /v1/logs`
+- `POST /v1/metrics`
+
+For browser telemetry, configure CORS on the collector or proxy through your app. For Worker telemetry, use Wrangler
+secrets for authorization headers and avoid putting tokens in client-side code.
+
+## Span names
+
+Useful span names:
+
+- `effect-workerd.Entry.fetch`
+- `liminal.Client.acquire`
+- `liminal.Client.f`
+- `liminal.Client.event.enqueue`
+- `liminal.workerd.WorkerdActorNamespace.upgrade`
+- `liminal.workerd.WorkerdActorNamespace.fetch`
+- `liminal.workerd.WorkerdActorNamespace.webSocketMessage`
+- `liminal.workerd.WorkerdActorNamespace.handler`
+- `liminal.workerd.WorkerdActorNamespace.event.send`
+
+## Attributes
+
+Useful attributes:
+
+- `_tag`: method or event tag
+- `client`: Liminal client service id
+- `liminal.session.id`: durable socket-session id, persisted through hibernation
+- `liminal.link`: `session` or `transport`
+- `liminal.transport`: `websocket` or `worker`
+- `package`: `liminal` or `effect-workerd`
+- `module`: instrumentation source module

@@ -1,0 +1,41 @@
+# Actor Namespace
+
+`WorkerdActorNamespace` is the Cloudflare Durable Object wrapper around a Liminal actor.
+
+A namespace wraps one actor type as one Durable Object class.
+
+```ts
+// TicTacToeNamespace.ts
+import { Layer } from "effect"
+import { WorkerdActorNamespace } from "liminal/workerd"
+
+import { handleMove } from "./handleMove.ts"
+import { KvLive } from "./KvLive.ts"
+import { onConnect } from "./onConnect.ts"
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()(
+  "examples/TicTacToeNamespace",
+  {
+    actor: TicTacToeActor,
+    handlers: { Move: handleMove },
+    onConnect,
+    prelude: KvLive,
+    layer: Layer.empty,
+  },
+) {}
+```
+
+## Fields
+
+- `actor`: the Liminal actor definition
+- `prelude`: long-lived runtime dependencies for the Durable Object instance
+- `layer`: short-lived, request-local dependencies derived from actor context
+- `onConnect`: logic that runs for newly upgraded sockets
+- `handlers`: the method implementation table
+- `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
+
+The Durable Object binding name is not part of the definition. It is supplied later when you call
+`TicTacToeNamespace.layer("TICTACTOE")` to provide the namespace to your Worker runtime.
+
+Read [Prelude vs Layer](/core/prelude-vs-layer) for the dependency model.

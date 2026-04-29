@@ -1,0 +1,23 @@
+# Lifecycle
+
+`onConnect` runs when a client socket is newly upgraded into an actor.
+
+Use it to send initial state, reject a client, update attachments, or notify other clients.
+
+## Send initial events
+
+```ts
+import { Effect } from "effect"
+
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+export const onConnect = Effect.gen(function* () {
+  const { clients } = yield* TicTacToeActor
+  const player = clients.size === 1 ? "X" : "O"
+  yield* TicTacToeActor.all.send("GameStarted", { player }).pipe(Effect.orDie)
+})
+```
+
+`onConnect` is the usual place to emit the first snapshot event for a reconnectable client. Read
+[Snapshot and Delta Events](/state/snapshot-delta-events) for the state pattern and [Accumulator](/state/accumulator) for
+the reduction loop.
