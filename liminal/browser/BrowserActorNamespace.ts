@@ -186,7 +186,9 @@ export const make = Effect.fnUntraced(function* <
                 const { id, payload } = message
                 const { _tag, value } = payload as never
                 const parent = message.trace && Tracer.externalSpan(message.trace)
-                const transportSpan = parent ? yield* Effect.currentParentSpan.pipe(Effect.option) : Option.none()
+                const transportSpan = yield* Effect.currentParentSpan.pipe(
+                  Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
+                )
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],
@@ -211,10 +213,10 @@ export const make = Effect.fnUntraced(function* <
                     kind: "server",
                     parent,
                     links:
-                      parent && transportSpan._tag === "Some"
+                      parent && transportSpan
                         ? [
                             {
-                              span: transportSpan.value,
+                              span: transportSpan,
                               attributes: {
                                 "liminal.link": "transport",
                                 "liminal.transport": "worker",

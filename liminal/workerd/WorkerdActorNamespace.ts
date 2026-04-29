@@ -236,10 +236,9 @@ export const Service =
         }),
       close: ({ socket }) => Effect.sync(() => socket.close(1000)),
       snapshot: ({ socket, session }, attachments) =>
-        encodeSocketAttachment({
-          attachments,
-          session,
-        }).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
+        encodeSocketAttachment({ attachments, session }).pipe(
+          Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v))),
+        ),
     }
 
     const sessionAttributes = (session: typeof TraceUtil.TraceSession.Type) => ({
@@ -329,13 +328,7 @@ export const Service =
           const sessionId = crypto.randomUUID()
           const trace = yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace))
           const session = { sessionId, trace }
-          const currentClient = yield* this.directory.register(
-            {
-              socket: server,
-              session,
-            },
-            attachments,
-          )
+          const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -387,14 +380,19 @@ export const Service =
           const { id, payload } = message
           const { _tag, value } = payload as never
           const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
-          const transportSpan = parent ? yield* Effect.currentParentSpan.pipe(Effect.option) : Option.none()
+          const transportSpan = yield* Effect.currentParentSpan.pipe(
+            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
+          )
           const links = [
             sessionLink(session),
-            ...(parent && transportSpan._tag === "Some"
+            ...(parent && transportSpan
               ? [
                   {
-                    span: transportSpan.value,
-                    attributes: { "liminal.link": "transport", "liminal.transport": "websocket" },
+                    span: transportSpan,
+                    attributes: {
+                      "liminal.link": "transport",
+                      "liminal.transport": "websocket",
+                    },
                   },
                 ]
               : []),
@@ -436,22 +434,13 @@ export const Service =
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
         this.directory.entry(socket).pipe(
-          Effect.option,
-          Effect.flatMap((entry) =>
+          Effect.flatMap(({ client: { session } }) =>
             this.directory.unregister(socket).pipe(
               Effect.tap(debug("SocketClosed")),
-              span(
-                "webSocketClose",
-                Option.map(entry, ({ client }) => client.session).pipe(
-                  Option.match({
-                    onSome: (v) => ({
-                      attributes: sessionAttributes(v),
-                      links: [sessionLink(v)],
-                    }),
-                    onNone: () => undefined,
-                  }),
-                ),
-              ),
+              span("webSocketClose", {
+                attributes: sessionAttributes(session),
+                links: [sessionLink(session)],
+              }),
             ),
           ),
           Effect.tapCause(logCause),
@@ -462,9 +451,7 @@ export const Service =
 
       override webSocketError(socket: WebSocket, cause: unknown) {
         this.directory.entry(socket).pipe(
-          Effect.option,
-          Effect.flatMap((entry) => {
-            const session = Option.getOrUndefined(Option.map(entry, ({ client }) => client.session))
+          Effect.flatMap(({ client: { session } }) => {
             return Effect.gen({ self: this }, function* () {
               yield* debug("SocketErrored", { cause })
               yield* this.directory.unregister(socket)
@@ -510,9 +497,12 @@ export const Service =
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
           const actorRequest = new Request(url, request)
-          const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders), Effect.option)
-          if (traceHeaders._tag === "Some") {
-            for (const [key, value] of Object.entries(traceHeaders.value)) {
+          const traceHeaders = yield* Effect.currentSpan.pipe(
+            Effect.map(HttpTraceContext.toHeaders),
+            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
+          )
+          if (traceHeaders) {
+            for (const [key, value] of Object.entries(traceHeaders)) {
               actorRequest.headers.set(key, value)
             }
           }

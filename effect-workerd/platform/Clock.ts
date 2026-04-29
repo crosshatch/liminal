@@ -9,7 +9,7 @@ export const layer = Layer.succeed(Clock.Clock, {
   currentTimeMillis: Effect.sync(() => currentTimeMillisUnsafe()),
   currentTimeNanosUnsafe,
   currentTimeNanos: Effect.sync(() => currentTimeNanosUnsafe()),
-  sleep(duration: Duration.Duration) {
+  sleep: (duration) => {
     const millis = Duration.toMillis(duration)
     if (millis <= 0) return Effect.void
     return Effect.callback<void>((resume) => {
