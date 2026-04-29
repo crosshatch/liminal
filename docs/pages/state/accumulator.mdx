@@ -68,6 +68,8 @@ The `reducer` helper narrows the event type to a single tag, which is useful whe
 ```ts
 const reducer = GameState.reducer<Item>()
 
+const AwaitingPartner = reducer("AwaitingPartner", () => (state) => Effect.succeed(state))
+
 const GameStarted = reducer(
   "GameStarted",
   ({ player }) =>
@@ -87,10 +89,17 @@ Each call returns the reducer function unchanged. The value is in the type narro
 Combine the source stream, initial function, and reduce functions into a layer.
 
 ```ts
+import { Effect, Match, Option } from "effect"
+
 export const layer = GameState.layer({
   source: TicTacToeClient.events,
-  initial,
-  reduce: Match.valueTags({ GameStarted, MoveMade, GameEnded }),
+  initial: Effect.fn(function* (item) {
+    if (item._tag === "GameStarted") {
+      return Option.some({ name: item.player })
+    }
+    return Option.none()
+  }),
+  reduce: Match.valueTags({ AwaitingPartner, GameStarted, MoveMade, GameEnded }),
 })
 ```
 

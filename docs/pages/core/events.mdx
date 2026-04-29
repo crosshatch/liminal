@@ -10,6 +10,9 @@ Effect.gen(function* () {
     Stream.runForEach(
       Effect.fn(function* (event) {
         switch (event._tag) {
+          case "AwaitingPartner": {
+            break
+          }
           case "GameStarted": {
             const { player } = event
             break

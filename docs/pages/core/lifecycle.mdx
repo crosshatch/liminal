@@ -12,12 +12,17 @@ import { Effect } from "effect"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 export const onConnect = Effect.gen(function* () {
-  const { clients } = yield* TicTacToeActor
-  const player = clients.size === 1 ? "X" : "O"
-  yield* TicTacToeActor.all.send("GameStarted", { player }).pipe(Effect.orDie)
-})
+  const { clients, currentClient } = yield* TicTacToeActor
+  if (clients.size === 1) {
+    yield* currentClient.send("AwaitingPartner", {})
+  } else {
+    yield* TicTacToeActor.others.send("GameStarted", { player: "X" })
+    yield* currentClient.send("GameStarted", { player: "O" })
+  }
+}).pipe(Effect.orDie)
 ```
 
-`onConnect` is the usual place to emit the first snapshot event for a reconnectable client. Read
-[Snapshot and Delta Events](/state/snapshot-delta-events) for the state pattern and [Accumulator](/state/accumulator) for
-the reduction loop.
+`onConnect` is the usual place to emit the first snapshot event for a reconnectable client. Tic-tac-toe sends an
+`AwaitingPartner` event to the first socket, then sends `GameStarted` to both players once the second socket connects.
+Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the state pattern and
+[Accumulator](/state/accumulator) for the reduction loop.

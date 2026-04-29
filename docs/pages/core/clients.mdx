@@ -21,16 +21,8 @@ export const Coordinate = S.Literals([0, 1, 2])
 export const Coordinates = S.Tuple([Coordinate, Coordinate])
 
 export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
-  methods: {
-    Move: {
-      payload: S.Struct({
-        position: Coordinates,
-      }),
-      success: S.Void,
-      failure: S.Never,
-    },
-  },
   events: {
+    AwaitingPartner: {},
     GameStarted: {
       player: Player,
     },
@@ -40,6 +32,15 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
     },
     GameEnded: {
       winner: S.optional(Player),
+    },
+  },
+  methods: {
+    Move: {
+      payload: S.Struct({
+        position: Coordinates,
+      }),
+      success: S.Void,
+      failure: S.Never,
     },
   },
 }) {}

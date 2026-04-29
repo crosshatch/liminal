@@ -55,28 +55,27 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         Layer.provideMerge(Clock.layer),
       ),
     )
-    return runtime.runPromise(
-      handler.pipe(
-        Effect.tapCause(logCause),
-        Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
-        Effect.map(HttpServerResponse.toWeb),
-        Effect.provide([
-          Layer.succeed(ExecutionContext, ctx),
-          Layer.succeed(NativeRequest, request),
-          Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
-        ]),
-        Effect.scoped,
-        span("fetch", {
-          kind: "server",
-          parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
-        }),
-        Effect.ensuring(flush),
-        // Solves crashes between HMRs.
-        // Without this, in-flight requests use an old memoMap; new requests use a new one.
-        // Aka. cross-contamination.
-        // TODO: investigate whether better-solved by https://github.com/dmmulroy/effect-cloudflare/blob/main/src/internal/wrangler.ts
-        Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
-      ),
+    return handler.pipe(
+      Effect.tapCause(logCause),
+      Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
+      Effect.map(HttpServerResponse.toWeb),
+      Effect.provide([
+        Layer.succeed(ExecutionContext, ctx),
+        Layer.succeed(NativeRequest, request),
+        Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
+      ]),
+      Effect.scoped,
+      span("fetch", {
+        kind: "server",
+        parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
+      }),
+      Effect.ensuring(flush),
+      // Solves crashes between HMRs.
+      // Without this, in-flight requests use an old memoMap; new requests use a new one.
+      // Aka. cross-contamination.
+      // TODO: investigate whether better-solved by https://github.com/dmmulroy/effect-cloudflare/blob/main/src/internal/wrangler.ts
+      Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
+      runtime.runPromise,
     )
   }
 

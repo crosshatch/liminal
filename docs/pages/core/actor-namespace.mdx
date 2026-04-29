@@ -6,24 +6,30 @@ A namespace wraps one actor type as one Durable Object class.
 
 ```ts
 // TicTacToeNamespace.ts
-import { Layer } from "effect"
+import { Effect, Layer } from "effect"
 import { WorkerdActorNamespace } from "liminal/workerd"
 
 import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"
-import { onConnect } from "./onConnect.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()(
-  "examples/TicTacToeNamespace",
-  {
-    actor: TicTacToeActor,
-    handlers: { Move: handleMove },
-    onConnect,
-    prelude: KvLive,
-    layer: Layer.empty,
-  },
-) {}
+const onConnect = Effect.gen(function* () {
+  const { clients, currentClient } = yield* TicTacToeActor
+  if (clients.size === 1) {
+    yield* currentClient.send("AwaitingPartner", {})
+  } else {
+    yield* TicTacToeActor.others.send("GameStarted", { player: "X" })
+    yield* currentClient.send("GameStarted", { player: "O" })
+  }
+}).pipe(Effect.orDie)
+
+export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
+  actor: TicTacToeActor,
+  prelude: KvLive,
+  onConnect,
+  handlers: { Move: handleMove },
+  layer: Layer.empty,
+}) {}
 ```
 
 ## Fields
