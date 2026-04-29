@@ -305,23 +305,7 @@ export const Service =
       }
 
       override fetch(request: Request): Promise<Response> {
-        const links = pipe(
-          request.headers,
-          Headers.fromInput,
-          HttpTraceContext.fromHeaders,
-          Option.match({
-            onNone: () => [],
-            onSome: (span) => [
-              {
-                span,
-                attributes: {
-                  "liminal.link": "transport",
-                  "liminal.transport": "durable-object-fetch",
-                },
-              },
-            ],
-          }),
-        )
+        const parent = pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined)
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -357,7 +341,7 @@ export const Service =
           })
         }).pipe(
           Effect.tapCause(logCause),
-          span("fetch", { kind: "server", links }),
+          span("fetch", { kind: "server", parent }),
           Effect.ensuring(OtlpExporter.flush),
           this.runtime.runPromise,
         )
@@ -474,7 +458,7 @@ export const Service =
         )
       }
 
-      static readonly upgrade = (name: Name["Type"], attachments: (typeof Attachments)["Type"]) =>
+      static readonly upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
         Effect.gen({ self: this }, function* () {
           yield* debug("UpgradeInitiated", { attachments })
           const namespace = yield* this.service
@@ -499,17 +483,24 @@ export const Service =
           }
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
-          const actorRequest = new Request(url, request)
-          const traceHeaders = yield* Effect.currentSpan.pipe(
-            Effect.map(HttpTraceContext.toHeaders),
-            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
-          )
-          if (traceHeaders) {
+          return yield* Effect.gen(function* () {
+            const actorRequest = new Request(url, request)
+            const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
             for (const [key, value] of Object.entries(traceHeaders)) {
               actorRequest.headers.set(key, value)
             }
-          }
-          return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
+            return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
+          }).pipe(
+            span("durableObjectFetch", {
+              kind: "client",
+              attributes: {
+                "liminal.transport": "durable-object-fetch",
+                "server.address": url.origin,
+                "url.full": url.toString(),
+                "url.path": url.pathname,
+              },
+            }),
+          )
         }).pipe(span("upgrade"))
     }
   }
