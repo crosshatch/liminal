@@ -224,25 +224,6 @@ export const Service =
         ...attributes,
       })
 
-    const sessionSpanOptions = (session: Session | undefined) =>
-      session
-        ? {
-            attributes: sessionAttributes(session),
-            links: [sessionLink(session)],
-          }
-        : undefined
-
-    const traceParentLinks = (traceParent: Option.Option<Tracer.ExternalSpan>) =>
-      Option.match(traceParent, {
-        onNone: () => [],
-        onSome: (span) => [
-          {
-            span,
-            attributes: { "liminal.link": "transport", "liminal.transport": "durable-object-fetch" },
-          },
-        ],
-      })
-
     class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()(
       "liminal/WorkerdActorNamespace/NameDecoded",
     ) {}
@@ -337,7 +318,17 @@ export const Service =
       }
 
       override fetch(request: Request): Promise<Response> {
-        const links = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers)).pipe(traceParentLinks)
+        const links = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers)).pipe(
+          Option.match({
+            onNone: () => [],
+            onSome: (span) => [
+              {
+                span,
+                attributes: { "liminal.link": "transport", "liminal.transport": "durable-object-fetch" },
+              },
+            ],
+          }),
+        )
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -451,15 +442,21 @@ export const Service =
         this.directory.entry(socket).pipe(
           Effect.option,
           Effect.flatMap((entry) =>
-            this.directory
-              .unregister(socket)
-              .pipe(
-                Effect.tap(debug("SocketClosed")),
-                span(
-                  "webSocketClose",
-                  sessionSpanOptions(Option.getOrUndefined(Option.map(entry, ({ client }) => client.session))),
+            this.directory.unregister(socket).pipe(
+              Effect.tap(debug("SocketClosed")),
+              span(
+                "webSocketClose",
+                Option.map(entry, ({ client }) => client.session).pipe(
+                  Option.match({
+                    onSome: (v) => ({
+                      attributes: sessionAttributes(v),
+                      links: [sessionLink(v)],
+                    }),
+                    onNone: () => undefined,
+                  }),
                 ),
               ),
+            ),
           ),
           Effect.tapCause(logCause),
           Effect.ensuring(TraceUtil.flush),

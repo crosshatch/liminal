@@ -76,16 +76,16 @@ export const make = Effect.fnUntraced(function* <
   const entries: Record<string, Entry> = {}
 
   const transport: ActorTransport<BrowserClient, AttachmentFields, D> = {
-    send: ({ backing }, event) =>
-      Effect.gen(function* () {
+    send: ({ backing }, event) => {
+      const { _tag } = event.event as never
+      return Effect.gen(function* () {
         const trace = yield* TraceEnvelope.current
         yield* backing.send(0, {
           ...event,
           ...(trace._tag === "Some" ? { trace: trace.value } : {}),
         })
-      }).pipe(
-        span("event.send", { attributes: { _tag: (event.event as { readonly _tag: string })._tag }, kind: "producer" }),
-      ),
+      }).pipe(span("event.send", { attributes: { _tag }, kind: "producer" }))
+    },
     close: ({ close }) => close,
     snapshot: () => Effect.void,
   }
@@ -185,7 +185,7 @@ export const make = Effect.fnUntraced(function* <
                 }
                 const { id, payload } = message
                 const { _tag, value } = payload as never
-                const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
+                const parent = message.trace && Tracer.externalSpan(message.trace)
                 const transportSpan = parent ? yield* Effect.currentParentSpan.pipe(Effect.option) : Option.none()
                 yield* (
                   handlers as Method.Handlers<
