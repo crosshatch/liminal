@@ -233,15 +233,6 @@ export const Service =
       static service = Context.Service<NamespaceSelf, DurableObjectNamespace>()(id)
       static layer = Binding.layer(this.service, ["idFromName", "idFromString", "newUniqueId", "get"])
 
-      readonly makeSession = Effect.gen(function* () {
-        const sessionId = crypto.randomUUID()
-        const trace = yield* Effect.currentSpan
-        return {
-          sessionId,
-          trace: TraceUtil.toTrace(trace),
-        } satisfies Session
-      })
-
       readonly transport: ActorTransport<WorkerdClient, AttachmentFields, D> = {
         send: ({ socket, session }, event) =>
           Effect.gen(function* () {
