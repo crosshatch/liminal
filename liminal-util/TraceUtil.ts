@@ -1,5 +1,4 @@
-import { Effect, Option, Schema as S, Tracer } from "effect"
-import { OtlpExporter } from "effect/unstable/observability"
+import { Effect, Schema as S, Tracer } from "effect"
 
 export const TraceEnvelope = S.Struct({
   traceId: S.String,
@@ -14,10 +13,9 @@ export const TraceSession = S.Struct({
 
 export const toTrace = S.decodeSync(S.toType(TraceEnvelope))
 
-export const current = Effect.currentSpan.pipe(
-  Effect.map(toTrace),
-  Effect.catchTag("NoSuchElementError", () => Effect.undefined),
-)
+export const parent = Effect.currentParentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+
+export const current = Effect.currentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
 
 export const toLink = (
   envelope: typeof TraceEnvelope.Type,
@@ -26,13 +24,3 @@ export const toLink = (
   span: Tracer.externalSpan(envelope),
   attributes,
 })
-
-export const flush = Effect.serviceOption(OtlpExporter.Exporters).pipe(
-  Effect.flatMap(
-    Option.match({
-      onNone: () => Effect.void,
-      onSome: (exporters) => exporters.flush,
-    }),
-  ),
-  Effect.ignore,
-)

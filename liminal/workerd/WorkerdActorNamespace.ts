@@ -15,11 +15,13 @@ import {
   Option,
   Cause,
   Tracer,
+  pipe,
 } from "effect"
 import { Binding, DoState, NativeRequest } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
+import { OtlpExporter } from "effect/unstable/observability"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
 import * as TraceUtil from "liminal-util/TraceUtil"
@@ -304,7 +306,10 @@ export const Service =
       }
 
       override fetch(request: Request): Promise<Response> {
-        const links = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers)).pipe(
+        const links = pipe(
+          request.headers,
+          Headers.fromInput,
+          HttpTraceContext.fromHeaders,
           Option.match({
             onNone: () => [],
             onSome: (span) => [
@@ -325,9 +330,10 @@ export const Service =
           const state = yield* DoState.DoState
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
-          const sessionId = crypto.randomUUID()
-          const trace = yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace))
-          const session = { sessionId, trace }
+          const session = {
+            sessionId: crypto.randomUUID(),
+            trace: yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace)),
+          }
           const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
@@ -353,7 +359,7 @@ export const Service =
         }).pipe(
           Effect.tapCause(logCause),
           span("fetch", { kind: "server", links }),
-          Effect.ensuring(TraceUtil.flush),
+          Effect.ensuring(OtlpExporter.flush),
           this.runtime.runPromise,
         )
       }
@@ -380,9 +386,7 @@ export const Service =
           const { id, payload } = message
           const { _tag, value } = payload as never
           const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
-          const transportSpan = yield* Effect.currentParentSpan.pipe(
-            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
-          )
+          const transportSpan = yield* TraceUtil.parent
           const links = [
             sessionLink(session),
             ...(parent && transportSpan
@@ -427,7 +431,7 @@ export const Service =
           Mutex.task,
           Effect.tapCause(logCause),
           span("webSocketMessage"),
-          Effect.ensuring(TraceUtil.flush),
+          Effect.ensuring(OtlpExporter.flush),
           this.runtime.runFork,
         )
       }
@@ -444,7 +448,7 @@ export const Service =
             ),
           ),
           Effect.tapCause(logCause),
-          Effect.ensuring(TraceUtil.flush),
+          Effect.ensuring(OtlpExporter.flush),
           this.runtime.runFork,
         )
       }
@@ -466,7 +470,7 @@ export const Service =
             )
           }),
           Effect.tapCause(logCause),
-          Effect.ensuring(TraceUtil.flush),
+          Effect.ensuring(OtlpExporter.flush),
           this.runtime.runFork,
         )
       }

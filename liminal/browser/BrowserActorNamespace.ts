@@ -2,6 +2,7 @@ import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
+import * as TraceUtil from "liminal-util/TraceUtil"
 import * as TraceEnvelope from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
@@ -186,9 +187,7 @@ export const make = Effect.fnUntraced(function* <
                 const { id, payload } = message
                 const { _tag, value } = payload as never
                 const parent = message.trace && Tracer.externalSpan(message.trace)
-                const transportSpan = yield* Effect.currentParentSpan.pipe(
-                  Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
-                )
+                const transportSpan = yield* TraceUtil.parent
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],

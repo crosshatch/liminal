@@ -9,15 +9,15 @@ import {
   HttpServerResponse,
   HttpTraceContext,
 } from "effect/unstable/http"
+import { OtlpExporter } from "effect/unstable/observability"
 import { logCause } from "liminal-util/logCause"
-import { flush } from "liminal-util/TraceUtil"
 
 import { diagnostic } from "./_diagnostic.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
+import * as Clock from "./platform/Clock.ts"
 
 const { span } = diagnostic("Entry")
-import * as Clock from "./platform/Clock.ts"
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>
@@ -69,7 +69,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
-      Effect.ensuring(flush),
+      Effect.ensuring(OtlpExporter.flush),
       // Solves crashes between HMRs.
       // Without this, in-flight requests use an old memoMap; new requests use a new one.
       // Aka. cross-contamination.

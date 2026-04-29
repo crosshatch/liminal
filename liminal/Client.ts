@@ -152,7 +152,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           string,
           {
             readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FError<D>>
-            readonly span: Option.Option<Tracer.AnySpan>
+            readonly span?: Tracer.AnySpan | undefined
           }
         > = {}
         let callId = 0
@@ -244,10 +244,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                       }
                     }
                   })
-                  return yield* Option.match(inflight.span, {
-                    onSome: (span) => Effect.withParentSpan(complete, span, { captureStackTrace: false }),
-                    onNone: () => complete,
-                  })
+                  return yield* inflight.span
+                    ? Effect.withParentSpan(complete, inflight.span, { captureStackTrace: false })
+                    : complete
                 }
                 return
               }
@@ -352,16 +351,15 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               }
               const id = callId++
               const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
-              const span = yield* Effect.currentSpan.pipe(
-                Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
-                Effect.map(Option.fromNullishOr),
-              )
+              const span = yield* TraceUtil.current
               inflights[id] = { deferred, span }
               yield* send({
                 _tag: "F.Payload",
                 id,
                 payload: { _tag, value } as never,
-                ...(span._tag === "Some" && { trace: TraceUtil.toTrace(span.value) }),
+                ...(span && {
+                  trace: TraceUtil.toTrace(span),
+                }),
               })
               return yield* Effect.raceFirst(
                 Deferred.await(deferred),
