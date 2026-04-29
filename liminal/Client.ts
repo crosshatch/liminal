@@ -201,7 +201,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               }
               case "Audition.Failure": {
                 const { expected, actual } = message
-                yield* debug("Audition.Failed", { expected, actual })
                 return yield* new AuditionError({ value: { expected, actual } })
               }
               case "Event": {

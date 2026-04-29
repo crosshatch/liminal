@@ -3,11 +3,8 @@ import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
 import type { F } from "./F.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
 
-import { diagnostic } from "./_diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
-
-const { debug } = diagnostic("Audition")
 
 const TypeId = "~liminal/Audition" as const
 
@@ -68,12 +65,7 @@ export const add: {
         )
 
     const events = audition.events.pipe(
-      Stream.catchTag("AuditionError", () =>
-        Effect.succeed(client.events).pipe(
-          Effect.tap(() => debug("AuditionStaged", { client: client.key })),
-          Stream.unwrap,
-        ),
-      ),
+      Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),
     )
 
     return {
