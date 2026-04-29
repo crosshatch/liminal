@@ -17,6 +17,8 @@ export const parent = Effect.currentParentSpan.pipe(Effect.catchTag("NoSuchEleme
 
 export const current = Effect.currentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
 
+export const currentTrace = current.pipe(Effect.map((span) => (span ? toTrace(span) : undefined)))
+
 export const toLink = (
   envelope: typeof TraceEnvelope.Type,
   attributes: Record<string, unknown> = {},

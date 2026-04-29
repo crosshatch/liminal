@@ -3,7 +3,6 @@ import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore,
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as TraceUtil from "liminal-util/TraceUtil"
-import * as TraceEnvelope from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
@@ -78,7 +77,7 @@ export const make = Effect.fnUntraced(function* <
     send: ({ backing }, event) => {
       const { _tag } = event.event as never
       return Effect.gen(function* () {
-        const trace = yield* TraceEnvelope.current
+        const trace = yield* TraceUtil.currentTrace
         yield* backing.send(0, {
           ...event,
           ...(trace && { trace }),

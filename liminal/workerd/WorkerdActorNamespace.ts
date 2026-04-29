@@ -219,7 +219,7 @@ export const Service =
         Effect.gen(function* () {
           const eventTag = (event.event as { readonly _tag: string })._tag
           yield* Effect.gen(function* () {
-            const trace = yield* TraceUtil.current
+            const trace = yield* TraceUtil.currentTrace
             const encoded = yield* encodeEvent({
               ...event,
               ...(trace && { trace }),

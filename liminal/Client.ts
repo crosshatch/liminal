@@ -350,14 +350,13 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               const id = callId++
               const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
               const span = yield* TraceUtil.current
+              const trace = span ? TraceUtil.toTrace(span) : undefined
               inflights[id] = { deferred, span }
               yield* send({
                 _tag: "F.Payload",
                 id,
                 payload: { _tag, value } as never,
-                ...(span && {
-                  trace: TraceUtil.toTrace(span),
-                }),
+                ...(trace && { trace }),
               })
               return yield* Effect.raceFirst(
                 Deferred.await(deferred),
