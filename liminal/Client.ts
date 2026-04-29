@@ -15,15 +15,17 @@ import {
   Take,
   Schema as S,
   Array,
-  Struct,
   Fiber,
   Exit,
   Cause,
   Result,
   flow,
+  Tracer,
+  identity,
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import * as TraceUtil from "liminal-util/TraceUtil"
 
 import { diagnostic } from "./_diagnostic.ts"
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
@@ -87,7 +89,11 @@ export const Service =
 
     const protocol = Protocol(definition)
 
-    const events = tag.asEffect().pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
+    const events = tag.asEffect().pipe(
+      Effect.flatMap(RcRef.get),
+      Effect.map(({ events }) => events),
+      Stream.unwrap,
+    )
 
     const f: F<Self, D> = (_tag) =>
       Effect.fnUntraced(function* (value) {
@@ -137,13 +143,17 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
         type _ = typeof client.protocol
         type Event = ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"]
 
-        yield* debug("AcquisitionStarted")
-
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
 
-        const inflights: Record<string, Deferred.Deferred<_["F"]["Success"]["Type"], FError<D>>> = {}
+        const inflights: Record<
+          string,
+          {
+            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FError<D>>
+            readonly span?: Tracer.AnySpan | undefined
+          }
+        > = {}
         let callId = 0
         let takeCount = 0
         const pubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
@@ -186,46 +196,53 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
               case "Audition.Success": {
-                yield* debug("Audition.Succeeded")
                 yield* Deferred.succeed(audition, void 0)
                 return
               }
               case "Audition.Failure": {
                 const { expected, actual } = message
-                yield* debug("Audition.Failed", { expected, actual })
                 return yield* new AuditionError({ value: { expected, actual } })
               }
               case "Event": {
                 const { event } = message
-                yield* debug("Event.Emitted", { event })
-                yield* publishTake([event as never], true)
+                const { _tag } = event as never
+                const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
+                yield* Effect.gen(function* () {
+                  yield* publishTake([event], true)
+                }).pipe(
+                  span("event.enqueue", {
+                    attributes: { _tag },
+                    kind: "consumer",
+                    parent,
+                  }),
+                )
                 return
               }
               case "F.Success":
               case "F.Failure": {
                 const { id } = message
-                const deferred = inflights[id]
-                if (deferred) {
+                const inflight = inflights[id]
+                if (inflight) {
                   delete inflights[id]
-                  switch (message._tag) {
-                    case "F.Success": {
-                      const { _tag, value } = message.success as never
-                      yield* debug("Call.Succeeded", { id, _tag, value })
-                      yield* Deferred.succeed(deferred, value)
-                      return
+                  return yield* Effect.gen(function* () {
+                    switch (message._tag) {
+                      case "F.Success": {
+                        const { value } = message.success as never
+                        yield* Deferred.succeed(inflight.deferred, value)
+                        return
+                      }
+                      case "F.Failure": {
+                        const { _tag, value } = message.failure as never
+                        yield* debug("Call.Failed", { id, _tag })
+                        yield* Deferred.fail(inflight.deferred, value)
+                        return
+                      }
                     }
-                    case "F.Failure": {
-                      const { _tag, value } = message.failure as never
-                      yield* debug("Call.Failed", { id, _tag, value })
-                      yield* Deferred.fail(deferred, value)
-                      return
-                    }
-                  }
+                  }).pipe(inflight.span ? Effect.withParentSpan(inflight.span, { captureStackTrace: false }) : identity)
                 }
                 return
               }
               case "Disconnect": {
-                yield* debug("Disconnected")
                 return
               }
             }
@@ -234,7 +251,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           Effect.ensuring(
             Effect.all(
               [
-                debug("Client.Closed", { unresolved: Record.keys(inflights).length }),
+                Effect.sync(() => Record.keys(inflights).length).pipe(
+                  Effect.flatMap((unresolved) => (unresolved === 0 ? Effect.void : debug("Client.Closed", { unresolved }))),
+                ),
                 Deferred.succeed(audition, void 0),
                 RcRef.invalidate(rcr),
               ],
@@ -324,15 +343,18 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 })
               }
               const id = callId++
-              const inflight = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
-              inflights[id] = inflight
+              const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
+              const span = yield* TraceUtil.current
+              const trace = span ? TraceUtil.toTrace(span) : undefined
+              inflights[id] = { deferred, span }
               yield* send({
                 _tag: "F.Payload",
                 id,
                 payload: { _tag, value } as never,
+                ...(trace && { trace }),
               })
               return yield* Effect.raceFirst(
-                Deferred.await(inflight),
+                Deferred.await(deferred),
                 Fiber.await(fiber).pipe(
                   Effect.flatMap(
                     (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
@@ -350,7 +372,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 ),
               )
             },
-            span("f"),
+            span("f", { kind: "client", attributes: { _tag } }),
             Effect.scoped,
             Effect.provide(encodingServices),
           )
@@ -405,7 +427,6 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
                 Effect.fnUntraced(function* (cause) {
                   const { reason } = cause
                   if (reason._tag === "SocketCloseError" && reason.code === 1000) {
-                    yield* debug("Socket.Disconnected")
                     return yield* publish({ _tag: "Disconnect" })
                   }
                   yield* debug(`SocketErrored.${reason._tag}`, { cause })

@@ -1,18 +1,19 @@
-# Quickstart
-
-## Overview
+# Overview
 
 Liminal is a typed actor framework built on [Effect](https://effect.website). It gives you schema-driven RPC methods,
-event streams, and per-client attachment state — all wired through a single client/actor contract — and stays
-vendor-agnostic so the same actor model can run on different transports.
+event streams, and per-client attachment state wired through a single client/actor contract.
 
-- [Clients and Methods](./clients) — define the wire protocol.
-- [Actors, Handlers, and Lifecycle](./actors-handlers-and-lifecycle) — implement server-side behavior.
-- [Accumulator](./accumulator) — derive stable client-side state from event streams.
-- [Audition](./audition) — merge multiple clients into one call surface.
-- [Cloudflare Quickstart](./cloudflare) — host actors on Cloudflare Durable Objects.
-- [Cloudflare Actor Namespace](./cloudflare/actor-namespace) — wrap an actor as a Durable Object class and route from a
-  Worker.
+Liminal stays vendor-agnostic, so the same actor model can run on different transports. Cloudflare Workers and Durable
+Objects are supported through `liminal/workerd` and `effect-workerd`.
+
+## Start here
+
+- [Quickstart](/start): the shortest end-to-end path.
+- [Clients](/core/clients): define the wire protocol.
+- [Actors](/core/actors): define the server-side runtime.
+- [Actor Namespace](/core/actor-namespace): wrap an actor as a Cloudflare Durable Object.
+- [Accumulator](/state/accumulator): derive stable client-side state from event streams.
+- [Instrumentation](/instrumentation): export built-in spans and logs with Effect OpenTelemetry.
 
 ## Install
 
@@ -36,11 +37,10 @@ bun add liminal
 
 `liminal` is a small set of subpath exports.
 
-- `liminal` — the core actor model (`Accumulator`, `Actor`, `Audition`, `Client`, `ClientDirectory`, `ClientHandle`,
-  `Method`, `Protocol`).
-- `liminal/workerd` — the Cloudflare Durable Object actor namespace (`WorkerdActorNamespace`).
-- `liminal/browser` — the browser-side actor namespace (`BrowserActorNamespace`).
+- `liminal`: the core actor model (`Accumulator`, `Actor`, `Audition`, `Client`, `ClientDirectory`, `ClientHandle`, `Method`, `Protocol`).
+- `liminal/workerd`: the Cloudflare Durable Object actor namespace (`WorkerdActorNamespace`).
+- `liminal/browser`: the browser-side actor namespace (`BrowserActorNamespace`).
 
-To host actors on Cloudflare, pair `liminal/workerd` with [`effect-workerd`](https://www.npmjs.com/package/effect-workerd)
-— a small package of Effect services around the Workerd runtime that exposes `Worker.make`, `Assets`, `R2`, and the
-other Cloudflare bindings you'll need at the entrypoint.
+To host actors on Cloudflare, pair `liminal/workerd` with
+[`effect-workerd`](https://www.npmjs.com/package/effect-workerd), a small package of Effect services around the Workerd
+runtime that exposes `Worker.make`, `Assets`, `R2`, and the other Cloudflare bindings you need at the entrypoint.

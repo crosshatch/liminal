@@ -1,0 +1,73 @@
+# Cloudflare Setup
+
+The Worker runtime and Durable Object actor runtime both need telemetry in their Effect layers. Both runtimes flush the
+OTLP exporter after Worker fetches and Durable Object fetch/message/close/error callbacks, so short-lived Worker
+executions can export the spans they just produced.
+
+The actor namespace has its own runtime, including after hibernation wakeups, so the telemetry layer should be fully
+provided with `FetchHttpClient.layer`.
+
+## Define telemetry
+
+```ts
+// api/TelemetryLive.ts
+import { Config, Effect, Layer, Redacted } from "effect"
+import { FetchHttpClient } from "effect/unstable/http"
+import { Otlp } from "effect/unstable/observability"
+
+export const telemetryLive = (serviceName: string) =>
+  Otlp.layerJson(
+    Effect.gen(function* () {
+      const token = yield* Config.redacted("OTEL_TOKEN")
+      return {
+        baseUrl: yield* Config.string("OTEL_EXPORTER_OTLP_ENDPOINT"),
+        resource: {
+          serviceName,
+          attributes: {
+            "deployment.environment": "cloudflare",
+          },
+        },
+        headers: {
+          authorization: `Bearer ${Redacted.value(token)}`,
+        },
+        tracerExportInterval: "1 second",
+        loggerExportInterval: "1 second",
+      }
+    }),
+  ).pipe(Layer.provide(FetchHttpClient.layer))
+```
+
+If your collector does not require authentication, omit `OTEL_TOKEN` and `headers`.
+
+## Add telemetry to the Worker prelude
+
+```ts
+import { telemetryLive } from "./TelemetryLive.ts"
+
+export default Worker.make({
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(
+    KvLive,
+    telemetryLive("tic-tac-toe-worker"),
+    TicTacToeNamespace.layer("TICTACTOE"),
+    Assets.layer("ASSETS"),
+  ),
+})
+```
+
+Read [Worker Entrypoint](/actor-routing/worker-entrypoint) for the full Worker file.
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` as a Wrangler var and `OTEL_TOKEN` as a secret if your collector requires
+authentication. See [Collectors](/instrumentation/collectors) for endpoint, proxy, and credential guidance.
+
+## Add telemetry to the actor namespace
+
+The actor namespace does not need a separate tracing wrapper. It runs inside the `WorkerdActorNamespace` Effect runtime,
+and its `prelude` should include telemetry when actor spans and logs should be exported.
+
+```ts
+prelude: Layer.mergeAll(KvLive, telemetryLive("tic-tac-toe-actor")),
+```
+
+Read [Actor Namespace](/core/actor-namespace) for the full namespace shape and
+[Prelude vs Layer](/core/prelude-vs-layer) for the dependency lifetime split.

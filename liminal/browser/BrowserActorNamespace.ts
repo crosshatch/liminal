@@ -1,7 +1,8 @@
 import { BrowserWorkerRunner } from "@effect/platform-browser"
-import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream } from "effect"
+import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
+import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
@@ -13,7 +14,7 @@ import { diagnostic } from "../_diagnostic.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { debug, span } = diagnostic("browser.BrowserActorNamespace")
+const { span } = diagnostic("browser.BrowserActorNamespace")
 
 export interface Introduction<Name extends TopFromString, AttachmentFields extends S.Struct.Fields> {
   readonly port: MessagePort
@@ -59,17 +60,31 @@ export const make = Effect.fnUntraced(function* <
   const validateClientMessage = S.decodeUnknownEffect(S.toType(ClientM))
   const encodeName = S.encodeEffect(Name)
 
+  interface BrowserClient {
+    readonly backing: WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>
+
+    readonly close: Effect.Effect<void>
+  }
+
   interface Entry {
-    readonly directory: ClientDirectory.ClientDirectory<MessagePort, ActorSelf, AttachmentFields, D>
+    readonly directory: ClientDirectory.ClientDirectory<MessagePort, BrowserClient, ActorSelf, AttachmentFields, D>
     readonly mutex: <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>
   }
 
   const entries: Record<string, Entry> = {}
-  const runners = new Map<MessagePort, WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>>()
 
-  const transport: ActorTransport<MessagePort, AttachmentFields, D> = {
-    send: (port, event) => runners.get(port)?.send(0, event) ?? Effect.void,
-    close: () => Effect.void,
+  const transport: ActorTransport<BrowserClient, AttachmentFields, D> = {
+    send: ({ backing }, event) => {
+      const { _tag } = event.event as never
+      return Effect.gen(function* () {
+        const trace = yield* TraceUtil.currentTrace
+        yield* backing.send(0, {
+          ...event,
+          ...(trace && { trace }),
+        })
+      }).pipe(span("event.send", { attributes: { _tag }, kind: "producer" }))
+    },
+    close: ({ close }) => close,
     snapshot: () => Effect.void,
   }
 
@@ -78,7 +93,17 @@ export const make = Effect.fnUntraced(function* <
   const getEntry = Effect.fnUntraced(function* (key: string) {
     const existing = entries[key]
     if (existing) return existing
-    const directory = ClientDirectory.make(actor, transport)
+    const directory = ClientDirectory.make<
+      MessagePort,
+      BrowserClient,
+      ActorSelf,
+      ActorId,
+      Name,
+      AttachmentFields,
+      ClientSelf,
+      ClientId,
+      D
+    >(actor, { transport })
     const semaphore = yield* Semaphore.make(1)
     const fresh = {
       directory,
@@ -93,8 +118,6 @@ export const make = Effect.fnUntraced(function* <
   yield* introductions.pipe(
     Stream.runForEach(
       Effect.fnUntraced(function* ({ name, port, attachments }) {
-        yield* debug("IntroductionReceived", { name })
-
         const stateRef = yield* Ref.make<
           Option.Option<{
             readonly key: string
@@ -108,14 +131,12 @@ export const make = Effect.fnUntraced(function* <
         const closeScope = Scope.close(scope, Exit.void)
 
         const backing = yield* BrowserWorkerRunner.make(port).start<typeof Actor.Type, typeof ClientM.Type>()
-        runners.set(port, backing)
 
         yield* Scope.addFinalizer(
           scope,
           Effect.gen(function* () {
-            runners.delete(port)
             const state = yield* Ref.get(stateRef)
-            if (Option.isSome(state)) {
+            if (state._tag === "Some") {
               const {
                 key,
                 entry: { directory },
@@ -134,8 +155,7 @@ export const make = Effect.fnUntraced(function* <
               const state = yield* Ref.get(stateRef)
               yield* Effect.gen(function* () {
                 const message = yield* validateClientMessage(raw)
-                yield* debug("MessageReceived", { message })
-                if (Option.isNone(state)) {
+                if (state._tag === "None") {
                   if (message._tag !== "Audition.Payload") {
                     return yield* Effect.die(undefined)
                   }
@@ -150,9 +170,11 @@ export const make = Effect.fnUntraced(function* <
                   }
                   const key = yield* encodeName(name)
                   const entry = yield* getEntry(key)
-                  const currentClient = Object.assign(yield* entry.directory.register(port, attachments), {
-                    disconnect: closeScope,
-                  })
+                  const currentClient = yield* entry.directory.register(
+                    port,
+                    { backing, close: closeScope },
+                    attachments,
+                  )
                   const ActorLive = Layer.succeed(actor, {
                     name,
                     clients: entry.directory.handles,
@@ -171,6 +193,8 @@ export const make = Effect.fnUntraced(function* <
                 }
                 const { id, payload } = message
                 const { _tag, value } = payload as never
+                const parent = message.trace && Tracer.externalSpan(message.trace)
+                const transportSpan = yield* TraceUtil.parent
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],
@@ -190,7 +214,23 @@ export const make = Effect.fnUntraced(function* <
                     }),
                   }),
                   Effect.andThen((v) => backing.send(0, v)),
-                  span("handler", { attributes: { _tag } }),
+                  span("handler", {
+                    attributes: { _tag },
+                    kind: "server",
+                    parent,
+                    links:
+                      parent && transportSpan
+                        ? [
+                            {
+                              span: transportSpan,
+                              attributes: {
+                                "liminal.link": "transport",
+                                "liminal.transport": "worker",
+                              },
+                            },
+                          ]
+                        : undefined,
+                  }),
                   Effect.scoped,
                   Effect.provide(ActorLive),
                   entry.mutex,

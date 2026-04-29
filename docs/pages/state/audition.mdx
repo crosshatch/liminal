@@ -2,10 +2,10 @@
 
 `Audition` combines multiple clients into one call surface and one event stream.
 
-For larger apps, this avoids forcing the UI to swap service references manually when flows shift between contexts (for
-example, from a lobby into a chat room).
+For larger apps, this avoids forcing the UI to swap service references manually when flows shift between contexts, such
+as moving from a lobby into a chat room.
 
-## Merge multiple clients with `Audition`
+## Merge clients
 
 ```ts
 import { Audition } from "liminal"
@@ -20,8 +20,6 @@ After that, callers can use one method surface:
 
 ```ts
 Effect.gen(function* () {
-  // ...
-
   yield* audition.f("JoinRoom")({ roomId })
   yield* audition.f("SendMessage")({ content: "Hello!" })
 })
@@ -30,10 +28,35 @@ Effect.gen(function* () {
 The `audition.f(method)` signature mirrors `Client.f(method)`. The effect's required services are the union of services
 for every underlying client in the audition.
 
-And one event stream:
+## Merge events
 
 ```ts
 const source = audition.events
+```
+
+An app-wide accumulator can listen to that merged stream.
+
+```ts
+import { Stream } from "effect"
+
+const source = audition.events.pipe(Stream.forever)
+
+const AppAccumulatorLive = AppAccumulator.layer({
+  source,
+  initial: (event) => {
+    if (event._tag === "SessionStarted") {
+      return Effect.succeed(
+        Option.some({
+          roomId: event.roomId,
+          userId: event.userId,
+          members: event.members,
+        }),
+      )
+    }
+    return Effect.succeed(Option.none())
+  },
+  reduce,
+})
 ```
 
 ## Method resolution order

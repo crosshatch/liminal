@@ -1,0 +1,35 @@
+# Client Calls
+
+`Client.f(...)` invokes a named method from the client protocol.
+
+```ts
+Effect.gen(function* () {
+  yield* TicTacToeClient.f("Move")({
+    position: [1, 1],
+  })
+})
+```
+
+The method name selects the payload, success, and failure types from the `Client` definition.
+
+## Failure types
+
+The effect error type is wider than just the method's domain failure. A call can fail with:
+
+- the method's typed `failure` schema
+- `ConnectionError` if the transport fails
+- `AuditionError` if the client connects to an actor that does not match its client type
+- `UnresolvedError` if the underlying transport dies before the call resolves
+
+## Invalidate the session
+
+`Client.invalidate` tears down the underlying transport session. The next use re-acquires it.
+
+```ts
+Effect.gen(function* () {
+  yield* TicTacToeClient.invalidate
+})
+```
+
+This is useful when application state changes in a way that makes the current transport session stale, such as logout or
+tenant switching.

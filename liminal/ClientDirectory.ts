@@ -11,26 +11,37 @@ import * as ClientHandle from "./ClientHandle.ts"
 
 const { span } = diagnostic("ClientDirectory")
 
+export interface ClientEntry<Client, Handle> {
+  readonly client: Client
+
+  readonly handle: Handle
+}
+
 export interface ClientDirectory<
-  Raw,
+  Key,
+  Client,
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
   D extends ProtocolDefinition,
 > {
   readonly "": {
     readonly Handle: ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
+    readonly Entry: ClientEntry<Client, ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>>
   }
 
   readonly handles: ReadonlySet<this[""]["Handle"]>
 
   readonly register: (
-    raw: Raw,
+    key: Key,
+    client: Client,
     attachments: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<this[""]["Handle"], S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
 
-  readonly get: (raw: Raw) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError>
+  readonly get: (key: Key) => Effect.Effect<this[""]["Handle"], Cause.NoSuchElementError>
 
-  readonly unregister: (raw: Raw) => Effect.Effect<void>
+  readonly entry: (key: Key) => Effect.Effect<this[""]["Entry"], Cause.NoSuchElementError>
+
+  readonly unregister: (key: Key) => Effect.Effect<void>
 }
 
 export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
@@ -44,7 +55,8 @@ export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D e
 }
 
 export const make = <
-  Raw,
+  Key,
+  Client,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -54,51 +66,58 @@ export const make = <
   D extends ProtocolDefinition,
 >(
   _actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
-  { send, close, snapshot }: ActorTransport<Raw, AttachmentFields, D>,
-): ClientDirectory<Raw, ActorSelf, AttachmentFields, D> => {
+  {
+    transport: { send, close, snapshot },
+  }: {
+    readonly transport: ActorTransport<Client, AttachmentFields, D>
+  },
+): ClientDirectory<Key, Client, ActorSelf, AttachmentFields, D> => {
   type Handle = ClientHandle.ClientHandle<ActorSelf, AttachmentFields, D>
+  type Entry = ClientEntry<Client, Handle>
 
-  const raws = new Map<Raw, Handle>()
+  const entries = new Map<Key, Entry>()
   const handles = new Set<Handle>()
 
-  const get = (raw: Raw) => Effect.fromNullishOr(raws.get(raw))
+  const entry = (key: Key) => Effect.fromNullishOr(entries.get(key))
+  const get = (key: Key) => entry(key).pipe(Effect.map(({ handle }) => handle))
 
-  const register = Effect.fnUntraced(function* (raw: Raw, attachments: S.Struct<AttachmentFields>["Type"]) {
-    yield* snapshot(raw, attachments)
+  const unregister = (key: Key) =>
+    Effect.sync(() => {
+      const current = entries.get(key)
+      if (current) {
+        entries.delete(key)
+        handles.delete(current.handle)
+      }
+    }).pipe(span("unregister"))
+
+  const register = Effect.fnUntraced(function* (
+    clientKey: Key,
+    client: Client,
+    attachments: S.Struct<AttachmentFields>["Type"],
+  ) {
+    yield* snapshot(client, attachments)
     const attachmentsRef = yield* Ref.make(attachments)
     const handle: Handle = {
       attachments: Ref.get(attachmentsRef),
       save: Effect.fnUntraced(function* (attachments) {
         yield* Ref.set(attachmentsRef, attachments)
-        yield* snapshot(raw, attachments)
+        yield* snapshot(client, attachments)
       }),
       send: (_tag, payload) =>
-        send(raw, {
+        send(client, {
           _tag: "Event",
           event: { _tag, ...payload } as never,
         }),
-      disconnect: close(raw).pipe(
-        Effect.andThen(() =>
-          Effect.sync(() => {
-            raws.delete(raw)
-            handles.delete(handle)
-          }),
-        ),
-      ),
+      disconnect: close(client).pipe(Effect.andThen(unregister(clientKey)), Effect.asVoid),
     }
-    raws.set(raw, handle)
+    const previous = entries.get(clientKey)
+    if (previous) {
+      handles.delete(previous.handle)
+    }
+    entries.set(clientKey, { client, handle })
     handles.add(handle)
     return handle
   }, span("register"))
 
-  const unregister = (raw: Raw) =>
-    Effect.sync(() => {
-      const handle = raws.get(raw)
-      if (handle) {
-        raws.delete(raw)
-        handles.delete(handle)
-      }
-    }).pipe(span("unregister"))
-
-  return { ...phantom, handles, register, get, unregister }
+  return { ...phantom, handles, register, get, entry, unregister }
 }

@@ -1,0 +1,43 @@
+# Actors
+
+Actors are the server-side runtime for a client definition.
+
+An actor ties together three things:
+
+- a durable name
+- a client definition
+- attachment state stored per connected client
+
+```ts
+import { Schema as S } from "effect"
+import { Actor } from "liminal"
+
+import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
+
+export class TicTacToeActor extends Actor.Service<TicTacToeActor>()("examples/TicTacToeActor", {
+  client: TicTacToeClient,
+  name: S.String,
+  attachments: { player: Player },
+}) {}
+```
+
+## Fields
+
+- `client` points at the `Client` definition the actor implements.
+- `name` is a schema for the actor instance's unique identifier.
+- `attachments` is a struct-fields record for per-connected-client state.
+
+Use `S.String` for an opaque actor id, or a branded schema such as `S.String.pipe(S.brand("GameId"))` if you want the id
+type to be distinct.
+
+## Name versus attachments
+
+Keep the split clear:
+
+- `name` identifies the actor instance.
+- `attachments` identify or describe one connected client.
+
+For tic-tac-toe, the name is the game id and attachments record which player (`X` or `O`) the connected socket is
+playing as.
+
+This lets multiple clients connect to the same actor while keeping client-specific context isolated from one another.

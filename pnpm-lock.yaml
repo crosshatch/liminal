@@ -120,6 +120,9 @@ overrides:
   react-dom: ^19.2.4
 
 patchedDependencies:
+  effect@4.0.0-beta.57:
+    hash: 565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d
+    path: konfik/patches/effect@4.0.0-beta.57.patch
   miniflare@4.20260415.0:
     hash: 239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad
     path: konfik/patches/miniflare@4.20260415.0.patch
@@ -139,10 +142,10 @@ importers:
         version: 0.85.1
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1)
       '@effect/vitest':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.4)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(vitest@4.1.4)
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.0
@@ -166,7 +169,7 @@ importers:
         version: 4.1.4(vitest@4.1.4)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
@@ -199,7 +202,7 @@ importers:
         version: 19.2.14
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       liminal:
         specifier: workspace:*
         version: link:../liminal
@@ -226,10 +229,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       liminal-util:
         specifier: workspace:*
         version: link:../liminal-util
@@ -244,10 +247,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       effect-workerd:
         specifier: workspace:*
         version: link:../../effect-workerd
@@ -274,10 +277,10 @@ importers:
         version: 4.20260416.2
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       effect-workerd:
         specifier: workspace:*
         version: link:../../../effect-workerd
@@ -301,10 +304,10 @@ importers:
         version: 1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))
       '@effect/atom-react':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(react@19.2.5)(scheduler@0.27.0)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(react@19.2.5)(scheduler@0.27.0)
       '@effect/platform-browser':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       '@liminal-examples/tictactoe':
         specifier: workspace:*
         version: link:../api
@@ -331,7 +334,7 @@ importers:
         version: 1.0.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       liminal:
         specifier: workspace:*
         version: link:../../../liminal
@@ -355,13 +358,13 @@ importers:
         version: 4.20260416.2
       '@effect/platform-browser':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       '@effect/sql-d1':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       effect-workerd:
         specifier: workspace:*
         version: link:../effect-workerd
@@ -373,19 +376,19 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
 
   scripts:
     dependencies:
       '@effect/openapi-generator':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1))(effect@4.0.0-beta.57)
+        version: 4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1))(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
       '@effect/platform-node':
         specifier: 'catalog:'
-        version: 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
+        version: 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1)
       effect:
         specifier: 'catalog:'
-        version: 4.0.0-beta.57
+        version: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       swagger2openapi:
         specifier: 'catalog:'
         version: 7.0.8
@@ -6222,37 +6225,37 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@effect/atom-react@4.0.0-beta.57(effect@4.0.0-beta.57)(react@19.2.5)(scheduler@0.27.0)':
+  '@effect/atom-react@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(react@19.2.5)(scheduler@0.27.0)':
     dependencies:
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       react: 19.2.5
       scheduler: 0.27.0
 
   '@effect/language-service@0.85.1': {}
 
-  '@effect/openapi-generator@4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1))(effect@4.0.0-beta.57)':
+  '@effect/openapi-generator@4.0.0-beta.57(@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1))(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))':
     dependencies:
-      '@effect/platform-node': 4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)
-      effect: 4.0.0-beta.57
+      '@effect/platform-node': 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1)
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
 
-  '@effect/platform-browser@4.0.0-beta.57(effect@4.0.0-beta.57)':
+  '@effect/platform-browser@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))':
     dependencies:
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       multipasta: 0.2.7
 
-  '@effect/platform-node-shared@4.0.0-beta.57(effect@4.0.0-beta.57)':
+  '@effect/platform-node-shared@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       ws: 8.20.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57)(ioredis@5.10.1)':
+  '@effect/platform-node@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(ioredis@5.10.1)':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.57(effect@4.0.0-beta.57)
-      effect: 4.0.0-beta.57
+      '@effect/platform-node-shared': 4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       ioredis: 5.10.1
       mime: 4.1.0
       undici: 8.1.0
@@ -6260,14 +6263,14 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/sql-d1@4.0.0-beta.57(effect@4.0.0-beta.57)':
+  '@effect/sql-d1@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))':
     dependencies:
       '@cloudflare/workers-types': 4.20260416.2
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
 
-  '@effect/vitest@4.0.0-beta.57(effect@4.0.0-beta.57)(vitest@4.1.4)':
+  '@effect/vitest@4.0.0-beta.57(effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d))(vitest@4.1.4)':
     dependencies:
-      effect: 4.0.0-beta.57
+      effect: 4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d)
       vitest: 4.1.4(@types/node@25.6.0)(@vitest/coverage-v8@4.1.4)(happy-dom@20.9.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   '@emnapi/core@1.9.2':
@@ -8984,7 +8987,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-beta.57:
+  effect@4.0.0-beta.57(patch_hash=565104a13928ec83989716188aeb0ce1e4c43a0854a5c1e1d2ed8e993546a41d):
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.6.0
