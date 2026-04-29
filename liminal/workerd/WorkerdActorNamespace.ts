@@ -205,19 +205,48 @@ export const Service =
 
     const encodeEvent = encodeJsonString(P.Event)
 
-    type Session = typeof TraceUtil.TraceSession.Type
-
-    interface WorkerdClient {
-      readonly socket: WebSocket
-
-      readonly session: Session
+    const transport: ActorTransport<
+      {
+        readonly socket: WebSocket
+        readonly session: typeof TraceUtil.TraceSession.Type
+      },
+      AttachmentFields,
+      D
+    > = {
+      send: ({ socket, session }, event) =>
+        Effect.gen(function* () {
+          const eventTag = (event.event as { readonly _tag: string })._tag
+          yield* Effect.gen(function* () {
+            const trace = yield* TraceUtil.current
+            const encoded = yield* encodeEvent({
+              ...event,
+              ...(trace && { trace }),
+            })
+            yield* Effect.sync(() => socket.send(encoded))
+          }).pipe(
+            span("event.send", {
+              attributes: {
+                _tag: eventTag,
+                ...sessionAttributes(session),
+              },
+              kind: "producer",
+              links: [sessionLink(session)],
+            }),
+          )
+        }),
+      close: ({ socket }) => Effect.sync(() => socket.close(1000)),
+      snapshot: ({ socket, session }, attachments) =>
+        encodeSocketAttachment({
+          attachments,
+          session,
+        }).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
     }
 
-    const sessionAttributes = (session: Session) => ({
+    const sessionAttributes = (session: typeof TraceUtil.TraceSession.Type) => ({
       "liminal.session.id": session.sessionId,
     })
 
-    const sessionLink = (session: Session, attributes: Record<string, unknown> = {}) =>
+    const sessionLink = (session: typeof TraceUtil.TraceSession.Type, attributes: Record<string, unknown> = {}) =>
       TraceUtil.toLink(session.trace, {
         "liminal.link": "session",
         ...sessionAttributes(session),
@@ -233,43 +262,10 @@ export const Service =
       static service = Context.Service<NamespaceSelf, DurableObjectNamespace>()(id)
       static layer = Binding.layer(this.service, ["idFromName", "idFromString", "newUniqueId", "get"])
 
-      readonly transport: ActorTransport<WorkerdClient, AttachmentFields, D> = {
-        send: ({ socket, session }, event) =>
-          Effect.gen(function* () {
-            const eventTag = (event.event as { readonly _tag: string })._tag
-            yield* Effect.gen(function* () {
-              const trace = yield* TraceUtil.current
-              const encoded = yield* encodeEvent({
-                ...event,
-                ...(trace && { trace }),
-              })
-              yield* Effect.sync(() => socket.send(encoded))
-            }).pipe(
-              span("event.send", {
-                attributes: {
-                  _tag: eventTag,
-                  ...sessionAttributes(session),
-                },
-                kind: "producer",
-                links: [sessionLink(session)],
-              }),
-            )
-          }),
-        close: ({ socket }) => Effect.sync(() => socket.close(1000)),
-        snapshot: ({ socket, session }, attachments) =>
-          Effect.gen(function* () {
-            const encoded = yield* encodeSocketAttachment({
-              attachments,
-              session,
-            })
-            yield* Effect.sync(() => socket.serializeAttachment(encoded))
-          }),
-      }
-
       readonly runtime
       readonly directory = ClientDirectory.make(actor, {
         key: ({ socket }) => socket,
-        transport: this.transport,
+        transport,
       })
 
       constructor(state: DurableObjectState<{}>, env: Cloudflare.Env) {
@@ -315,7 +311,10 @@ export const Service =
             onSome: (span) => [
               {
                 span,
-                attributes: { "liminal.link": "transport", "liminal.transport": "durable-object-fetch" },
+                attributes: {
+                  "liminal.link": "transport",
+                  "liminal.transport": "durable-object-fetch",
+                },
               },
             ],
           }),
@@ -329,8 +328,14 @@ export const Service =
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const sessionId = crypto.randomUUID()
           const trace = yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace))
-          const session = { sessionId, trace } satisfies Session
-          const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
+          const session = { sessionId, trace }
+          const currentClient = yield* this.directory.register(
+            {
+              socket: server,
+              session,
+            },
+            attachments,
+          )
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
