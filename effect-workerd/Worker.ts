@@ -1,13 +1,23 @@
 import { env } from "cloudflare:workers"
-import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider } from "effect"
-import { HttpServerRequest, HttpServerResponse, HttpClient, FetchHttpClient, HttpServer } from "effect/unstable/http"
+import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Option, pipe } from "effect"
+import {
+  Headers,
+  FetchHttpClient,
+  HttpClient,
+  HttpServer,
+  HttpServerRequest,
+  HttpServerResponse,
+  HttpTraceContext,
+} from "effect/unstable/http"
 import { logCause } from "liminal-util/logCause"
+import { flush } from "liminal-util/TraceUtil"
 
 import { diagnostic } from "./_diagnostic.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 
 const { span } = diagnostic("Entry")
+import * as Clock from "./platform/Clock.ts"
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>
@@ -42,6 +52,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
             HttpServer.layerServices,
           ),
         ),
+        Layer.provideMerge(Clock.layer),
       ),
     )
     return handler.pipe(
@@ -54,7 +65,11 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
       ]),
       Effect.scoped,
-      span("fetch"),
+      span("fetch", {
+        kind: "server",
+        parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
+      }),
+      Effect.ensuring(flush),
       // Solves crashes between HMRs.
       // Without this, in-flight requests use an old memoMap; new requests use a new one.
       // Aka. cross-contamination.

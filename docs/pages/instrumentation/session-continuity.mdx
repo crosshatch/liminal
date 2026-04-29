@@ -1,0 +1,36 @@
+# Session Continuity
+
+Cloudflare Durable Objects can hibernate. Because an object can sleep between messages, Liminal does not model a
+WebSocket connection as one long live span.
+
+Long-running spans are difficult to end reliably and can produce oversized traces.
+
+## Persisted session metadata
+
+Instead, Liminal persists session metadata in the WebSocket attachment:
+
+```ts
+{
+  attachments: unknown
+  sessionId: string
+  trace: {
+    traceId: string
+    spanId: string
+    sampled: boolean
+  }
+}
+```
+
+After hibernation, the Durable Object hydrates that metadata and uses it as a span link and attribute source.
+
+Short spans still represent the actual work: message receive, handler execution, event send, close, error, and hydration.
+Session metadata ties those spans together without requiring a live span to survive hibernation.
+
+## Useful attributes and links
+
+Look for these attributes and links in your telemetry backend:
+
+- `liminal.session.id`: stable per connected socket session
+- `liminal.link = session`: link from short work spans back to the session trace
+- `liminal.link = transport`: link from handler spans back to the local WebSocket receive span
+- `liminal.transport = websocket` or `worker`

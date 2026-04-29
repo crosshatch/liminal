@@ -1,0 +1,59 @@
+# Snapshot and Delta Events
+
+The accumulator design depends on a deliberate event pattern:
+
+1. `onConnect` sends a snapshot event such as `GameStarted` or `RoomSnapshot`.
+2. Later handlers emit delta events such as `MoveMade` or `GameEnded`.
+3. `initial` extracts state from the snapshot.
+4. `reduce` folds deltas into that state.
+
+Without a snapshot event, a reconnecting UI usually needs a separate imperative fetch path.
+
+## Snapshot on connect
+
+```ts
+export const onConnect = Effect.gen(function* () {
+  const { currentClient } = yield* RoomActor
+  const room = yield* loadRoom
+
+  yield* currentClient.send("RoomSnapshot", {
+    roomId: room.id,
+    members: room.members,
+    messages: room.messages,
+  })
+})
+```
+
+## Delta from handlers
+
+```ts
+export const sendMessage = RoomActor.handler(
+  "SendMessage",
+  Effect.fn(function* ({ content }) {
+    const message = yield* saveMessage(content)
+
+    yield* RoomActor.all.send("MessageAdded", {
+      message,
+    })
+  }),
+)
+```
+
+## Accumulate locally
+
+```ts
+const initial = Effect.fn(function* (event: RoomEvent) {
+  if (event._tag === "RoomSnapshot") {
+    return Option.some({
+      roomId: event.roomId,
+      members: event.members,
+      messages: event.messages,
+    })
+  }
+  return Option.none()
+})
+```
+
+This keeps the client state model event-driven from the first usable value onward.
+
+Read [Lifecycle](/core/lifecycle) for `onConnect` and [Accumulator](/state/accumulator) for the reduction loop.

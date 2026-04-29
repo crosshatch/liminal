@@ -3,7 +3,7 @@
 An `Accumulator` is a typed state container driven by events. It reduces incoming events into long-lived client state,
 giving UI code a stable state stream instead of forcing every component to understand the full event log.
 
-If you are building anything larger than a toy screen, this is the most important guide after the quickstart.
+If you are building anything larger than a toy screen, this is the most important state guide after the quickstart.
 
 ## Define an accumulator
 
@@ -25,9 +25,9 @@ export class GameState extends Accumulator.Service<
 >()("examples/GameState") {}
 ```
 
-The state is a plain TypeScript type. There is no schema config — you control the shape directly.
+The state is a plain TypeScript type. There is no schema config; you control the shape directly.
 
-## Extract initial state from the first event
+## Extract initial state
 
 The `initial` function inspects each event until it finds one that produces the starting state.
 
@@ -42,9 +42,9 @@ const initial = Effect.fn(function* (item: Item) {
 })
 ```
 
-Until `initial` returns `Some`, the accumulator is not yet active and no reductions occur.
+Until `initial` returns `Some`, the accumulator is not active and no reductions occur.
 
-## Write the reduce function
+## Reduce events
 
 The `reduce` function folds each subsequent event into the current state.
 
@@ -61,12 +61,14 @@ const reduce = (event: Item) => (state: { readonly name: typeof Player.Type }) =
 }
 ```
 
-## Use `reducer` for type-safe per-event reducers
+## Use typed per-event reducers
 
 The `reducer` helper narrows the event type to a single tag, which is useful when composing reducers.
 
 ```ts
 const reducer = GameState.reducer<Item>()
+
+const AwaitingPartner = reducer("AwaitingPartner", () => (state) => Effect.succeed(state))
 
 const GameStarted = reducer(
   "GameStarted",
@@ -80,37 +82,37 @@ const MoveMade = reducer("MoveMade", () => (state) => Effect.succeed(state))
 const GameEnded = reducer("GameEnded", () => (state) => Effect.succeed(state))
 ```
 
-Each call returns the reducer function unchanged — the value is in the type narrowing, not runtime behavior.
+Each call returns the reducer function unchanged. The value is in the type narrowing, not runtime behavior.
 
-## Build the accumulator layer
+## Build the layer
 
 Combine the source stream, initial function, and reduce functions into a layer.
 
 ```ts
+import { Effect, Match, Option } from "effect"
+
 export const layer = GameState.layer({
   source: TicTacToeClient.events,
-  initial,
-  reduce: Match.valueTags({ GameStarted, MoveMade, GameEnded }),
+  initial: Effect.fn(function* (item) {
+    if (item._tag === "GameStarted") {
+      return Option.some({ name: item.player })
+    }
+    return Option.none()
+  }),
+  reduce: Match.valueTags({ AwaitingPartner, GameStarted, MoveMade, GameEnded }),
 })
 ```
 
 That layer starts the reduction loop and exposes:
 
-- `GameState.get` — an `Effect` that reads the current state
-- `GameState.stream` — a `Stream` of state changes
+- `GameState.get`: an `Effect` that reads the current state
+- `GameState.stream`: a `Stream` of state changes
 
 ## Consume state
 
-UI code reads the accumulator's current value or subscribes to its stream.
-
 ```ts
 Effect.gen(function* () {
-  // ...
-
-  // Read the current state
   const state = yield* GameState.get
-
-  // Subscribe to state changes
   const stateStream = GameState.stream
 })
 ```
@@ -126,46 +128,7 @@ import { GameState } from "./State"
 export const stateAtom = runtime.atom(GameState.stream)
 ```
 
-## Snapshot-on-connect plus delta events
-
-The accumulator design depends on a deliberate event pattern:
-
-1. `onConnect` sends a snapshot event such as `GameStarted` or `RoomSnapshot`
-2. later handlers emit delta events such as `MoveMade` or `GameEnded`
-3. `initial` extracts state from the snapshot, then `reduce` folds deltas
-
-That is why `onConnect` is so important. Without a snapshot event, a reconnecting UI would need a separate imperative
-fetch path.
-
-## Combining with `Audition`
-
-Larger apps combine `Audition` and `Accumulator` together. An app-wide accumulator listens to the merged event stream of
-multiple clients, and `initial` extracts the first snapshot from any of them.
-
-```ts
-import { Stream } from "effect"
-
-const source = audition.events.pipe(Stream.forever)
-
-const AppAccumulatorLive = AppAccumulator.layer({
-  source,
-  initial: (event) => {
-    if (event._tag === "SessionStarted") {
-      return Effect.succeed(
-        Option.some({
-          roomId: event.roomId,
-          userId: event.userId,
-          members: event.members,
-        }),
-      )
-    }
-    return Effect.succeed(Option.none())
-  },
-  reduce,
-})
-```
-
-## When to use `Accumulator`
+## When to use it
 
 Use `Accumulator` when:
 
@@ -175,3 +138,5 @@ Use `Accumulator` when:
 - you want a stable state stream derived from events
 
 Skip it when a screen only needs one or two direct method calls and no long-lived local state.
+
+Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the event pattern that makes accumulators reliable.

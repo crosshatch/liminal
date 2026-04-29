@@ -21,6 +21,10 @@
     "./*": {
       "types": "./*.ts",
       "default": "./dist/*.js"
+    },
+    "./platform": {
+      "types": "./platform/index.ts",
+      "default": "./dist/platform/index.js"
     }
   },
   "peerDependencies": {

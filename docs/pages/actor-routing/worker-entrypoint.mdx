@@ -1,0 +1,55 @@
+# Worker Entrypoint
+
+The Worker entrypoint usually exports:
+
+- a default `fetch` handler
+- each Durable Object class as a named export
+
+`Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling. `WorkerdActorNamespace` separately
+manages the Durable Object runtime for actor messages.
+
+## Build the entrypoint
+
+```ts
+// main.ts
+import { Effect, Layer } from "effect"
+import { Assets, Worker } from "effect-workerd"
+import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
+
+import * as GameState from "./Games.ts"
+import { KvLive } from "./KvLive.ts"
+import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
+
+export { TicTacToeNamespace }
+
+const ApiLive = Layer.mergeAll(
+  HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
+  HttpRouter.add(
+    "GET",
+    "/play",
+    Effect.gen(function* () {
+      const { gameId, player } = yield* GameState.init
+      return yield* TicTacToeNamespace.upgrade(gameId, { player })
+    }),
+  ),
+  HttpRouter.cors({
+    allowedHeaders: ["*"],
+    allowedMethods: ["*"],
+    allowedOrigins: ["*"],
+  }),
+  HttpRouter.add("*", "/*", Assets.forward),
+)
+
+export default Worker.make({
+  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer("TICTACTOE"), Assets.layer("ASSETS")),
+})
+```
+
+## Things to notice
+
+- `HttpRouter.add(method, path, effect)` mounts a single route.
+- `HttpRouter.cors(...)` wires up CORS for every route in the router.
+- `HttpRouter.add("*", "/*", Assets.forward)` falls through to the Cloudflare Assets binding for unmatched requests.
+- `Worker.make({ handler, prelude })` produces the Worker `fetch` export.
+- The Durable Object class must be re-exported from the Worker entrypoint.

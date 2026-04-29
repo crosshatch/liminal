@@ -1,0 +1,34 @@
+# Instrumentation
+
+Liminal is instrumented with Effect spans and logs at every runtime boundary where a client, transport, Worker, Durable
+Object, or actor handler hands work to the next layer.
+
+If you provide an Effect OpenTelemetry layer, those built-in spans and logs are exported without changing your actor
+code.
+
+## Built-in coverage
+
+Liminal uses Effect's tracing model. Every span is a normal Effect span, every diagnostic log is an Effect log, and
+propagation works through Effect's `Tracer` service.
+
+The built-in instrumentation covers Worker requests, Durable Object upgrades, socket messages, actor lifecycle hooks,
+method handlers, event sends, client calls, client-side event enqueueing, and response completion.
+
+Read [Collectors](/instrumentation/collectors) for useful span names and attributes.
+
+## Logs
+
+Liminal adds structured log annotations through its diagnostic helpers, including package/module fields and
+operation-specific fields such as method or event tags.
+
+When an OTLP logger is installed, Effect log records include the active trace and span identifiers, so logs line up with
+the surrounding traces in your backend.
+
+## Setup
+
+- [Propagation](/instrumentation/propagation) covers trace context across HTTP, WebSockets, and worker messages.
+- [Session Continuity](/instrumentation/session-continuity) covers hibernatable Cloudflare sockets.
+- [Trace Story](/instrumentation/trace-story) shows a browser-to-actor call from end to end.
+- [Browser Setup](/instrumentation/browser-setup) configures the client runtime.
+- [Cloudflare Setup](/instrumentation/cloudflare-setup) configures Worker and actor runtimes.
+- [Collectors](/instrumentation/collectors) lists useful span names, attributes, and collector requirements.

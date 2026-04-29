@@ -1,0 +1,26 @@
+# Actor Context
+
+Handlers and lifecycle hooks read actor runtime context by yielding the actor tag.
+
+```ts
+Effect.gen(function* () {
+  const { name, clients, currentClient } = yield* TicTacToeActor
+
+  const { player } = yield* currentClient.attachments
+})
+```
+
+The context includes:
+
+- `name`: the durable actor name for the current actor instance
+- `clients`: all connected client handles
+- `currentClient`: the client handle for the current invocation
+
+## Request-local services
+
+Many handlers want convenient access to values derived from actor context.
+
+On Cloudflare, use the namespace `layer` to derive request-local services like `CurrentUserId` or `Authorization` from
+the actor name and current client attachments.
+
+Read [Prelude vs Layer](/core/prelude-vs-layer) for the full Cloudflare pattern.

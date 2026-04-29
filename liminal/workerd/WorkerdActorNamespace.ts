@@ -14,12 +14,15 @@ import {
   Encoding,
   Option,
   Cause,
+  Tracer,
 } from "effect"
 import { Binding, DoState, NativeRequest } from "effect-workerd"
+import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
-import { HttpServerResponse, HttpClient, FetchHttpClient } from "effect/unstable/http"
+import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
+import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
@@ -60,7 +63,8 @@ export interface ActorNamespaceDefinition<
     | S.Struct<AttachmentFields>["EncodingServices"]
     | Name["EncodingServices"]
     | Name["DecodingServices"],
-    PreludeE
+    PreludeE,
+    HttpClient.HttpClient
   >
 
   readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
@@ -184,8 +188,12 @@ export const Service =
     const encodeName = S.encodeEffect(Name)
 
     const Attachments = S.Struct(AttachmentFields)
-    const encodeAttachments = S.encodeEffect(S.toCodecJson(Attachments))
-    const decodeAttachments = S.decodeUnknownEffect(S.toCodecJson(Attachments))
+    const SocketAttachment = S.Struct({
+      attachments: S.toCodecJson(Attachments),
+      session: TraceUtil.TraceSession,
+    })
+    const encodeSocketAttachment = S.encodeEffect(SocketAttachment)
+    const decodeSocketAttachment = S.decodeUnknownEffect(SocketAttachment)
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const decodeAttachmentsString = decodeJsonString(Attachments)
 
@@ -197,12 +205,52 @@ export const Service =
 
     const encodeEvent = encodeJsonString(P.Event)
 
-    const transport: ActorTransport<WebSocket, AttachmentFields, D> = {
-      send: (socket, event) => encodeEvent(event).pipe(Effect.andThen((v) => Effect.sync(() => socket.send(v)))),
-      close: (socket) => Effect.sync(() => socket.close(1000)),
-      snapshot: (socket, attachments) =>
-        encodeAttachments(attachments).pipe(Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v)))),
+    const transport: ActorTransport<
+      {
+        readonly socket: WebSocket
+        readonly session: typeof TraceUtil.TraceSession.Type
+      },
+      AttachmentFields,
+      D
+    > = {
+      send: ({ socket, session }, event) =>
+        Effect.gen(function* () {
+          const eventTag = (event.event as { readonly _tag: string })._tag
+          yield* Effect.gen(function* () {
+            const trace = yield* TraceUtil.current
+            const encoded = yield* encodeEvent({
+              ...event,
+              ...(trace && { trace }),
+            })
+            yield* Effect.sync(() => socket.send(encoded))
+          }).pipe(
+            span("event.send", {
+              attributes: {
+                _tag: eventTag,
+                ...sessionAttributes(session),
+              },
+              kind: "producer",
+              links: [sessionLink(session)],
+            }),
+          )
+        }),
+      close: ({ socket }) => Effect.sync(() => socket.close(1000)),
+      snapshot: ({ socket, session }, attachments) =>
+        encodeSocketAttachment({ attachments, session }).pipe(
+          Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v))),
+        ),
     }
+
+    const sessionAttributes = (session: typeof TraceUtil.TraceSession.Type) => ({
+      "liminal.session.id": session.sessionId,
+    })
+
+    const sessionLink = (session: typeof TraceUtil.TraceSession.Type, attributes: Record<string, unknown> = {}) =>
+      TraceUtil.toLink(session.trace, {
+        "liminal.link": "session",
+        ...sessionAttributes(session),
+        ...attributes,
+      })
 
     class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()(
       "liminal/WorkerdActorNamespace/NameDecoded",
@@ -214,7 +262,10 @@ export const Service =
       static layer = Binding.layer(this.service, ["idFromName", "idFromString", "newUniqueId", "get"])
 
       readonly runtime
-      readonly directory = ClientDirectory.make(actor, transport)
+      readonly directory = ClientDirectory.make(actor, {
+        key: ({ socket }) => socket,
+        transport,
+      })
 
       constructor(state: DurableObjectState<{}>, env: Cloudflare.Env) {
         super(state, env)
@@ -230,21 +281,43 @@ export const Service =
           Layer.succeed(DoState.DoState, state),
           Mutex.layer,
           Layer.effect(NameDecoded, S.decodeUnknownEffect(Name)(state.id.name)).pipe(
-            Layer.provideMerge(prelude.pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromUnknown(env))))),
+            Layer.provideMerge(
+              prelude.pipe(
+                Layer.provideMerge(
+                  Layer.mergeAll(FetchHttpClient.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
+                ),
+              ),
+            ),
           ),
-        ).pipe(boundLayer("actor"))
+        ).pipe(Layer.provideMerge(Clock.layer), boundLayer("actor"))
 
         const hydrateAttachments = Effect.gen({ self: this }, function* () {
           for (const socket of state.getWebSockets()) {
-            const attachments = yield* decodeAttachments(socket.deserializeAttachment())
-            yield* this.directory.register(socket, attachments)
+            const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
+            yield* this.directory
+              .register({ socket, session }, attachments)
+              .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
           }
         }).pipe(span("hydrateAttachments"), Effect.tapCause(logCause))
 
-        this.runtime = hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live), ManagedRuntime.make)
+        this.runtime = ManagedRuntime.make(hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live)))
       }
 
       override fetch(request: Request): Promise<Response> {
+        const links = HttpTraceContext.fromHeaders(Headers.fromInput(request.headers)).pipe(
+          Option.match({
+            onNone: () => [],
+            onSome: (span) => [
+              {
+                span,
+                attributes: {
+                  "liminal.link": "transport",
+                  "liminal.transport": "durable-object-fetch",
+                },
+              },
+            ],
+          }),
+        )
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -252,7 +325,10 @@ export const Service =
           const state = yield* DoState.DoState
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
-          const currentClient = yield* this.directory.register(server, attachments)
+          const sessionId = crypto.randomUUID()
+          const trace = yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace))
+          const session = { sessionId, trace }
+          const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -261,7 +337,10 @@ export const Service =
           })
           yield* onConnect.pipe(
             Effect.scoped,
-            span("onConnect"),
+            span("onConnect", {
+              attributes: sessionAttributes(session),
+              links: [sessionLink(session)],
+            }),
             Effect.scoped,
             Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
@@ -271,12 +350,19 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(Effect.tapCause(logCause), span("fetch"), this.runtime.runPromise)
+        }).pipe(
+          Effect.tapCause(logCause),
+          span("fetch", { kind: "server", links }),
+          Effect.ensuring(TraceUtil.flush),
+          this.runtime.runPromise,
+        )
       }
 
       override webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen({ self: this }, function* () {
-          const currentClient = yield* this.directory.get(socket)
+          const { client, handle: currentClient } = yield* this.directory.entry(socket)
+          const { session } = client
+          yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
             name,
@@ -293,6 +379,24 @@ export const Service =
           }
           const { id, payload } = message
           const { _tag, value } = payload as never
+          const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
+          const transportSpan = yield* Effect.currentParentSpan.pipe(
+            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
+          )
+          const links = [
+            sessionLink(session),
+            ...(parent && transportSpan
+              ? [
+                  {
+                    span: transportSpan,
+                    attributes: {
+                      "liminal.link": "transport",
+                      "liminal.transport": "websocket",
+                    },
+                  },
+                ]
+              : []),
+          ]
           yield* handlers[_tag]!(value).pipe(
             Effect.matchEffect({
               onSuccess: (value) =>
@@ -308,25 +412,63 @@ export const Service =
                   failure: { _tag, value } as never,
                 }),
             }),
-            span("handler", { attributes: { _tag } }),
+            span("handler", {
+              attributes: { _tag, ...sessionAttributes(session) },
+              kind: "server",
+              parent,
+              links,
+            }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             Effect.scoped,
             Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
-        }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
+        }).pipe(
+          Effect.scoped,
+          Mutex.task,
+          Effect.tapCause(logCause),
+          span("webSocketMessage"),
+          Effect.ensuring(TraceUtil.flush),
+          this.runtime.runFork,
+        )
       }
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-        this.directory
-          .unregister(socket)
-          .pipe(Effect.tap(debug("SocketClosed")), Effect.tapCause(logCause), this.runtime.runFork)
+        this.directory.entry(socket).pipe(
+          Effect.flatMap(({ client: { session } }) =>
+            this.directory.unregister(socket).pipe(
+              Effect.tap(debug("SocketClosed")),
+              span("webSocketClose", {
+                attributes: sessionAttributes(session),
+                links: [sessionLink(session)],
+              }),
+            ),
+          ),
+          Effect.tapCause(logCause),
+          Effect.ensuring(TraceUtil.flush),
+          this.runtime.runFork,
+        )
       }
 
       override webSocketError(socket: WebSocket, cause: unknown) {
-        Effect.gen({ self: this }, function* () {
-          yield* debug("SocketErrored", { cause })
-          yield* this.directory.unregister(socket)
-        }).pipe(Effect.tapCause(logCause), span("SocketErrored", { attributes: { cause } }), this.runtime.runFork)
+        this.directory.entry(socket).pipe(
+          Effect.flatMap(({ client: { session } }) => {
+            return Effect.gen({ self: this }, function* () {
+              yield* debug("SocketErrored", { cause })
+              yield* this.directory.unregister(socket)
+            }).pipe(
+              span("SocketErrored", {
+                attributes: {
+                  cause,
+                  ...(session ? sessionAttributes(session) : {}),
+                },
+                links: session ? [sessionLink(session)] : undefined,
+              }),
+            )
+          }),
+          Effect.tapCause(logCause),
+          Effect.ensuring(TraceUtil.flush),
+          this.runtime.runFork,
+        )
       }
 
       static readonly upgrade = (name: Name["Type"], attachments: (typeof Attachments)["Type"]) =>
@@ -354,9 +496,17 @@ export const Service =
           }
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
-          return yield* Effect.promise(() => stub.fetch(new Request(url, request))).pipe(
-            Effect.map(HttpServerResponse.raw),
+          const actorRequest = new Request(url, request)
+          const traceHeaders = yield* Effect.currentSpan.pipe(
+            Effect.map(HttpTraceContext.toHeaders),
+            Effect.catchTag("NoSuchElementError", () => Effect.succeed(undefined)),
           )
+          if (traceHeaders) {
+            for (const [key, value] of Object.entries(traceHeaders)) {
+              actorRequest.headers.set(key, value)
+            }
+          }
+          return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
         }).pipe(span("upgrade"))
     }
   }

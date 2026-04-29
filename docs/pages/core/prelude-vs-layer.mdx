@@ -1,0 +1,50 @@
+# Prelude vs Layer
+
+The `prelude` and `layer` fields in `WorkerdActorNamespace` serve different lifetimes.
+
+Use `prelude` for long-lived infrastructure:
+
+- database access
+- config
+- logging
+- asset bindings
+- Cloudflare service bindings
+
+Use `layer` for short-lived context derived from the current client-specific actor invocation:
+
+- current user id
+- current authorization
+
+## Derive request context
+
+The next example builds a `layer` that provides an actor-specific `CurrentUserId` derived from two different actor
+definitions.
+
+```ts
+import { Context, Effect, Layer, Schema as S } from "effect"
+
+import { ChatActor } from "../chat/ChatActor.ts"
+import { LobbyActor } from "../lobby/LobbyActor.ts"
+
+const UserId = S.String.pipe(S.brand("UserId"))
+
+export class CurrentUserId extends Context.Service<CurrentUserId, typeof UserId.Type>()("CurrentUserId") {}
+
+// Use the actor name as the id.
+export const layerLobby = Effect.gen(function* () {
+  const { name } = yield* LobbyActor
+  return name
+}).pipe(Layer.effect(CurrentUserId))
+
+// Use the current client attachment as the id.
+export const layerChat = Effect.gen(function* () {
+  const { currentClient } = yield* ChatActor
+  const { userId } = yield* currentClient.attachments
+  return userId
+}).pipe(Layer.effect(CurrentUserId))
+```
+
+In Effect v4, context is defined with `Context.Service<Self, A>()(id)`. This replaces `Context.Tag` from earlier
+versions.
+
+Read [Actor Context](/core/actor-context) for the values available through `yield* ActorTag`.

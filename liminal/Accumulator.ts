@@ -77,7 +77,7 @@ export const Service =
             Effect.fn(function* (item) {
               if (!(yield* Deferred.isDone(deferred))) {
                 const match = yield* initial(item)
-                if (Option.isSome(match)) {
+                if (match._tag === "Some") {
                   const { value } = match
                   yield* Deferred.succeed(deferred, value)
                   yield* debug("InitializedState", { state: value })

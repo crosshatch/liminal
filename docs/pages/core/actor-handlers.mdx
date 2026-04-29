@@ -1,0 +1,31 @@
+# Actor Handlers
+
+Handlers implement client methods inside actor context.
+
+The simplest handler pattern is actor-bound.
+
+```ts
+import { Effect } from "effect"
+
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+export const handleMove = TicTacToeActor.handler(
+  "Move",
+  Effect.fn(function* ({ position }) {
+    const { currentClient, name: gameId } = yield* TicTacToeActor
+    const { player } = yield* currentClient.attachments
+
+    yield* TicTacToeActor.all.send("MoveMade", { player, position })
+    yield* saveMove(gameId, player, position)
+  }),
+)
+```
+
+`Actor.handler("Method", ...)` is a typed pass-through. It returns the handler unchanged at runtime but narrows the
+handler's payload, success, and failure types to the named method.
+
+## Related concepts
+
+- [Actor Context](/core/actor-context) covers `yield* ActorTag`.
+- [Client Handles](/core/client-handles) covers sends, broadcasts, saves, attachments, and disconnects.
+- [Methods](/core/methods) covers shared `Method.handler(...)` implementations.
