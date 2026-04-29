@@ -254,8 +254,11 @@ export const Service =
 
       readonly makeSession = Effect.gen(function* () {
         const sessionId = crypto.randomUUID()
-        const trace = yield* Effect.currentSpan.pipe(Effect.orDie)
-        return { sessionId, trace: TraceUtil.toTrace(trace) } satisfies Session
+        const trace = yield* Effect.currentSpan
+        return {
+          sessionId,
+          trace: TraceUtil.toTrace(trace),
+        } satisfies Session
       })
 
       readonly transport: ActorTransport<WorkerdClient, AttachmentFields, D> = {
@@ -342,7 +345,9 @@ export const Service =
           const state = yield* DoState.DoState
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
-          const session = yield* this.makeSession
+          const sessionId = crypto.randomUUID()
+          const trace = yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace))
+          const session = { sessionId, trace } satisfies Session
           const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
           const name = yield* NameDecoded
           const ActorLive = Layer.succeed(actor, {
