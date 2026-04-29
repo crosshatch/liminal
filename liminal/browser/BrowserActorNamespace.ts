@@ -14,7 +14,7 @@ import { diagnostic } from "../_diagnostic.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { debug, span } = diagnostic("browser.BrowserActorNamespace")
+const { span } = diagnostic("browser.BrowserActorNamespace")
 
 export interface Introduction<Name extends TopFromString, AttachmentFields extends S.Struct.Fields> {
   readonly port: MessagePort
@@ -118,8 +118,6 @@ export const make = Effect.fnUntraced(function* <
   yield* introductions.pipe(
     Stream.runForEach(
       Effect.fnUntraced(function* ({ name, port, attachments }) {
-        yield* debug("IntroductionReceived", { name })
-
         const stateRef = yield* Ref.make<
           Option.Option<{
             readonly key: string
@@ -157,7 +155,6 @@ export const make = Effect.fnUntraced(function* <
               const state = yield* Ref.get(stateRef)
               yield* Effect.gen(function* () {
                 const message = yield* validateClientMessage(raw)
-                yield* debug("MessageReceived", { message })
                 if (state._tag === "None") {
                   if (message._tag !== "Audition.Payload") {
                     return yield* Effect.die(undefined)

@@ -1,4 +1,4 @@
-import { Schema as S, Effect, Cause, Option, Ref } from "effect"
+import { Schema as S, Effect, Cause, Ref } from "effect"
 
 import type { TopFromString } from "./_util/schema.ts"
 import type { Actor } from "./Actor.ts"
@@ -41,7 +41,7 @@ export interface ClientDirectory<
 
   readonly entry: (key: Key) => Effect.Effect<this[""]["Entry"], Cause.NoSuchElementError>
 
-  readonly unregister: (key: Key) => Effect.Effect<Option.Option<this[""]["Entry"]>>
+  readonly unregister: (key: Key) => Effect.Effect<void>
 }
 
 export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
@@ -87,9 +87,7 @@ export const make = <
       if (current) {
         entries.delete(key)
         handles.delete(current.handle)
-        return Option.some(current)
       }
-      return Option.none()
     }).pipe(span("unregister"))
 
   const register = Effect.fnUntraced(function* (

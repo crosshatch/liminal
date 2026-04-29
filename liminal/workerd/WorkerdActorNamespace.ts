@@ -333,7 +333,6 @@ export const Service =
             Effect.scoped,
             Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
-          yield* debug("ClientRegistered")
           return new Response(null, {
             status: 101,
             webSocket,
@@ -359,7 +358,6 @@ export const Service =
             currentClient,
           })
           const message = yield* decodeClientM(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
-          yield* debug("MessageReceived", { message })
           if (message._tag === "Audition.Payload") {
             return yield* Effect.die(undefined)
           }
@@ -420,39 +418,31 @@ export const Service =
       }
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-        this.directory.entry(socket).pipe(
-          Effect.flatMap(({ client: { session } }) =>
-            this.directory.unregister(socket).pipe(
-              Effect.tap(debug("SocketClosed")),
-              span("webSocketClose", {
-                attributes: sessionAttributes(session),
-                links: [sessionLink(session)],
-              }),
-            ),
-          ),
+        Effect.gen({ self: this }, function* () {
+          const {
+            client: { session },
+          } = yield* this.directory.entry(socket)
+          yield* Effect.annotateCurrentSpan(sessionAttributes(session))
+          yield* this.directory.unregister(socket)
+        }).pipe(
           Effect.tapCause(logCause),
+          span("webSocketClose"),
           Effect.ensuring(OtlpExporter.flush),
           this.runtime.runFork,
         )
       }
 
       override webSocketError(socket: WebSocket, cause: unknown) {
-        this.directory.entry(socket).pipe(
-          Effect.flatMap(({ client: { session } }) => {
-            return Effect.gen({ self: this }, function* () {
-              yield* debug("SocketErrored", { cause })
-              yield* this.directory.unregister(socket)
-            }).pipe(
-              span("SocketErrored", {
-                attributes: {
-                  cause,
-                  ...(session ? sessionAttributes(session) : {}),
-                },
-                links: session ? [sessionLink(session)] : undefined,
-              }),
-            )
-          }),
+        Effect.gen({ self: this }, function* () {
+          const {
+            client: { session },
+          } = yield* this.directory.entry(socket)
+          yield* Effect.annotateCurrentSpan(sessionAttributes(session))
+          yield* this.directory.unregister(socket)
+          yield* debug("SocketErrored", { cause })
+        }).pipe(
           Effect.tapCause(logCause),
+          span("webSocketError"),
           Effect.ensuring(OtlpExporter.flush),
           this.runtime.runFork,
         )
@@ -460,7 +450,6 @@ export const Service =
 
       static readonly upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
         Effect.gen({ self: this }, function* () {
-          yield* debug("UpgradeInitiated", { attachments })
           const namespace = yield* this.service
           const nameEncoded = yield* encodeName(name)
           const stub = namespace.getByName(nameEncoded)
@@ -495,9 +484,6 @@ export const Service =
               kind: "client",
               attributes: {
                 "liminal.transport": "durable-object-fetch",
-                "server.address": url.origin,
-                "url.full": url.toString(),
-                "url.path": url.pathname,
               },
             }),
           )

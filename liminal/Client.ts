@@ -143,8 +143,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
         type _ = typeof client.protocol
         type Event = ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"]
 
-        yield* debug("AcquisitionStarted")
-
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
@@ -198,7 +196,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
               case "Audition.Success": {
-                yield* debug("Audition.Succeeded")
                 yield* Deferred.succeed(audition, void 0)
                 return
               }
@@ -213,7 +210,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* Effect.gen(function* () {
                   yield* publishTake([event], true)
-                  yield* debug("Event.Enqueued", { event })
                 }).pipe(
                   span("event.enqueue", {
                     attributes: { _tag },
@@ -232,14 +228,13 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                   return yield* Effect.gen(function* () {
                     switch (message._tag) {
                       case "F.Success": {
-                        const { _tag, value } = message.success as never
-                        yield* debug("Call.Succeeded", { id, _tag, value })
+                        const { value } = message.success as never
                         yield* Deferred.succeed(inflight.deferred, value)
                         return
                       }
                       case "F.Failure": {
                         const { _tag, value } = message.failure as never
-                        yield* debug("Call.Failed", { id, _tag, value })
+                        yield* debug("Call.Failed", { id, _tag })
                         yield* Deferred.fail(inflight.deferred, value)
                         return
                       }
@@ -249,7 +244,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 return
               }
               case "Disconnect": {
-                yield* debug("Disconnected")
                 return
               }
             }
@@ -258,7 +252,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           Effect.ensuring(
             Effect.all(
               [
-                debug("Client.Closed", { unresolved: Record.keys(inflights).length }),
+                Effect.sync(() => Record.keys(inflights).length).pipe(
+                  Effect.flatMap((unresolved) => (unresolved === 0 ? Effect.void : debug("Client.Closed", { unresolved }))),
+                ),
                 Deferred.succeed(audition, void 0),
                 RcRef.invalidate(rcr),
               ],
@@ -432,7 +428,6 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
                 Effect.fnUntraced(function* (cause) {
                   const { reason } = cause
                   if (reason._tag === "SocketCloseError" && reason.code === 1000) {
-                    yield* debug("Socket.Disconnected")
                     return yield* publish({ _tag: "Disconnect" })
                   }
                   yield* debug(`SocketErrored.${reason._tag}`, { cause })

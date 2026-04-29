@@ -7,7 +7,7 @@ import { diagnostic } from "./_diagnostic.ts"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 
-const { debug, span } = diagnostic("Audition")
+const { debug } = diagnostic("Audition")
 
 const TypeId = "~liminal/Audition" as const
 
@@ -65,7 +65,6 @@ export const add: {
         .f(method)(payload)
         .pipe(
           Effect.catchTag("AuditionError", () => client.f(method)(payload)),
-          span("f"),
         )
 
     const events = audition.events.pipe(

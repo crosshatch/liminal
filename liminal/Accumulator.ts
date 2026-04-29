@@ -1,9 +1,5 @@
 import { Deferred, Types, Option, Ref, PubSub, Stream, Effect, Context, Layer, Semaphore } from "effect"
 
-import { diagnostic } from "./_diagnostic.ts"
-
-const { debug } = diagnostic("Accumulator")
-
 const TypeId = "~liminal/Accumulator" as const
 
 export interface Service<State> {
@@ -80,7 +76,6 @@ export const Service =
                 if (match._tag === "Some") {
                   const { value } = match
                   yield* Deferred.succeed(deferred, value)
-                  yield* debug("InitializedState", { state: value })
                 }
                 return
               }
@@ -88,7 +83,6 @@ export const Service =
               const reduced = yield* reduce(item)(current)
               yield* Ref.set(ref, reduced)
               yield* PubSub.publish(pubsub, reduced)
-              yield* debug("ReducedState", { item, previous: current, current: reduced })
             }, semaphore.withPermits(1)),
           ),
           Effect.forkScoped,

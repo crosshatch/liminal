@@ -4,4 +4,4 @@ import * as Binding from "./Binding.ts"
 
 export class R2 extends Context.Service<R2, R2Bucket>()("effect-workerd/R2") {}
 
-export const layer = Binding.layer(R2, ["put", "get"])
+export const layer = Binding.layer(R2, ["put", "get", "delete", "list"])
