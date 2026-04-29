@@ -24,6 +24,7 @@ import {
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import * as TraceUtil from "liminal-util/TraceUtil"
 
 import { diagnostic } from "./_diagnostic.ts"
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
@@ -360,7 +361,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 _tag: "F.Payload",
                 id,
                 payload: { _tag, value } as never,
-                ...(span._tag === "Some" && { trace: span.value }),
+                ...(span._tag === "Some" && { trace: TraceUtil.toTrace(span.value) }),
               })
               return yield* Effect.raceFirst(
                 Deferred.await(deferred),

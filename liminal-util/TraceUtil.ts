@@ -12,7 +12,16 @@ export const TraceSession = S.Struct({
   trace: TraceEnvelope,
 })
 
-export const current: Effect.Effect<Option.Option<typeof TraceEnvelope.Type>> = Effect.currentSpan.pipe(Effect.option)
+export const toTrace = (span: typeof TraceEnvelope.Type): typeof TraceEnvelope.Type => ({
+  traceId: span.traceId,
+  spanId: span.spanId,
+  sampled: span.sampled,
+})
+
+export const current: Effect.Effect<Option.Option<typeof TraceEnvelope.Type>> = Effect.currentSpan.pipe(
+  Effect.map(toTrace),
+  Effect.option,
+)
 
 export const toLink = (
   envelope: typeof TraceEnvelope.Type,

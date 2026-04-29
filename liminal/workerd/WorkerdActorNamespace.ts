@@ -255,7 +255,7 @@ export const Service =
       readonly makeSession = Effect.gen(function* () {
         const sessionId = crypto.randomUUID()
         const trace = yield* Effect.currentSpan.pipe(Effect.orDie)
-        return { sessionId, trace } satisfies Session
+        return { sessionId, trace: TraceUtil.toTrace(trace) } satisfies Session
       })
 
       readonly transport: ActorTransport<WorkerdClient, AttachmentFields, D> = {
