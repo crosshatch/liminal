@@ -419,9 +419,15 @@ export const Service =
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
         Effect.gen({ self: this }, function* () {
-          const {
-            client: { session },
-          } = yield* this.directory.entry(socket)
+			const entry = yield* this.directory.entry(socket).pipe(
+				Effect.catchTag("NoSuchElementError", () => Effect.undefined),
+			)
+			if (!entry) {
+				return
+			}
+			const {
+				client: { session },
+			} = entry
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* this.directory.unregister(socket)
         }).pipe(

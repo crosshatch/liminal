@@ -207,9 +207,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 const { event } = message
                 const { _tag } = event as never
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
-                yield* Effect.gen(function* () {
-                  yield* publishTake([event], true)
-                }).pipe(
+                yield* publishTake([event], true).pipe(
                   span("event.enqueue", {
                     attributes: { _tag },
                     kind: "consumer",
@@ -252,7 +250,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
             Effect.all(
               [
                 Effect.sync(() => Record.keys(inflights).length).pipe(
-                  Effect.flatMap((unresolved) => (unresolved === 0 ? Effect.void : debug("Client.Closed", { unresolved }))),
+                  Effect.flatMap((unresolved) =>
+                    unresolved === 0 ? Effect.void : debug("Client.Closed", { unresolved }),
+                  ),
                 ),
                 Deferred.succeed(audition, void 0),
                 RcRef.invalidate(rcr),
@@ -372,7 +372,10 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 ),
               )
             },
-            span("f", { kind: "client", attributes: { _tag } }),
+            span("f", {
+              kind: "client",
+              attributes: { _tag },
+            }),
             Effect.scoped,
             Effect.provide(encodingServices),
           )

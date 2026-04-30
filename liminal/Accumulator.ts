@@ -8,12 +8,14 @@ export interface Service<State> {
   readonly pubsub: PubSub.PubSub<State>
 }
 
-export interface AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3> {
+export interface AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4> {
   readonly source: Stream.Stream<Item, E, R>
 
   readonly reduce: (item: Item) => (state: State) => Effect.Effect<State, E2, R2>
 
   readonly initial: (item: Item) => Effect.Effect<Option.Option<State>, E3, R3>
+
+  readonly onInitial: (state: State) => Effect.Effect<void, E4, R4>
 }
 
 export type Reduce<State, Item, K extends Types.Tags<Item> = Types.Tags<Item>, E = never, R = never> = (
@@ -34,9 +36,9 @@ export interface Accumulator<Self, Id extends string, State> extends Context.Ser
     f: Reduce<State, Item, K, E, R>,
   ) => Reduce<State, Item, K, E, R>
 
-  readonly layer: <Item, E, R, E2, R2, E3, R3>(
-    config: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3>,
-  ) => Layer.Layer<Self, E | E2 | E3, R | R2 | R3>
+  readonly layer: <Item, E, R, E2, R2, E3, R3, E4, R4>(
+    config: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4>,
+  ) => Layer.Layer<Self, E | E2 | E3 | E4, R | R2 | R3 | R4>
 }
 
 export const Service =
@@ -59,11 +61,16 @@ export const Service =
       <K extends Types.Tags<Item>, E, R>(_tag: K, f: Reduce<State, Item, K, E, R>): Reduce<State, Item, K, E, R> =>
         f
 
-    const layer = <Item, E, R, E2, R2, E3, R3>({
+    const layer = <Item, E, R, E2, R2, E3, R3, E4, R4>({
       source,
       initial,
+      onInitial,
       reduce,
-    }: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3>): Layer.Layer<Self, E | E2 | E3, R | R2 | R3> =>
+    }: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4>): Layer.Layer<
+      Self,
+      E | E2 | E3 | E4,
+      R | R2 | R3 | R4
+    > =>
       Effect.gen(function* () {
         const semaphore = yield* Semaphore.make(1)
         const deferred = yield* Deferred.make<State>()
@@ -90,6 +97,7 @@ export const Service =
         const initial_ = yield* Deferred.await(deferred)
         const ref = yield* Ref.make(initial_)
         yield* PubSub.publish(pubsub, initial_)
+        yield* onInitial(initial_)
         return { ref, pubsub }
       }).pipe(Layer.effect(tag))
 
