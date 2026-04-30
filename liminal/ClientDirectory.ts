@@ -1,15 +1,15 @@
 import { Schema as S, Effect, Cause, Ref } from "effect"
+import * as Spanner from "liminal-util/Spanner"
 
 import type { TopFromString } from "./_util/schema.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 
-import { diagnostic } from "./_diagnostic.ts"
 import { phantom } from "./_util/phantom.ts"
 import * as ClientHandle from "./ClientHandle.ts"
 
-const { span } = diagnostic("ClientDirectory")
+const span = Spanner.make(import.meta.url)
 
 export interface ClientEntry<Client, Handle> {
   readonly client: Client

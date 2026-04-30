@@ -11,13 +11,13 @@ import {
 } from "effect/unstable/http"
 import { OtlpExporter } from "effect/unstable/observability"
 import { logCause } from "liminal-util/logCause"
+import * as Spanner from "liminal-util/Spanner"
 
-import { diagnostic } from "./_diagnostic.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 import * as Clock from "./platform/Clock.ts"
 
-const { span } = diagnostic("Entry")
+const span = Spanner.make(import.meta.url)
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>

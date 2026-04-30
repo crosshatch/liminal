@@ -24,19 +24,19 @@ import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceCont
 import { OtlpExporter } from "effect/unstable/observability"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
+import * as Spanner from "liminal-util/Spanner"
 import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
 
-import { diagnostic } from "../_diagnostic.ts"
 import * as Mutex from "../_util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { debug, span } = diagnostic("workerd.WorkerdActorNamespace")
+const span = Spanner.make(import.meta.url)
 
 export interface ActorNamespaceDefinition<
   ActorSelf,
@@ -419,15 +419,15 @@ export const Service =
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
         Effect.gen({ self: this }, function* () {
-			const entry = yield* this.directory.entry(socket).pipe(
-				Effect.catchTag("NoSuchElementError", () => Effect.undefined),
-			)
-			if (!entry) {
-				return
-			}
-			const {
-				client: { session },
-			} = entry
+          const entry = yield* this.directory
+            .entry(socket)
+            .pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+          if (!entry) {
+            return
+          }
+          const {
+            client: { session },
+          } = entry
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* this.directory.unregister(socket)
         }).pipe(
@@ -445,7 +445,7 @@ export const Service =
           } = yield* this.directory.entry(socket)
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* this.directory.unregister(socket)
-          yield* debug("SocketErrored", { cause })
+          yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
         }).pipe(
           Effect.tapCause(logCause),
           span("webSocketError"),

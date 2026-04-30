@@ -1,14 +1,14 @@
 import { Context, Schema as S, Effect } from "effect"
+import * as Spanner from "liminal-util/Spanner"
 
 import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
 
-import { diagnostic } from "./_diagnostic.ts"
 import * as Method from "./Method.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"
 
-const { span } = diagnostic("Actor")
+const span = Spanner.make(import.meta.url)
 
 export const TypeId = "~liminal/Actor" as const
 
