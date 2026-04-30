@@ -7,6 +7,8 @@ packages:
   - liminal-util
   - scripts
 
+allowUnusedPatches: true
+
 catalog:
   "@changesets/cli": ^2.30.0
   "@cloudflare/vite-plugin": ^1.32.3
@@ -69,6 +71,7 @@ overrides:
   react-dom: ^19.2.4
 
 patchedDependencies:
+  drizzle-orm@1.0.0-beta.21: konfik/patches/drizzle-orm@1.0.0-beta.21.patch
   effect@4.0.0-beta.57: konfik/patches/effect@4.0.0-beta.57.patch
   miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
   vocs@1.4.1: konfik/patches/vocs@1.4.1.patch
