@@ -76,6 +76,10 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
       // TODO: investigate whether better-solved by https://github.com/dmmulroy/effect-cloudflare/blob/main/src/internal/wrangler.ts
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
+      (v) => {
+        ctx.waitUntil(v)
+        return v
+      },
     )
   }
 
