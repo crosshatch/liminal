@@ -25,6 +25,10 @@
     "./platform": {
       "types": "./platform/index.ts",
       "default": "./dist/platform/index.js"
+    },
+    "./otel": {
+      "types": "./otel/index.ts",
+      "default": "./dist/otel/index.js"
     }
   },
   "peerDependencies": {
