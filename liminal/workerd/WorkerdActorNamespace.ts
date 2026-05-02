@@ -21,7 +21,6 @@ import { Binding, DoState, NativeRequest } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
-import { OtlpExporter } from "effect/unstable/observability"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
@@ -338,12 +337,7 @@ export const Service =
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(
-          Effect.tapCause(logCause),
-          span("fetch", { kind: "server", parent }),
-          Effect.ensuring(OtlpExporter.flush),
-          this.runtime.runPromise,
-        )
+        }).pipe(Effect.tapCause(logCause), span("fetch", { kind: "server", parent }), this.runtime.runPromise)
       }
 
       override webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
@@ -407,14 +401,7 @@ export const Service =
             Effect.scoped,
             Effect.provide(Layer.provideMerge(layer, ActorLive)),
           )
-        }).pipe(
-          Effect.scoped,
-          Mutex.task,
-          Effect.tapCause(logCause),
-          span("webSocketMessage"),
-          Effect.ensuring(OtlpExporter.flush),
-          this.runtime.runFork,
-        )
+        }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
       }
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
@@ -430,12 +417,7 @@ export const Service =
           } = entry
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* this.directory.unregister(socket)
-        }).pipe(
-          Effect.tapCause(logCause),
-          span("webSocketClose"),
-          Effect.ensuring(OtlpExporter.flush),
-          this.runtime.runFork,
-        )
+        }).pipe(Effect.tapCause(logCause), span("webSocketClose"), this.runtime.runFork)
       }
 
       override webSocketError(socket: WebSocket, cause: unknown) {
@@ -446,12 +428,7 @@ export const Service =
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* this.directory.unregister(socket)
           yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
-        }).pipe(
-          Effect.tapCause(logCause),
-          span("webSocketError"),
-          Effect.ensuring(OtlpExporter.flush),
-          this.runtime.runFork,
-        )
+        }).pipe(Effect.tapCause(logCause), span("webSocketError"), this.runtime.runFork)
       }
 
       static readonly upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
