@@ -8,10 +8,11 @@ import * as TraceUtil from "liminal-util/TraceUtil"
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
-import * as ClientDirectory from "../ClientDirectory.ts"
 import type { ClientHandle } from "../ClientHandle.ts"
-import * as Method from "../Method.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
+
+import * as ClientDirectory from "../ClientDirectory.ts"
+import * as Method from "../Method.ts"
 
 const span = Spanner.make(import.meta.url)
 

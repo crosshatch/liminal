@@ -42,8 +42,8 @@ catalog:
   drizzle-orm: 1.0.0-beta.21
   effect: 4.0.0-beta.57
   happy-dom: ^20.9.0
-  oxfmt: ^0.34.0
-  oxlint: ^1.60.0
+  oxfmt: ^0.47.0
+  oxlint: ^1.62.0
   playwright: ^1.59.1
   portless: ^0.9.5
   react: ^19.2.5
