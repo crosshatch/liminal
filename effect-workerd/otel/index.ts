@@ -1,1 +1,1 @@
-export * as OtelProxy from "./OtelProxy.ts"
+export * as OtlpProxy from "./OtlpProxy.ts"

@@ -28,13 +28,19 @@ export const layer = ({ endpoint }: { readonly endpoint: string }) =>
               method,
             } as RequestInit),
           )
-          return HttpServerResponse.fromWeb(
-            new Response(upstream.body, {
-              headers: upstream.headers,
-              status: upstream.status,
-              statusText: upstream.statusText,
-            }),
-          )
+          const responseBody =
+            upstream.body === null ? null : new Uint8Array(yield* Effect.tryPromise(() => upstream.arrayBuffer()))
+          return responseBody === null
+            ? HttpServerResponse.empty({
+                headers: upstream.headers,
+                status: upstream.status,
+                statusText: upstream.statusText,
+              })
+            : HttpServerResponse.uint8Array(responseBody, {
+                headers: upstream.headers,
+                status: upstream.status,
+                statusText: upstream.statusText,
+              })
         }),
       ),
     ),
