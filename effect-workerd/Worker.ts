@@ -35,13 +35,14 @@ export interface WorkerDefinition<PreludeROut, PreludeE, E> {
 }
 
 export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
-  let runtime:
-    | undefined
-    | ManagedRuntime.ManagedRuntime<
-        PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
-        PreludeE
-      >
   const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
+    let runtime:
+      | undefined
+      | ManagedRuntime.ManagedRuntime<
+          PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
+          PreludeE
+        >
+    const memoMap = Layer.makeMemoMapUnsafe()
     runtime ??= ManagedRuntime.make(
       prelude.pipe(
         Layer.provideMerge(
@@ -53,6 +54,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         ),
         Layer.provideMerge(Clock.layer),
       ),
+      { memoMap },
     )
     return handler.pipe(
       Effect.tapCause(logCause),
@@ -68,12 +70,9 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
-      // Solves crashes between HMRs.
-      // Without this, in-flight requests use an old memoMap; new requests use a new one.
-      // Aka. cross-contamination.
-      // TODO: investigate whether better-solved by https://github.com/dmmulroy/effect-cloudflare/blob/main/src/internal/wrangler.ts
-      Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
+      Effect.provideService(Layer.CurrentMemoMap, memoMap),
       runtime.runPromise,
+      (v) => v.finally(() => runtime.dispose()),
     )
   }
 
