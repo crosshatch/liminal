@@ -28,7 +28,7 @@
     },
     "./observability": {
       "types": "./observability/index.ts",
-      "default": "./observability/otel/index.js"
+      "default": "./dist/observability/index.js"
     }
   },
   "peerDependencies": {
