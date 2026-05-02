@@ -24,9 +24,9 @@ Instead, Liminal persists session metadata in the WebSocket attachment:
 After hibernation, the Durable Object hydrates that metadata and links the registration work back to the stored session
 trace.
 
-Short spans still represent the actual work: message receive, handler execution, event send, close, error, and hydration.
-The session id is attached to actor-side spans when a socket is known. Handler, event-send, on-connect, and hydration
-paths also link back to the stored session trace.
+Short spans still represent the actual work: message receive, handler execution, event send, close, error, and
+hydration. The session id is attached to actor-side spans when a socket is known. Handler, event-send, on-connect, and
+hydration paths also link back to the stored session trace.
 
 ## Useful attributes and links
 

@@ -1,10 +1,9 @@
 import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
 
-import type { F } from "./F.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
-
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
+import type { F } from "./F.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 const TypeId = "~liminal/Audition" as const
 
@@ -60,9 +59,7 @@ export const add: {
     const f: F<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> = (method) => (payload) =>
       audition
         .f(method)(payload)
-        .pipe(
-          Effect.catchTag("AuditionError", () => client.f(method)(payload)),
-        )
+        .pipe(Effect.catchTag("AuditionError", () => client.f(method)(payload)))
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),

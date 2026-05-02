@@ -27,14 +27,13 @@ import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
 import * as TraceUtil from "liminal-util/TraceUtil"
 
-import type { Actor } from "../Actor.ts"
-import type { ActorTransport } from "../ActorTransport.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
-
 import * as Mutex from "../_util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
+import type { Actor } from "../Actor.ts"
+import type { ActorTransport } from "../ActorTransport.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
+import type { ProtocolDefinition } from "../Protocol.ts"
 
 const span = Spanner.make(import.meta.url)
 
