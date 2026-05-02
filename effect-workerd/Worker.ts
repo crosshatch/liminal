@@ -42,7 +42,6 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
           PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
           PreludeE
         >
-    const memoMap = Layer.makeMemoMapUnsafe()
     runtime ??= ManagedRuntime.make(
       prelude.pipe(
         Layer.provideMerge(
@@ -54,7 +53,6 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         ),
         Layer.provideMerge(Clock.layer),
       ),
-      { memoMap },
     )
     return handler.pipe(
       Effect.tapCause(logCause),
@@ -70,7 +68,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
-      Effect.provideService(Layer.CurrentMemoMap, memoMap),
+      Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
       (v) => v.finally(() => runtime.dispose()),
     )

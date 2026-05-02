@@ -6,7 +6,6 @@
     "@effect/openapi-generator": "catalog:",
     "@effect/platform-node": "catalog:",
     "effect": "catalog:",
-    "swagger2openapi": "catalog:",
     "yaml": "catalog:"
   }
 }
