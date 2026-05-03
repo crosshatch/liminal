@@ -6,7 +6,7 @@
     { "path": "../../../liminal" },
     { "path": "../../../liminal-util" }
   ],
-  "exclude": ["dist", "vitest.config.ts"],
+  "exclude": ["dist"],
   "compilerOptions": {
     "noEmit": false,
     "outDir": "dist"

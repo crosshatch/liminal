@@ -2,5 +2,5 @@
   "extends": "../../konfik/tsconfig.base",
   "include": ["."],
   "references": [{ "path": "../../effect-workerd" }, { "path": "../../liminal-util" }],
-  "exclude": ["dist", "vitest.config.ts"]
+  "exclude": ["dist"]
 }

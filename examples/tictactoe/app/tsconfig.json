@@ -9,6 +9,6 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["."],
-  "exclude": ["dist", "vitest.config.ts"],
+  "exclude": ["dist"],
   "references": [{ "path": "../../../liminal" }, { "path": "../api" }]
 }

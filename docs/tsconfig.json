@@ -1,6 +1,6 @@
 {
   "extends": "../konfik/tsconfig.base",
   "include": ["."],
-  "exclude": ["dist", "vocs.config.ts", "vitest.config.ts"],
+  "exclude": ["dist", "vocs.config.ts"],
   "references": [{ "path": "../liminal" }]
 }

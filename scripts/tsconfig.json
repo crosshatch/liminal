@@ -1,5 +1,5 @@
 {
   "extends": "../konfik/tsconfig.base",
   "include": ["."],
-  "exclude": ["dist", "vitest.config.ts"]
+  "exclude": ["dist"]
 }
