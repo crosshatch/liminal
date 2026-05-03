@@ -22,3 +22,6 @@
 [submodule "repos/workerd"]
 	path = repos/workerd
 	url = git@github.com:cloudflare/workerd.git
+[submodule "repos/vitest"]
+	path = repos/vitest
+	url = git@github.com:vitest-dev/vitest.git

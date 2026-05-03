@@ -6,6 +6,6 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["."],
-  "exclude": ["dist"],
+  "exclude": ["dist", "vitest.config.ts"],
   "references": [{ "path": "../liminal-util" }]
 }
