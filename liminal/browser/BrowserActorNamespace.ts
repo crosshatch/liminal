@@ -2,6 +2,7 @@ import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
+import * as Spanner from "liminal-util/Spanner"
 import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
@@ -10,11 +11,10 @@ import type { ActorTransport } from "../ActorTransport.ts"
 import type { ClientHandle } from "../ClientHandle.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
 
-import { diagnostic } from "../_diagnostic.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 
-const { span } = diagnostic("browser.BrowserActorNamespace")
+const span = Spanner.make(import.meta.url)
 
 export interface Introduction<Name extends TopFromString, AttachmentFields extends S.Struct.Fields> {
   readonly port: MessagePort

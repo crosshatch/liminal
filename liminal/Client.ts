@@ -25,15 +25,15 @@ import {
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import * as Spanner from "liminal-util/Spanner"
 import * as TraceUtil from "liminal-util/TraceUtil"
 
-import { diagnostic } from "./_diagnostic.ts"
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
 
-const { debug, span } = diagnostic("Client")
+const span = Spanner.make(import.meta.url)
 
 export const TypeId = "~liminal/Client" as const
 
@@ -207,9 +207,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 const { event } = message
                 const { _tag } = event as never
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
-                yield* Effect.gen(function* () {
-                  yield* publishTake([event], true)
-                }).pipe(
+                yield* publishTake([event], true).pipe(
                   span("event.enqueue", {
                     attributes: { _tag },
                     kind: "consumer",
@@ -233,7 +231,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                       }
                       case "F.Failure": {
                         const { _tag, value } = message.failure as never
-                        yield* debug("Call.Failed", { id, _tag })
+                        yield* Effect.annotateLogs(Effect.logDebug("Call.Failed"), { id, _tag })
                         yield* Deferred.fail(inflight.deferred, value)
                         return
                       }
@@ -252,7 +250,11 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
             Effect.all(
               [
                 Effect.sync(() => Record.keys(inflights).length).pipe(
-                  Effect.flatMap((unresolved) => (unresolved === 0 ? Effect.void : debug("Client.Closed", { unresolved }))),
+                  Effect.flatMap((unresolved) =>
+                    unresolved === 0
+                      ? Effect.void
+                      : Effect.annotateLogs(Effect.logDebug("Client.Closed"), { unresolved }),
+                  ),
                 ),
                 Deferred.succeed(audition, void 0),
                 RcRef.invalidate(rcr),
@@ -372,7 +374,10 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 ),
               )
             },
-            span("f", { kind: "client", attributes: { _tag } }),
+            span("f", {
+              kind: "client",
+              attributes: { _tag },
+            }),
             Effect.scoped,
             Effect.provide(encodingServices),
           )
@@ -429,7 +434,7 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
                   if (reason._tag === "SocketCloseError" && reason.code === 1000) {
                     return yield* publish({ _tag: "Disconnect" })
                   }
-                  yield* debug(`SocketErrored.${reason._tag}`, { cause })
+                  yield* Effect.annotateLogs(Effect.logDebug(`SocketErrored.${reason._tag}`), { cause })
                   return yield* new ConnectionError({ cause })
                 }),
               ),

@@ -19,3 +19,9 @@
 [submodule "konfik"]
 	path = konfik
 	url = git@github.com:crosshatch/konfik.git
+[submodule "repos/workerd"]
+	path = repos/workerd
+	url = git@github.com:cloudflare/workerd.git
+[submodule "repos/vitest"]
+	path = repos/vitest
+	url = git@github.com:vitest-dev/vitest.git

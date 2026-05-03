@@ -13,9 +13,11 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./*": {
-      "types": "./*.ts",
-      "default": "./dist/*.js"
+    "./*": "./*.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      "./*": "./dist/*.js"
     }
   },
   "peerDependencies": {

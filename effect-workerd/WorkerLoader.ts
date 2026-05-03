@@ -1,10 +1,10 @@
 import { absurd, Effect, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
+import * as Spanner from "liminal-util/Spanner"
 
-import { diagnostic } from "./_diagnostic.ts"
 import * as Binding from "./Binding.ts"
 
-const { span } = diagnostic("WorkerLoader")
+const span = Spanner.make(import.meta.url)
 
 export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.WorkerLoader>()(
   "effect-workerd/WorkerLoader",

@@ -14,27 +14,22 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "types": "./index.ts",
-      "default": "./dist/index.js"
-    },
-    "./*": {
-      "types": "./*.ts",
-      "default": "./dist/*.js"
-    },
-    "./browser": {
-      "types": "./browser/index.ts",
-      "default": "./dist/browser/index.js"
-    },
-    "./experimental": {
-      "types": "./experimental/index.ts",
-      "default": "./dist/experimental/index.js"
-    },
-    "./workerd": {
-      "types": "./workerd/index.ts",
-      "default": "./dist/workerd/index.js"
-    },
+    ".": "./index.ts",
+    "./*": "./*.ts",
+    "./browser": "./browser/index.ts",
+    "./experimental": "./experimental/index.ts",
+    "./workerd": "./workerd/index.ts",
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./*": "./dist/*.js",
+      "./browser": "./dist/browser/index.js",
+      "./experimental": "./dist/experimental/index.js",
+      "./workerd": "./dist/workerd/index.js",
+      "./package.json": "./package.json"
+    }
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",

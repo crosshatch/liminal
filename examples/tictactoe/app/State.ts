@@ -36,4 +36,5 @@ export const layer = GameState.layer({
     return Option.none()
   }),
   reduce: Match.valueTags({ AwaitingPartner, GameStarted, MoveMade, GameEnded }),
+  onInitial: () => Effect.void,
 })

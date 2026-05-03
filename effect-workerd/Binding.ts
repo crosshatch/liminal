@@ -1,9 +1,8 @@
 import { env } from "cloudflare:workers"
 import { Context, Layer, Effect, Schema as S, SchemaIssue } from "effect"
+import * as Spanner from "liminal-util/Spanner"
 
-import { diagnostic } from "./_diagnostic.ts"
-
-const { span } = diagnostic("Binding")
+const span = Spanner.make(import.meta.url)
 
 export const layer =
   <Self, Identifier extends string, Shape, ROut = never, E = never, RIn = never>(

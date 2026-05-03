@@ -1,4 +1,4 @@
-name: Checks
+name: Check
 
 on:
   push:
@@ -20,4 +20,4 @@ jobs:
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: ./konfik/.github/actions/configure_environment
       - run: pnpm build
-      # - run: pnpm test
+      - run: pnpm test

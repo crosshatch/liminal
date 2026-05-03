@@ -60,9 +60,7 @@ export const add: {
     const f: F<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> = (method) => (payload) =>
       audition
         .f(method)(payload)
-        .pipe(
-          Effect.catchTag("AuditionError", () => client.f(method)(payload)),
-        )
+        .pipe(Effect.catchTag("AuditionError", () => client.f(method)(payload)))
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),

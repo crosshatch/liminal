@@ -9,15 +9,14 @@ import {
   HttpServerResponse,
   HttpTraceContext,
 } from "effect/unstable/http"
-import { OtlpExporter } from "effect/unstable/observability"
 import { logCause } from "liminal-util/logCause"
+import * as Spanner from "liminal-util/Spanner"
 
-import { diagnostic } from "./_diagnostic.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 import * as Clock from "./platform/Clock.ts"
 
-const { span } = diagnostic("Entry")
+const span = Spanner.make(import.meta.url)
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>
@@ -36,13 +35,13 @@ export interface WorkerDefinition<PreludeROut, PreludeE, E> {
 }
 
 export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
-  let runtime:
-    | undefined
-    | ManagedRuntime.ManagedRuntime<
-        PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
-        PreludeE
-      >
   const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
+    let runtime:
+      | undefined
+      | ManagedRuntime.ManagedRuntime<
+          PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
+          PreludeE
+        >
     runtime ??= ManagedRuntime.make(
       prelude.pipe(
         Layer.provideMerge(
@@ -69,13 +68,9 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
-      Effect.ensuring(OtlpExporter.flush),
-      // Solves crashes between HMRs.
-      // Without this, in-flight requests use an old memoMap; new requests use a new one.
-      // Aka. cross-contamination.
-      // TODO: investigate whether better-solved by https://github.com/dmmulroy/effect-cloudflare/blob/main/src/internal/wrangler.ts
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
+      (v) => v.finally(() => runtime.dispose()),
     )
   }
 

@@ -14,17 +14,17 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "types": "./index.ts",
-      "default": "./dist/index.js"
-    },
-    "./*": {
-      "types": "./*.ts",
-      "default": "./dist/*.js"
-    },
-    "./platform": {
-      "types": "./platform/index.ts",
-      "default": "./dist/platform/index.js"
+    ".": "./index.ts",
+    "./*": "./*.ts",
+    "./platform": "./platform/index.ts",
+    "./observability": "./observability/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./*": "./dist/*.js",
+      "./platform": "./dist/platform/index.js",
+      "./observability": "./dist/observability/index.js"
     }
   },
   "peerDependencies": {
