@@ -2,7 +2,9 @@ import { Effect, Schema as S } from "effect"
 
 import type { Protocol, ProtocolDefinition } from "./Protocol.ts"
 
-export interface ActorTransport<Client, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
+export interface ActorTransport<Key, Client, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
+  readonly key: (client: Client) => Key
+
   readonly send: (
     client: Client,
     event: Protocol<D>["Event"]["Type"],

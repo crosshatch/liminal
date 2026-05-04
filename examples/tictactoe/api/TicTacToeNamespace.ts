@@ -23,6 +23,7 @@ export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeN
   actor: TicTacToeActor,
   prelude: KvLive,
   onConnect,
+  onDisconnect: Effect.void,
   handlers: { Move: handleMove },
   layer: Layer.empty,
 }) {}

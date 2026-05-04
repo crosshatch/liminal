@@ -61,6 +61,8 @@ export const make = Effect.fnUntraced(function* <
   const encodeName = S.encodeEffect(Name)
 
   interface BrowserClient {
+    readonly port: MessagePort
+
     readonly backing: WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>
 
     readonly close: Effect.Effect<void>
@@ -73,7 +75,8 @@ export const make = Effect.fnUntraced(function* <
 
   const entries: Record<string, Entry> = {}
 
-  const transport: ActorTransport<BrowserClient, AttachmentFields, D> = {
+  const transport: ActorTransport<MessagePort, BrowserClient, AttachmentFields, D> = {
+    key: ({ port }) => port,
     send: ({ backing }, event) => {
       const { _tag } = event.event as never
       return Effect.gen(function* () {
@@ -93,17 +96,7 @@ export const make = Effect.fnUntraced(function* <
   const getEntry = Effect.fnUntraced(function* (key: string) {
     const existing = entries[key]
     if (existing) return existing
-    const directory = ClientDirectory.make<
-      MessagePort,
-      BrowserClient,
-      ActorSelf,
-      ActorId,
-      Name,
-      AttachmentFields,
-      ClientSelf,
-      ClientId,
-      D
-    >(actor, { transport })
+    const directory = ClientDirectory.make(actor, { transport })
     const semaphore = yield* Semaphore.make(1)
     const fresh = {
       directory,
@@ -170,11 +163,7 @@ export const make = Effect.fnUntraced(function* <
                   }
                   const key = yield* encodeName(name)
                   const entry = yield* getEntry(key)
-                  const currentClient = yield* entry.directory.register(
-                    port,
-                    { backing, close: closeScope },
-                    attachments,
-                  )
+                  const currentClient = yield* entry.directory.register({ port, backing, close: closeScope }, attachments)
                   const ActorLive = Layer.succeed(actor, {
                     name,
                     clients: entry.directory.handles,

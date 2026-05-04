@@ -34,6 +34,7 @@ import * as Mutex from "../_util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
+import type { ClientHandle } from "../ClientHandle.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -76,6 +77,12 @@ export interface ActorNamespaceDefinition<
   >
 
   readonly onConnect: Effect.Effect<
+    void,
+    never,
+    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
+  >
+
+  readonly onDisconnect: Effect.Effect<
     void,
     never,
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
@@ -177,7 +184,7 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, prelude, handlers, layer, onConnect } = definition
+    const { hibernation, actor, prelude, handlers, layer, onConnect, onDisconnect } = definition
     const {
       definition: {
         name: Name,
@@ -207,6 +214,7 @@ export const Service =
     const encodeEvent = encodeJsonString(P.Event)
 
     const transport: ActorTransport<
+      WebSocket,
       {
         readonly socket: WebSocket
         readonly session: typeof TraceUtil.TraceSession.Type
@@ -214,6 +222,7 @@ export const Service =
       AttachmentFields,
       D
     > = {
+      key: ({ socket }) => socket,
       send: ({ socket, session }, event) =>
         Effect.gen(function* () {
           const eventTag = (event.event as { readonly _tag: string })._tag
@@ -257,15 +266,33 @@ export const Service =
       "liminal/WorkerdActorNamespace/NameDecoded",
     ) {}
 
+    const directory = ClientDirectory.make(actor, { transport })
+
+    const provideActor = (handle: ClientHandle<ActorSelf, AttachmentFields, D>) =>
+      flow(
+        Effect.provide(
+          Layer.provideMerge(
+            layer,
+            Effect.gen(function* () {
+              const name = yield* NameDecoded
+              return Layer.succeed(actor, {
+                name,
+                clients: directory.handles,
+                currentClient: handle,
+              })
+            }).pipe(Layer.unwrap),
+          ),
+        ),
+        Effect.scoped,
+      )
+
     return class extends DurableObject {
       static definition = definition
       static service = Context.Service<NamespaceSelf, DurableObjectNamespace>()(id)
       static layer = Binding.layer(this.service, ["idFromName", "idFromString", "newUniqueId", "get"])
 
       readonly runtime
-      readonly directory = ClientDirectory.make(actor, {
-        transport,
-      })
+      readonly run
 
       constructor(state: DurableObjectState<{}>, env: Cloudflare.Env) {
         super(state, env)
@@ -294,17 +321,17 @@ export const Service =
         const hydrateAttachments = Effect.gen({ self: this }, function* () {
           for (const socket of state.getWebSockets()) {
             const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
-            yield* this.directory
-              .register(socket, { socket, session }, attachments)
+            yield* directory
+              .register({ socket, session }, attachments)
               .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
           }
         }).pipe(span("hydrateAttachments"), Effect.tapCause(logCause))
 
         this.runtime = ManagedRuntime.make(hydrateAttachments.pipe(Layer.effectDiscard, Layer.provideMerge(Live)))
+        this.run = flow(Effect.tapCause(logCause), this.runtime.runPromise)
       }
 
       override fetch(request: Request): Promise<Response> {
-        const parent = pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined)
         return Effect.gen({ self: this }, function* () {
           const url = new URL(request.url)
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
@@ -316,47 +343,46 @@ export const Service =
             sessionId: crypto.randomUUID(),
             trace: yield* Effect.currentSpan.pipe(Effect.map(TraceUtil.toTrace)),
           }
-          const currentClient = yield* this.directory.register(server, { socket: server, session }, attachments)
-          const name = yield* NameDecoded
-          const ActorLive = Layer.succeed(actor, {
-            name,
-            clients: this.directory.handles,
-            currentClient,
-          })
+          const currentClient = yield* directory.register({ socket: server, session }, attachments)
           yield* onConnect.pipe(
-            Effect.scoped,
             span("onConnect", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
-            Effect.scoped,
-            Effect.provide(Layer.provideMerge(layer, ActorLive)),
+            provideActor(currentClient),
           )
           return new Response(null, {
             status: 101,
             webSocket,
             headers: { [SecWebSocketProtocol]: "liminal" },
           })
-        }).pipe(Effect.tapCause(logCause), span("fetch", { kind: "server", parent }), this.runtime.runPromise)
+        }).pipe(
+          span("fetch", {
+            kind: "server",
+            parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
+          }),
+          this.run,
+        )
       }
 
       override webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
         Effect.gen({ self: this }, function* () {
-          const { client, handle: currentClient } = yield* this.directory.entry(socket)
+          const { client, handle: currentClient } = yield* directory.entry(socket)
           const { session } = client
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
-          const name = yield* NameDecoded
-          const ActorLive = Layer.succeed(actor, {
-            name,
-            clients: this.directory.handles,
-            currentClient,
-          })
           const message = yield* decodeClientM(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
           if (message._tag === "Audition.Payload") {
             return yield* Effect.die(undefined)
           }
           if (message._tag === "Disconnect") {
-            return yield* currentClient.disconnect
+            yield* currentClient.disconnect
+            return yield* onDisconnect.pipe(
+              span("onDisconnect", {
+                attributes: sessionAttributes(session),
+                links: [sessionLink(session)],
+              }),
+              provideActor(currentClient),
+            )
           }
           const { id, payload } = message
           const { _tag, value } = payload as never
@@ -398,15 +424,14 @@ export const Service =
               links,
             }),
             Effect.andThen((v) => Effect.sync(() => socket.send(v))),
-            Effect.scoped,
-            Effect.provide(Layer.provideMerge(layer, ActorLive)),
+            provideActor(currentClient),
           )
-        }).pipe(Effect.scoped, Mutex.task, Effect.tapCause(logCause), span("webSocketMessage"), this.runtime.runFork)
+        }).pipe(Mutex.task, span("webSocketMessage"), this.run)
       }
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
         Effect.gen({ self: this }, function* () {
-          const entry = yield* this.directory
+          const entry = yield* directory
             .entry(socket)
             .pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
           if (!entry) {
@@ -414,21 +439,37 @@ export const Service =
           }
           const {
             client: { session },
+            handle: currentClient,
           } = entry
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
-          yield* this.directory.unregister(socket)
-        }).pipe(Effect.tapCause(logCause), span("webSocketClose"), this.runtime.runFork)
+          yield* directory.unregister(socket)
+          yield* onDisconnect.pipe(
+            span("onDisconnect", {
+              attributes: sessionAttributes(session),
+              links: [sessionLink(session)],
+            }),
+            provideActor(currentClient),
+          )
+        }).pipe(span("webSocketClose"), this.run)
       }
 
       override webSocketError(socket: WebSocket, cause: unknown) {
         Effect.gen({ self: this }, function* () {
           const {
             client: { session },
-          } = yield* this.directory.entry(socket)
+            handle: currentClient,
+          } = yield* directory.entry(socket)
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
-          yield* this.directory.unregister(socket)
+          yield* directory.unregister(socket)
+          yield* onDisconnect.pipe(
+            span("onDisconnect", {
+              attributes: sessionAttributes(session),
+              links: [sessionLink(session)],
+            }),
+            provideActor(currentClient),
+          )
           yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
-        }).pipe(Effect.tapCause(logCause), span("webSocketError"), this.runtime.runFork)
+        }).pipe(span("webSocketError"), this.run)
       }
 
       static readonly upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
@@ -455,21 +496,12 @@ export const Service =
           }
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
-          return yield* Effect.gen(function* () {
-            const actorRequest = new Request(url, request)
-            const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
-            for (const [key, value] of Object.entries(traceHeaders)) {
-              actorRequest.headers.set(key, value)
-            }
-            return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
-          }).pipe(
-            span("durableObjectFetch", {
-              kind: "client",
-              attributes: {
-                "liminal.transport": "durable-object-fetch",
-              },
-            }),
-          )
-        }).pipe(span("upgrade"))
+          const actorRequest = new Request(url, request)
+          const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
+          for (const [key, value] of Object.entries(traceHeaders)) {
+            actorRequest.headers.set(key, value)
+          }
+          return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
+        }).pipe(span("upgrade", { kind: "client" }))
     }
   }
