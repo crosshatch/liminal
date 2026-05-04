@@ -348,7 +348,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               const id = callId++
               const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
               const span = yield* Tracing.current
-              const trace = span ? Tracing.toTrace(span) : undefined
+              const trace = span ? Tracing.toTraceEnvelope(span) : undefined
               inflights[id] = { deferred, span }
               yield* send({
                 _tag: "F.Payload",

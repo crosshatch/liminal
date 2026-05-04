@@ -35,6 +35,7 @@ import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util
 import * as ClientDirectory from "../ClientDirectory.ts"
 import * as Method from "../Method.ts"
 import type { ClientHandle } from "../ClientHandle.ts"
+import { sessionAttributes, SessionId, sessionLink } from "../Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -197,7 +198,7 @@ export const Service =
     const Attachments = S.Struct(AttachmentFields)
     const SocketAttachment = S.Struct({
       attachments: S.toCodecJson(Attachments),
-      session: Tracing.TraceSession,
+      session: Tracing.Session,
     })
     const encodeSocketAttachment = S.encodeEffect(SocketAttachment)
     const decodeSocketAttachment = S.decodeUnknownEffect(SocketAttachment)
@@ -214,7 +215,7 @@ export const Service =
       WebSocket,
       {
         readonly socket: WebSocket
-        readonly session: typeof Tracing.TraceSession.Type
+        readonly session: typeof Tracing.Session.Type
       },
       AttachmentFields,
       D
@@ -245,24 +246,13 @@ export const Service =
         ),
     }
 
-    const sessionAttributes = (session: typeof Tracing.TraceSession.Type) => ({
-      "liminal.session.id": session.sessionId,
-    })
-
-    const sessionLink = (session: typeof Tracing.TraceSession.Type, attributes: Record<string, unknown> = {}) =>
-      Tracing.toLink(session.trace, {
-        "liminal.link": "session",
-        ...sessionAttributes(session),
-        ...attributes,
-      })
-
     class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()(
       "liminal/WorkerdActorNamespace/NameDecoded",
     ) {}
 
     const directory = ClientDirectory.make(actor, { transport })
 
-    const provideActor = (handle: ClientHandle<ActorSelf, AttachmentFields, D>) =>
+    const provideActor = (currentClient: ClientHandle<ActorSelf, AttachmentFields, D>) =>
       flow(
         Effect.provide(
           Layer.provideMerge(
@@ -272,7 +262,7 @@ export const Service =
               return Layer.succeed(actor, {
                 name,
                 clients: directory.handles,
-                currentClient: handle,
+                currentClient,
               })
             }).pipe(Layer.unwrap),
           ),
@@ -321,6 +311,7 @@ export const Service =
         }).pipe(span("hydrateAttachments"), Layer.effectDiscard)
 
         const runtime = ManagedRuntime.make(HydrateLive.pipe(Layer.provideMerge(Live), boundLayer("actor")))
+
         this.run = flow(Effect.tapCause(logCause), runtime.runPromise)
       }
 
@@ -333,8 +324,8 @@ export const Service =
           state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const session = {
-            sessionId: crypto.randomUUID(),
-            trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTrace)),
+            id: SessionId.make(crypto.randomUUID()),
+            trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
           }
           const currentClient = yield* directory.register({ socket: server, session }, attachments)
           yield* onConnect.pipe(
@@ -395,7 +386,7 @@ export const Service =
                 ]
               : []),
           ]
-          yield* handlers[_tag]!(value).pipe(
+          const out = yield* handlers[_tag]!(value).pipe(
             Effect.matchEffect({
               onSuccess: (value) =>
                 encodeFSuccess({
@@ -416,9 +407,9 @@ export const Service =
               parent,
               links,
             }),
-            Effect.andThen((v) => Effect.sync(() => socket.send(v))),
             provideActor(currentClient),
           )
+          socket.send(out)
         }).pipe(Mutex.task, span("webSocketMessage"), this.run)
       }
 
