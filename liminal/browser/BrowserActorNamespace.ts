@@ -3,7 +3,7 @@ import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore,
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
-import * as TraceUtil from "liminal-util/TraceUtil"
+import * as Tracing from "../Tracing.ts"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
@@ -80,7 +80,7 @@ export const make = Effect.fnUntraced(function* <
     send: ({ backing }, event) => {
       const { _tag } = event.event as never
       return Effect.gen(function* () {
-        const trace = yield* TraceUtil.currentTrace
+        const trace = yield* Tracing.currentTrace
         yield* backing.send(0, {
           ...event,
           ...(trace && { trace }),
@@ -163,7 +163,10 @@ export const make = Effect.fnUntraced(function* <
                   }
                   const key = yield* encodeName(name)
                   const entry = yield* getEntry(key)
-                  const currentClient = yield* entry.directory.register({ port, backing, close: closeScope }, attachments)
+                  const currentClient = yield* entry.directory.register(
+                    { port, backing, close: closeScope },
+                    attachments,
+                  )
                   const ActorLive = Layer.succeed(actor, {
                     name,
                     clients: entry.directory.handles,
@@ -183,7 +186,7 @@ export const make = Effect.fnUntraced(function* <
                 const { id, payload } = message
                 const { _tag, value } = payload as never
                 const parent = message.trace && Tracer.externalSpan(message.trace)
-                const transportSpan = yield* TraceUtil.parent
+                const transportSpan = yield* Tracing.parent
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],

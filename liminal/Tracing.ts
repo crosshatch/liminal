@@ -11,7 +11,11 @@ export const TraceSession = S.Struct({
   trace: TraceEnvelope,
 })
 
-export const toTrace = S.decodeSync(S.toType(TraceEnvelope))
+export const toTrace = ({ traceId, spanId, sampled }: typeof TraceEnvelope.Type) => ({
+  traceId,
+  spanId,
+  sampled,
+})
 
 export const parent = Effect.currentParentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
 

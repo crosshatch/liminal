@@ -26,7 +26,7 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 import * as Spanner from "liminal-util/Spanner"
-import * as TraceUtil from "liminal-util/TraceUtil"
+import * as Tracing from "./Tracing.ts"
 
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
@@ -49,15 +49,16 @@ interface EventTake<A, E> {
   readonly take: Take.Take<A, E>
 }
 
-export interface Session<Self, D extends ProtocolDefinition> {
-  readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
+export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
+  {
+    readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
-  readonly f: F<Self, D>
+    readonly f: F<ClientSelf, D>
 
-  readonly end: Effect.Effect<void>
-}
-
-export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<Session<ClientSelf, D>, ClientError>
+    readonly end: Effect.Effect<void>
+  },
+  ClientError
+>
 
 export interface Client<Self, ClientId extends string, D extends ProtocolDefinition> extends Context.Service<
   Self,
@@ -138,7 +139,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
   replay?: ReplayConfig | undefined,
 ) =>
   Effect.gen(function* () {
-    const rcr: RcRef.RcRef<Session<Self, D>, ClientError> = yield* RcRef.make({
+    const rcr: Service<Self, D> = yield* RcRef.make({
       acquire: Effect.gen(function* () {
         type _ = typeof client.protocol
         type Event = ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"]
@@ -346,8 +347,8 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               }
               const id = callId++
               const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
-              const span = yield* TraceUtil.current
-              const trace = span ? TraceUtil.toTrace(span) : undefined
+              const span = yield* Tracing.current
+              const trace = span ? Tracing.toTrace(span) : undefined
               inflights[id] = { deferred, span }
               yield* send({
                 _tag: "F.Payload",

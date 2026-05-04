@@ -1,5 +1,5 @@
 import { Schema as S, Record, Types } from "effect"
-import * as TraceEnvelope from "liminal-util/TraceUtil"
+import * as Tracing from "./Tracing.ts"
 
 import type * as Method from "./Method.ts"
 
@@ -44,7 +44,7 @@ export interface Protocol<D extends ProtocolDefinition> {
       readonly event: S.TaggedUnion<{
         readonly [K in keyof D["events"] & string]: S.TaggedStruct<K, D["events"][K]>
       }>
-      readonly trace: S.optional<typeof TraceEnvelope.TraceEnvelope>
+      readonly trace: S.optional<typeof Tracing.TraceEnvelope>
     }
   >
 
@@ -56,7 +56,7 @@ export interface Protocol<D extends ProtocolDefinition> {
         readonly payload: S.TaggedUnion<{
           readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["payload"] }>
         }>
-        readonly trace: S.optional<typeof TraceEnvelope.TraceEnvelope>
+        readonly trace: S.optional<typeof Tracing.TraceEnvelope>
       }
     >
 
@@ -117,7 +117,7 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
     Payload: S.TaggedStruct("F.Payload", {
       id: S.Int,
       payload: S.TaggedUnion(Record.map(methods, ({ payload: value }) => ({ value }))),
-      trace: S.optional(TraceEnvelope.TraceEnvelope),
+      trace: S.optional(Tracing.TraceEnvelope),
     }) as never,
     Success: S.TaggedStruct("F.Success", {
       id: S.Int,
@@ -131,7 +131,7 @@ export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): 
 
   const Event: T["Event"] = S.TaggedStruct("Event", {
     event: S.TaggedUnion(events),
-    trace: S.optional(TraceEnvelope.TraceEnvelope),
+    trace: S.optional(Tracing.TraceEnvelope),
   }) as never
 
   const Client: T["Client"] = S.Union([Audition.Payload, F.Payload, Disconnect])
