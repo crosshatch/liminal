@@ -3,16 +3,15 @@ import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore,
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
-import * as TraceUtil from "liminal-util/TraceUtil"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
-import type { ClientHandle } from "../ClientHandle.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
-
 import * as ClientDirectory from "../ClientDirectory.ts"
+import type { ClientHandle } from "../ClientHandle.ts"
 import * as Method from "../Method.ts"
+import type { ProtocolDefinition } from "../Protocol.ts"
+import * as Tracing from "../Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -61,6 +60,8 @@ export const make = Effect.fnUntraced(function* <
   const encodeName = S.encodeEffect(Name)
 
   interface BrowserClient {
+    readonly port: MessagePort
+
     readonly backing: WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>
 
     readonly close: Effect.Effect<void>
@@ -73,11 +74,12 @@ export const make = Effect.fnUntraced(function* <
 
   const entries: Record<string, Entry> = {}
 
-  const transport: ActorTransport<BrowserClient, AttachmentFields, D> = {
+  const transport: ActorTransport<MessagePort, BrowserClient, AttachmentFields, D> = {
+    key: ({ port }) => port,
     send: ({ backing }, event) => {
       const { _tag } = event.event as never
       return Effect.gen(function* () {
-        const trace = yield* TraceUtil.currentTrace
+        const trace = yield* Tracing.currentTrace
         yield* backing.send(0, {
           ...event,
           ...(trace && { trace }),
@@ -93,17 +95,7 @@ export const make = Effect.fnUntraced(function* <
   const getEntry = Effect.fnUntraced(function* (key: string) {
     const existing = entries[key]
     if (existing) return existing
-    const directory = ClientDirectory.make<
-      MessagePort,
-      BrowserClient,
-      ActorSelf,
-      ActorId,
-      Name,
-      AttachmentFields,
-      ClientSelf,
-      ClientId,
-      D
-    >(actor, { transport })
+    const directory = ClientDirectory.make(actor, { transport })
     const semaphore = yield* Semaphore.make(1)
     const fresh = {
       directory,
@@ -171,8 +163,7 @@ export const make = Effect.fnUntraced(function* <
                   const key = yield* encodeName(name)
                   const entry = yield* getEntry(key)
                   const currentClient = yield* entry.directory.register(
-                    port,
-                    { backing, close: closeScope },
+                    { port, backing, close: closeScope },
                     attachments,
                   )
                   const ActorLive = Layer.succeed(actor, {
@@ -194,7 +185,7 @@ export const make = Effect.fnUntraced(function* <
                 const { id, payload } = message
                 const { _tag, value } = payload as never
                 const parent = message.trace && Tracer.externalSpan(message.trace)
-                const transportSpan = yield* TraceUtil.parent
+                const transportSpan = yield* Tracing.parent
                 yield* (
                   handlers as Method.Handlers<
                     D["methods"],

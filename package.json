@@ -8,8 +8,8 @@
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "dev": "turbo run dev //#watch",
-    "fmt": "oxfmt --config konfik/.oxfmtrc.jsonc",
-    "fmt:check": "oxfmt --check --config konfik/.oxfmtrc.jsonc",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "prepare": "ts-patch install -s",
     "test": "vitest run",
     "watch": "tsc -b -w"
@@ -28,6 +28,7 @@
     "@vitest/web-worker": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
+    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "playwright": "catalog:",
     "ts-patch": "catalog:",
