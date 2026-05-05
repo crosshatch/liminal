@@ -1,5 +1,6 @@
-import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 import { Schema as S, Effect } from "effect"
+
+import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 
 export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
   readonly attachments: (

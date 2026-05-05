@@ -3,16 +3,15 @@ import { Cause, Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore,
 import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
-import * as Tracing from "../Tracing.ts"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
-import type { ClientHandle } from "../ClientHandle.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
-
 import * as ClientDirectory from "../ClientDirectory.ts"
+import type { ClientHandle } from "../ClientHandle.ts"
 import * as Method from "../Method.ts"
+import type { ProtocolDefinition } from "../Protocol.ts"
+import * as Tracing from "../Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 

@@ -26,12 +26,12 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 import * as Spanner from "liminal-util/Spanner"
-import * as Tracing from "./Tracing.ts"
 
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
 import { type F } from "./F.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
+import * as Tracing from "./Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 
