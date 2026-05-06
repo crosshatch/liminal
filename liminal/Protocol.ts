@@ -1,10 +1,10 @@
 import { Schema as S, Record, Types } from "effect"
 
-import type * as Method from "./Method.ts"
+import type { Method } from "./Method.ts"
 import * as Tracing from "./Tracing.ts"
 
 export interface ProtocolDefinition<
-  Methods extends Record<string, Method.Any> = Record<string, Method.Any>,
+  Methods extends Record<string, Method> = Record<string, Method>,
   Events extends Record<string, S.Struct.Fields> = Record<string, S.Struct.Fields>,
 > {
   readonly methods: Methods
