@@ -1,12 +1,6 @@
-import { Deferred, Types, Option, Ref, PubSub, Stream, Effect, Context, Layer, Semaphore } from "effect"
+import { Deferred, Types, Option, Stream, Effect, Context, Layer, Semaphore, SubscriptionRef, Scope } from "effect"
 
 const TypeId = "~liminal/Accumulator" as const
-
-export interface Service<State> {
-  readonly ref: Ref.Ref<State>
-
-  readonly pubsub: PubSub.PubSub<State>
-}
 
 export interface AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4> {
   readonly source: Stream.Stream<Item, E, R>
@@ -22,8 +16,11 @@ export type Reduce<State, Item, K extends Types.Tags<Item> = Types.Tags<Item>, E
   item: Types.ExtractTag<Item, K>,
 ) => (accumulator: State) => Effect.Effect<State, E, R>
 
-export interface Accumulator<Self, Id extends string, State> extends Context.Service<Self, Service<State>> {
-  new (_: never): Context.ServiceClass.Shape<Id, Service<State>>
+export interface Accumulator<Self, Id extends string, State> extends Context.Service<
+  Self,
+  SubscriptionRef.SubscriptionRef<State>
+> {
+  new (_: never): Context.ServiceClass.Shape<Id, SubscriptionRef.SubscriptionRef<State>>
 
   readonly [TypeId]: typeof TypeId
 
@@ -38,23 +35,17 @@ export interface Accumulator<Self, Id extends string, State> extends Context.Ser
 
   readonly layer: <Item, E, R, E2, R2, E3, R3, E4, R4>(
     config: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4>,
-  ) => Layer.Layer<Self, E | E2 | E3 | E4, R | R2 | R3 | R4>
+  ) => Layer.Layer<Self, E | E2 | E3 | E4, R | Exclude<R2, Scope.Scope> | R3 | R4>
 }
 
 export const Service =
   <Self, State>() =>
   <Id extends string>(id: Id): Accumulator<Self, Id, State> => {
-    const tag = Context.Service<Self, Service<State>>()(id)
+    const tag = Context.Service<Self, SubscriptionRef.SubscriptionRef<State>>()(id)
 
-    const get = tag.asEffect().pipe(
-      Effect.map(({ ref }) => ref),
-      Effect.flatMap(Ref.get),
-    )
+    const get = tag.asEffect().pipe(Effect.flatMap(SubscriptionRef.get))
 
-    const stream = tag.asEffect().pipe(
-      Effect.map(({ pubsub }) => Stream.fromPubSub(pubsub)),
-      Stream.unwrap,
-    )
+    const stream = tag.asEffect().pipe(Effect.map(SubscriptionRef.changes), Stream.unwrap)
 
     const reducer =
       <Item>() =>
@@ -69,12 +60,11 @@ export const Service =
     }: AccumulatorLayerConfig<Item, E, R, State, E2, R2, E3, R3, E4, R4>): Layer.Layer<
       Self,
       E | E2 | E3 | E4,
-      R | R2 | R3 | R4
+      R | Exclude<R2, Scope.Scope> | R3 | R4
     > =>
       Effect.gen(function* () {
         const semaphore = yield* Semaphore.make(1)
         const deferred = yield* Deferred.make<State>()
-        const pubsub = yield* PubSub.unbounded<State>({ replay: 1 })
         yield* source.pipe(
           Stream.runForEach(
             Effect.fn(function* (item) {
@@ -86,19 +76,17 @@ export const Service =
                 }
                 return
               }
-              const current = yield* Ref.get(ref)
-              const reduced = yield* reduce(item)(current)
-              yield* Ref.set(ref, reduced)
-              yield* PubSub.publish(pubsub, reduced)
+              const current = yield* SubscriptionRef.get(ref)
+              const reduced = yield* reduce(item)(current).pipe(Effect.scoped)
+              yield* SubscriptionRef.set(ref, reduced)
             }, semaphore.withPermits(1)),
           ),
           Effect.forkScoped,
         )
         const initial_ = yield* Deferred.await(deferred)
-        const ref = yield* Ref.make(initial_)
-        yield* PubSub.publish(pubsub, initial_)
+        const ref = yield* SubscriptionRef.make(initial_)
         yield* onInitial(initial_)
-        return { ref, pubsub }
+        return ref
       }).pipe(Layer.effect(tag))
 
     return Object.assign(tag, { [TypeId]: TypeId, get, stream, reducer, layer })
