@@ -24,7 +24,6 @@ import { Headers, FetchHttpClient, HttpClient, HttpServerResponse, HttpTraceCont
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
-
 import * as Mutex from "../_util/Mutex.ts"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
@@ -77,7 +76,7 @@ export interface ActorNamespaceDefinition<
   >
 
   readonly onConnect: Effect.Effect<
-    void,
+    D["state"]["Type"],
     never,
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
   >
@@ -320,20 +319,21 @@ export const Service =
           const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
           const { 0: webSocket, 1: server } = new WebSocketPair()
           const state = yield* DoState.DoState
-          state.acceptWebSocket(server)
-          server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success" }))
           const session = {
             id: SessionId.make(crypto.randomUUID()),
             trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
           }
           const currentClient = yield* directory.register({ socket: server, session }, attachments)
-          yield* onConnect.pipe(
+          const initial = yield* onConnect.pipe(
             span("onConnect", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
             provideActor(currentClient),
           )
+          state.acceptWebSocket(server)
+          // TODO: fix protocol audition success schema inference rebuild
+          server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial } as never))
           return new Response(null, {
             status: 101,
             webSocket,

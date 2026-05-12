@@ -1,4 +1,4 @@
 import { runtime } from "./runtime"
-import { GameState } from "./State"
+import { TicTacToeClient } from "@liminal-examples/tictactoe/TicTacToeClient"
 
-export const stateAtom = runtime.atom(GameState.stream)
+export const stateAtom = runtime.atom(TicTacToeClient.state)

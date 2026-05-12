@@ -6,16 +6,18 @@ import { KvLive } from "./KvLive.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 const onConnect = Effect.gen(function* () {
-  const { clients, currentClient } = yield* TicTacToeActor
+  const { clients } = yield* TicTacToeActor
   if (clients.size === 1) {
-    yield* currentClient.send("AwaitingPartner", {})
+    return {
+      awaitingPartner: true,
+      name: "X" as const,
+    }
   } else {
-    yield* TicTacToeActor.others.send("GameStarted", {
-      player: "X",
-    })
-    yield* currentClient.send("GameStarted", {
-      player: "O",
-    })
+    yield* TicTacToeActor.others.send("GameStarted", {})
+    return {
+      awaitingPartner: false,
+      name: "O" as const,
+    }
   }
 }).pipe(Effect.orDie)
 

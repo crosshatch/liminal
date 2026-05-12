@@ -30,7 +30,6 @@ export const make = Effect.fnUntraced(function* <
   ClientId extends string,
   D extends ProtocolDefinition,
   const Handlers extends Method.Handlers<D["methods"], any>,
-  A,
   E,
   R,
   IntroductionE,
@@ -43,7 +42,7 @@ export const make = Effect.fnUntraced(function* <
 }: {
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
   readonly handlers: Handlers
-  readonly onConnect: Effect.Effect<A, E, R>
+  readonly onConnect: Effect.Effect<D["state"]["Type"], E, R>
   readonly introductions: Stream.Stream<Introduction<Name, AttachmentFields>, IntroductionE, IntroductionR>
 }) {
   const {
@@ -172,8 +171,16 @@ export const make = Effect.fnUntraced(function* <
                     currentClient,
                   })
                   yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-                  yield* backing.send(0, { _tag: "Audition.Success" })
-                  return yield* onConnect.pipe(entry.mutex, Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
+                  const initial = yield* onConnect.pipe(
+                    entry.mutex,
+                    Effect.scoped,
+                    span("onConnect"),
+                    Effect.provide(ActorLive),
+                  )
+                  return yield* backing.send(0, {
+                    _tag: "Audition.Success",
+                    initial,
+                  })
                 }
                 const { entry, ActorLive } = state.value
                 if (message._tag === "Audition.Payload") {

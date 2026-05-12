@@ -1,34 +1,34 @@
-import { Schema as S, Record, Types } from "effect"
-
+import { Schema as S, Record } from "effect"
 import type { Method } from "./Method.ts"
 import * as Tracing from "./Tracing.ts"
 
+type WithType<Schema extends S.Top, Type> = Omit<Schema, "Type" | "Rebuild"> & {
+  readonly Type: Type
+  readonly Rebuild: WithType<Schema, Type>
+}
+
 export interface ProtocolDefinition<
+  State extends S.Top = S.Top,
   Methods extends Record<string, Method> = Record<string, Method>,
   Events extends Record<string, S.Struct.Fields> = Record<string, S.Struct.Fields>,
 > {
+  readonly state: State
+
   readonly methods: Methods
 
   readonly events: Events
 }
 
-export declare namespace ProtocolDefinition {
-  export type Merge<T extends ProtocolDefinition, U extends ProtocolDefinition> = ProtocolDefinition<
-    [T] extends [never]
-      ? U["methods"]
-      : {
-          [K in keyof T["methods"] & keyof U["methods"] as Types.Equals<T["methods"][K], U["methods"][K]> extends true
-            ? K
-            : never]: T["methods"][K]
-        },
-    [T] extends [never] ? U["events"] : T["events"] & U["events"]
-  >
-}
-
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
-    readonly Payload: S.TaggedStruct<"Audition.Payload", { client: S.String }>
-    readonly Success: S.TaggedStruct<"Audition.Success", {}>
+    readonly Payload: S.TaggedStruct<"Audition.Payload", { readonly client: S.String }>
+    readonly Success: WithType<
+      S.TaggedStruct<"Audition.Success", { readonly initial: D["state"] }>,
+      {
+        readonly _tag: "Audition.Success"
+        readonly initial: D["state"]["Type"]
+      }
+    >
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
       {
@@ -99,19 +99,23 @@ export interface Protocol<D extends ProtocolDefinition> {
 
 export const Disconnect = S.TaggedStruct("Disconnect", {})
 
-const Audition = {
-  Payload: S.TaggedStruct("Audition.Payload", {
-    client: S.String,
-  }),
-  Success: S.TaggedStruct("Audition.Success", {}),
-  Failure: S.TaggedStruct("Audition.Failure", {
-    expected: S.String,
-    actual: S.String,
-  }),
-}
+const AuditionPayload = S.TaggedStruct("Audition.Payload", {
+  client: S.String,
+})
 
-export const Protocol = <D extends ProtocolDefinition>({ events, methods }: D): Protocol<D> => {
+const AuditionFailure = S.TaggedStruct("Audition.Failure", {
+  expected: S.String,
+  actual: S.String,
+})
+
+export const Protocol = <D extends ProtocolDefinition>({ state, events, methods }: D): Protocol<D> => {
   type T = Protocol<D>
+
+  const Audition = {
+    Payload: AuditionPayload,
+    Success: S.TaggedStruct("Audition.Success", { initial: state }),
+    Failure: AuditionFailure,
+  }
 
   const F: T["F"] = {
     Payload: S.TaggedStruct("F.Payload", {

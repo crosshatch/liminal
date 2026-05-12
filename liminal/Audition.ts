@@ -1,68 +1,116 @@
-import { Schema as S, Pipeable, Stream, Effect, Function } from "effect"
-
+import { Schema as S, Pipeable, Stream, Effect, Function, Types } from "effect"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
-import type { F } from "./F.ts"
+import type { Fn } from "./Fn.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
+import type { Method } from "./Method.ts"
 
 const TypeId = "~liminal/Audition" as const
 
-export interface Audition<ClientSelf, D extends ProtocolDefinition> extends Pipeable.Pipeable {
+export interface Audition<
+  AuditionSelf,
+  State extends S.Union<ReadonlyArray<S.Top>>,
+  Methods extends Record<string, Method>,
+  Event,
+>
+  extends Pipeable.Pipeable {
   readonly [TypeId]: typeof TypeId
 
-  readonly events: Stream.Stream<
-    ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
-    ClientError | S.SchemaError,
-    ClientSelf
-  >
+  readonly state: Stream.Stream<State["Type"], ClientError | S.SchemaError, AuditionSelf | State["DecodingServices"]>
 
-  readonly f: F<ClientSelf, D>
+  readonly fn: Fn<AuditionSelf, Methods>
+
+  readonly events: Stream.Stream<Event, ClientError | S.SchemaError, AuditionSelf>
 }
 
-export const empty: Audition<never, never> = {
+type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = Extract<
+  {
+    [K in keyof T | keyof U]: K extends keyof T
+      ? K extends keyof U
+        ? Types.Equals<T[K], U[K]> extends true
+          ? T[K]
+          : never
+        : T[K]
+      : K extends keyof U
+        ? U[K]
+        : never
+  },
+  Record<string, Method>
+>
+
+export const empty: Audition<never, never, {}, never> = {
   [TypeId]: TypeId,
   pipe() {
     return Pipeable.pipeArguments(this, arguments)
   },
+  state: Stream.empty,
+  fn: () => () => new AuditionError().asEffect(),
   events: Stream.fail(new AuditionError()),
-  f: () => () => new AuditionError().asEffect(),
 }
 
 export const add: {
   <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): <AuditionSelf, AuditionD extends ProtocolDefinition>(
-    audition: Audition<AuditionSelf, AuditionD>,
-  ) => Audition<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>>
+  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>>, Methods extends Record<string, Method>, Event>(
+    audition: Audition<AuditionSelf, State, Methods, Event>,
+  ) => Audition<
+    AuditionSelf | ClientSelf,
+    S.Union<[...State["members"], ClientD["state"]]>,
+    MergeMethods<Methods, ClientD["methods"]>,
+    Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
+  >
   <
-    AuditionClientSelf,
-    AuditionD extends ProtocolDefinition,
+    AuditionSelf,
+    State extends S.Union<ReadonlyArray<S.Top>>,
+    Methods extends Record<string, Method>,
+    Event,
     ClientSelf,
     ClientId extends string,
     ClientD extends ProtocolDefinition,
   >(
-    audition: Audition<AuditionClientSelf, AuditionD>,
+    audition: Audition<AuditionSelf, State, Methods, Event>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): Audition<AuditionClientSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>>
+  ): Audition<
+    AuditionSelf | ClientSelf,
+    S.Union<[...State["members"], ClientD["state"]]>,
+    MergeMethods<Methods, ClientD["methods"]>,
+    Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
+  >
 } = Function.dual(
   2,
   <
     AuditionSelf,
-    AuditionD extends ProtocolDefinition,
+    State extends S.Union<ReadonlyArray<S.Top>>,
+    Methods extends Record<string, Method>,
+    Event,
     ClientSelf,
     ClientId extends string,
     ClientD extends ProtocolDefinition,
   >(
-    audition: Audition<AuditionSelf, AuditionD>,
+    audition: Audition<AuditionSelf, State, Methods, Event>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): Audition<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> => {
-    const f: F<AuditionSelf | ClientSelf, ProtocolDefinition.Merge<AuditionD, ClientD>> = (method) => (payload) =>
-      audition
-        .f(method)(payload)
-        .pipe(Effect.catchTag("AuditionError", () => client.f(method)(payload)))
+  ): Audition<
+    AuditionSelf | ClientSelf,
+    S.Union<[...State["members"], ClientD["state"]]>,
+    MergeMethods<Methods, ClientD["methods"]>,
+    Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
+  > => {
+    const fn: Fn<AuditionSelf | ClientSelf, MergeMethods<Methods, ClientD["methods"]>> =
+      (method: string, ...f: Array<any>) =>
+      (payload: any) =>
+        audition
+          .fn(method)(payload)
+          .pipe(
+            Effect.catchTag("AuditionError", () => client.fn(method)(payload)),
+            ...(f as [any]),
+          )
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),
+    )
+
+    const state = audition.state.pipe(
+      Stream.catchTag("AuditionError", () => Effect.succeed(client.state).pipe(Stream.unwrap)),
     )
 
     return {
@@ -71,7 +119,8 @@ export const add: {
         return Pipeable.pipeArguments(this, arguments)
       },
       events,
-      f,
+      fn,
+      state,
     }
   },
 )
