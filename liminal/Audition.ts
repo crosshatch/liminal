@@ -39,6 +39,12 @@ type MergeMethods<T extends Record<string, Method>, U extends Record<string, Met
   Record<string, Method>
 >
 
+type MergeState<State, D extends ProtocolDefinition> = [State] extends [never]
+  ? S.Union<[S.Struct<D["state"]>]>
+  : State extends S.Union<ReadonlyArray<S.Top>>
+    ? S.Union<[...State["members"], S.Struct<D["state"]>]>
+    : never
+
 export const empty: Audition<never, never, {}, never> = {
   [TypeId]: TypeId,
   pipe() {
@@ -52,17 +58,17 @@ export const empty: Audition<never, never, {}, never> = {
 export const add: {
   <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>>, Methods extends Record<string, Method>, Event>(
+  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>> | never, Methods extends Record<string, Method>, Event>(
     audition: Audition<AuditionSelf, State, Methods, Event>,
   ) => Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
+    MergeState<State, ClientD>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
   <
     AuditionSelf,
-    State extends S.Union<ReadonlyArray<S.Top>>,
+    State extends S.Union<ReadonlyArray<S.Top>> | never,
     Methods extends Record<string, Method>,
     Event,
     ClientSelf,
@@ -73,7 +79,7 @@ export const add: {
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
+    MergeState<State, ClientD>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
@@ -92,7 +98,7 @@ export const add: {
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
+    MergeState<State, ClientD>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   > => {
