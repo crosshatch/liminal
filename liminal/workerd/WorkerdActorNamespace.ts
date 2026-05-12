@@ -77,7 +77,7 @@ export interface ActorNamespaceDefinition<
   >
 
   readonly onConnect: Effect.Effect<
-    D["state"]["Type"],
+    S.Struct<D["state"]>["Type"],
     never,
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
   >
@@ -333,8 +333,7 @@ export const Service =
             provideActor(currentClient),
           )
           state.acceptWebSocket(server)
-          // TODO: fix protocol audition success schema inference rebuild
-          server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial } as never))
+          server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
           return new Response(null, {
             status: 101,
             webSocket,

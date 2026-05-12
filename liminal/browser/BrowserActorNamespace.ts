@@ -42,7 +42,7 @@ export const make = Effect.fnUntraced(function* <
 }: {
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
   readonly handlers: Handlers
-  readonly onConnect: Effect.Effect<D["state"]["Type"], E, R>
+  readonly onConnect: Effect.Effect<S.Struct<D["state"]>["Type"], E, R>
   readonly introductions: Stream.Stream<Introduction<Name, AttachmentFields>, IntroductionE, IntroductionR>
 }) {
   const {

@@ -53,7 +53,7 @@ interface EventTake<A, E> {
 
 export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
   {
-    readonly state: Stream.Stream<D["state"]["Type"], ClientError | S.SchemaError>
+    readonly state: Stream.Stream<S.Struct<D["state"]>["Type"], ClientError | S.SchemaError>
 
     readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
@@ -79,7 +79,11 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
 
   readonly protocol: Protocol<D>
 
-  readonly state: Stream.Stream<D["state"]["Type"], ClientError | S.SchemaError, Self | D["state"]["DecodingServices"]>
+  readonly state: Stream.Stream<
+    S.Struct<D["state"]>["Type"],
+    ClientError | S.SchemaError,
+    Self | S.Struct<D["state"]>["DecodingServices"]
+  >
 
   readonly events: Stream.Stream<
     ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
@@ -177,7 +181,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
-        const stateDeferred = yield* Deferred.make<Ref.Ref<D["state"]["Type"]>>()
+        const stateDeferred = yield* Deferred.make<Ref.Ref<S.Struct<D["state"]>["Type"]>>()
 
         const inflights: Record<
           string,
@@ -189,7 +193,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
         let callId = 0
         let takeCount = 0
         const eventsPubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
-        const statePubsub = yield* PubSub.unbounded<D["state"]["Type"]>({ replay: 1 })
+        const statePubsub = yield* PubSub.unbounded<S.Struct<D["state"]>["Type"]>({ replay: 1 })
 
         const replayState = yield* Ref.make<{
           readonly startupOpen: boolean
@@ -252,7 +256,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                   Effect.provideService(client, rcr),
                   Effect.tap((state) => PubSub.publish(statePubsub, state)),
                   reduceTask,
-                ) as Effect.Effect<D["state"]["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
+                ) as Effect.Effect<S.Struct<D["state"]>["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
                 yield* Ref.set(state, next)
 
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined

@@ -28,8 +28,8 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
       success: S.Void,
     },
   },
-  state: S.Struct({
+  state: {
     awaitingPartner: S.Boolean,
     name: Player,
-  }),
+  },
 }) {}

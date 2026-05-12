@@ -3,13 +3,8 @@ import { Schema as S, Record } from "effect"
 import type { Method } from "./Method.ts"
 import * as Tracing from "./Tracing.ts"
 
-type WithType<Schema extends S.Top, Type> = Omit<Schema, "Type" | "Rebuild"> & {
-  readonly Type: Type
-  readonly Rebuild: WithType<Schema, Type>
-}
-
 export interface ProtocolDefinition<
-  State extends S.Top = S.Top,
+  State extends S.Struct.Fields = S.Struct.Fields,
   Methods extends Record<string, Method> = Record<string, Method>,
   Events extends Record<string, S.Struct.Fields> = Record<string, S.Struct.Fields>,
 > {
@@ -23,13 +18,7 @@ export interface ProtocolDefinition<
 export interface Protocol<D extends ProtocolDefinition> {
   readonly Audition: {
     readonly Payload: S.TaggedStruct<"Audition.Payload", { readonly client: S.String }>
-    readonly Success: WithType<
-      S.TaggedStruct<"Audition.Success", { readonly initial: D["state"] }>,
-      {
-        readonly _tag: "Audition.Success"
-        readonly initial: D["state"]["Type"]
-      }
-    >
+    readonly Success: S.TaggedStruct<"Audition.Success", { readonly initial: S.Struct<D["state"]> }>
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
       {
@@ -114,7 +103,7 @@ export const Protocol = <D extends ProtocolDefinition>({ state, events, methods 
 
   const Audition = {
     Payload: AuditionPayload,
-    Success: S.TaggedStruct("Audition.Success", { initial: state }),
+    Success: S.TaggedStruct("Audition.Success", { initial: S.Struct(state) }),
     Failure: AuditionFailure,
   }
 

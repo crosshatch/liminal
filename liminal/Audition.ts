@@ -56,7 +56,7 @@ export const add: {
     audition: Audition<AuditionSelf, State, Methods, Event>,
   ) => Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], ClientD["state"]]>,
+    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
@@ -73,7 +73,7 @@ export const add: {
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], ClientD["state"]]>,
+    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
@@ -92,7 +92,7 @@ export const add: {
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
-    S.Union<[...State["members"], ClientD["state"]]>,
+    S.Union<[...State["members"], S.Struct<ClientD["state"]>]>,
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   > => {
@@ -121,7 +121,7 @@ export const add: {
       },
       events,
       fn,
-      state,
+      state: state as never,
     }
   },
 )

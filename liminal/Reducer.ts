@@ -4,7 +4,7 @@ import type { ProtocolDefinition } from "./Protocol.ts"
 
 export type Reducer<D extends ProtocolDefinition, K extends keyof D["events"] = keyof D["events"]> = (
   event: Types.ExtractTag<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], Extract<K, string>>,
-) => (state: D["state"]["Type"]) => Effect.Effect<D["state"]["Type"], never, unknown>
+) => (state: S.Struct<D["state"]>["Type"]) => Effect.Effect<S.Struct<D["state"]>["Type"], never, unknown>
 
 export type Reducers<D extends ProtocolDefinition> = {
   readonly [K in keyof D["events"]]: Reducer<D, K>
