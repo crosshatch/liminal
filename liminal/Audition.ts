@@ -1,9 +1,10 @@
 import { Schema as S, Pipeable, Stream, Effect, Function, Types } from "effect"
+
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 import type { Fn } from "./Fn.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
 import type { Method } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 const TypeId = "~liminal/Audition" as const
 

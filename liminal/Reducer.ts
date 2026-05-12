@@ -1,5 +1,6 @@
-import type { ProtocolDefinition } from "./Protocol.ts"
 import { Schema as S, Types, Effect } from "effect"
+
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 export type Reducer<D extends ProtocolDefinition, K extends keyof D["events"] = keyof D["events"]> = (
   event: Types.ExtractTag<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], Extract<K, string>>,

@@ -1,6 +1,7 @@
 import { Effect, Schema as S } from "effect"
-import type { Method } from "./Method.ts"
+
 import type { ClientError, UnresolvedError } from "./errors.ts"
+import type { Method } from "./Method.ts"
 
 export type FnPayload<Methods extends Record<string, Method>, K extends keyof Methods> = Methods[K]["payload"]["Type"]
 
