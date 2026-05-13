@@ -26,30 +26,30 @@ export interface Fn<Self, Methods extends Record<string, Method>> {
   <K extends keyof Methods, A, B>(
     tag: K,
     a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnEffect<Self, Methods, K>) => B,
+    b: (value: A, payload: FnPayload<Methods, K>) => B,
   ): (payload: FnPayload<Methods, K>) => B
 
   <K extends keyof Methods, A, B, C>(
     tag: K,
     a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnEffect<Self, Methods, K>) => B,
-    c: (value: B, payload: FnEffect<Self, Methods, K>) => C,
+    b: (value: A, payload: FnPayload<Methods, K>) => B,
+    c: (value: B, payload: FnPayload<Methods, K>) => C,
   ): (payload: FnPayload<Methods, K>) => C
 
   <K extends keyof Methods, A, B, C, D>(
     tag: K,
     a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnEffect<Self, Methods, K>) => B,
-    c: (value: B, payload: FnEffect<Self, Methods, K>) => C,
-    d: (value: C, payload: FnEffect<Self, Methods, K>) => D,
+    b: (value: A, payload: FnPayload<Methods, K>) => B,
+    c: (value: B, payload: FnPayload<Methods, K>) => C,
+    d: (value: C, payload: FnPayload<Methods, K>) => D,
   ): (payload: FnPayload<Methods, K>) => D
 
   <K extends keyof Methods, A, B, C, D, E>(
     tag: K,
     a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnEffect<Self, Methods, K>) => B,
-    c: (value: B, payload: FnEffect<Self, Methods, K>) => C,
-    d: (value: C, payload: FnEffect<Self, Methods, K>) => D,
-    e: (value: D, payload: FnEffect<Self, Methods, K>) => E,
-  ): (payload: FnPayload<Methods, K>) => D
+    b: (value: A, payload: FnPayload<Methods, K>) => B,
+    c: (value: B, payload: FnPayload<Methods, K>) => C,
+    d: (value: C, payload: FnPayload<Methods, K>) => D,
+    e: (value: D, payload: FnPayload<Methods, K>) => E,
+  ): (payload: FnPayload<Methods, K>) => E
 }

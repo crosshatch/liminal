@@ -24,20 +24,17 @@ export interface Audition<
   readonly events: Stream.Stream<Event, ClientError | S.SchemaError, AuditionSelf>
 }
 
-type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = Extract<
-  {
-    [K in keyof T | keyof U]: K extends keyof T
-      ? K extends keyof U
-        ? Types.Equals<T[K], U[K]> extends true
-          ? T[K]
-          : never
-        : T[K]
-      : K extends keyof U
-        ? U[K]
+type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = {
+  [K in keyof T | keyof U]: K extends keyof T
+    ? K extends keyof U
+      ? Types.Equals<T[K], U[K]> extends true
+        ? T[K]
         : never
-  },
-  Record<string, Method>
->
+      : T[K]
+    : K extends keyof U
+      ? U[K]
+      : never
+}
 
 type MergeState<State, D extends ProtocolDefinition> = [State] extends [never]
   ? S.Union<[S.Struct<D["state"]>]>
@@ -50,7 +47,7 @@ export const empty: Audition<never, never, {}, never> = {
   pipe() {
     return Pipeable.pipeArguments(this, arguments)
   },
-  state: Stream.empty,
+  state: Stream.fail(new AuditionError()),
   fn: () => () => new AuditionError().asEffect(),
   events: Stream.fail(new AuditionError()),
 }
@@ -102,15 +99,15 @@ export const add: {
     MergeMethods<Methods, ClientD["methods"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   > => {
-    const fn: Fn<AuditionSelf | ClientSelf, MergeMethods<Methods, ClientD["methods"]>> =
-      (method: string, ...f: Array<any>) =>
-      (payload: any) =>
-        audition
-          .fn(method)(payload)
-          .pipe(
-            Effect.catchTag("AuditionError", () => client.fn(method)(payload)),
-            ...(f as [any]),
-          )
+    const fn = ((method: string, ...f: [any]) =>
+      Effect.fnUntraced(
+        function* (payload: any) {
+          return yield* audition
+            .fn(method)(payload)
+            .pipe(Effect.catchTag("AuditionError", () => client.fn(method)(payload)))
+        },
+        ...f,
+      )) as Fn<AuditionSelf | ClientSelf, MergeMethods<Methods, ClientD["methods"]>>
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),
@@ -127,7 +124,7 @@ export const add: {
       },
       events,
       fn,
-      state: state as never,
+      state,
     }
   },
 )

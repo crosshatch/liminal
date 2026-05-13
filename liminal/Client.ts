@@ -236,6 +236,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
             switch (message._tag) {
               case "Audition.Success": {
                 const { initial } = message
+                yield* PubSub.publish(statePubsub, initial)
                 const state = yield* Ref.make(initial)
                 yield* Deferred.succeed(stateDeferred, state)
                 yield* Deferred.succeed(audition, void 0)
@@ -250,15 +251,15 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 const { _tag } = event as never
                 const reducer = reducers[_tag]!
                 const state = yield* Deferred.await(stateDeferred)
-
-                const current = yield* Ref.get(state)
-                const next = yield* reducer(event as never)(current).pipe(
-                  Effect.provideService(client, rcr),
-                  Effect.tap((state) => PubSub.publish(statePubsub, state)),
-                  reduceTask,
-                ) as Effect.Effect<S.Struct<D["state"]>["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
-                yield* Ref.set(state, next)
-
+                yield* Effect.gen(function* () {
+                  const current = yield* Ref.get(state)
+                  const next = yield* reducer(event as never)(current).pipe(
+                    Effect.provideService(client, rcr),
+                    Effect.tap((state) => PubSub.publish(statePubsub, state)),
+                    reduceTask,
+                  ) as Effect.Effect<S.Struct<D["state"]>["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
+                  yield* Ref.set(state, next)
+                }).pipe(reduceTask)
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* publishTake([event], true).pipe(
                   span("event.enqueue", {
