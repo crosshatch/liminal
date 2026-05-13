@@ -186,7 +186,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
         const inflights: Record<
           string,
           {
-            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["methods"]>>
+            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["methods"], keyof D["methods"]>>
             readonly span?: Tracer.AnySpan | undefined
           }
         > = {}
@@ -256,7 +256,6 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                   const next = yield* reducer(event as never)(current).pipe(
                     Effect.provideService(client, rcr),
                     Effect.tap((state) => PubSub.publish(statePubsub, state)),
-                    reduceTask,
                   ) as Effect.Effect<S.Struct<D["state"]>["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
                   yield* Ref.set(state, next)
                 }).pipe(reduceTask)
@@ -320,6 +319,23 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
           Effect.provideService(Scope.Scope, scope),
         )
 
+        const interrupt = Stream.interruptWhen(
+          Fiber.await(fiber).pipe(
+            Effect.flatMap(
+              Exit.match({
+                onSuccess: () => Effect.void,
+                onFailure: flow(
+                  Cause.findError,
+                  Result.match({
+                    onSuccess: Effect.fail,
+                    onFailure: () => Effect.void,
+                  }),
+                ),
+              }),
+            ),
+          ),
+        )
+
         const events = Effect.gen(function* () {
           const queue = yield* PubSub.subscribe(eventsPubsub)
           const live = (replayCount: number) =>
@@ -358,27 +374,9 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 ),
                 live(replayCount),
               )
-        }).pipe(
-          Stream.unwrap,
-          Stream.interruptWhen(
-            Fiber.await(fiber).pipe(
-              Effect.flatMap(
-                Exit.match({
-                  onSuccess: () => Effect.void,
-                  onFailure: flow(
-                    Cause.findError,
-                    Result.match({
-                      onSuccess: Effect.fail,
-                      onFailure: () => Effect.void,
-                    }),
-                  ),
-                }),
-              ),
-            ),
-          ),
-        )
+        }).pipe(Stream.unwrap, interrupt)
 
-        const state = Stream.fromPubSub(statePubsub)
+        const state = Stream.fromPubSub(statePubsub).pipe(interrupt)
 
         const encodingServices = yield* Effect.context<_["F"]["Payload"]["EncodingServices"]>()
 
@@ -400,7 +398,10 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
               })
             }
             const id = callId++
-            const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FnError<D["methods"]>>()
+            const deferred = yield* Deferred.make<
+              _["F"]["Success"]["Type"],
+              FnError<D["methods"], keyof D["methods"]>
+            >()
             const span = yield* Tracing.current
             const trace = span ? Tracing.toTraceEnvelope(span) : undefined
             inflights[id] = { deferred, span }
@@ -429,7 +430,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
               ),
             )
           }).pipe(
-            span("f", {
+            span("fn", {
               kind: "client",
               attributes: { _tag },
             }),

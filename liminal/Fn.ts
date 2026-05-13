@@ -5,13 +5,13 @@ import type { Method } from "./Method.ts"
 
 export type FnPayload<Methods extends Record<string, Method>, K extends keyof Methods> = Methods[K]["payload"]["Type"]
 
-export type FnError<Methods extends Record<string, Method>> = [
-  Methods[keyof Methods]["failure"]["Type"] | ClientError | S.SchemaError | UnresolvedError,
+export type FnError<Methods extends Record<string, Method>, K extends keyof Methods> = [
+  Methods[K]["failure"]["Type"] | ClientError | S.SchemaError | UnresolvedError,
 ][0]
 
 export type FnEffect<Self, Methods extends Record<string, Method>, K extends keyof Methods> = Effect.Effect<
   Methods[K]["success"]["Type"],
-  FnError<Methods>,
+  FnError<Methods, K>,
   Self
 >
 

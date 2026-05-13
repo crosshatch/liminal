@@ -325,6 +325,7 @@ export const Service =
             trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
           }
           const currentClient = yield* directory.register({ socket: server, session }, attachments)
+          state.acceptWebSocket(server)
           const initial = yield* onConnect.pipe(
             span("onConnect", {
               attributes: sessionAttributes(session),
@@ -332,7 +333,6 @@ export const Service =
             }),
             provideActor(currentClient),
           )
-          state.acceptWebSocket(server)
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
           return new Response(null, {
             status: 101,

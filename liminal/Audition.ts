@@ -24,17 +24,11 @@ export interface Audition<
   readonly events: Stream.Stream<Event, ClientError | S.SchemaError, AuditionSelf>
 }
 
-type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = {
-  [K in keyof T | keyof U]: K extends keyof T
-    ? K extends keyof U
-      ? Types.Equals<T[K], U[K]> extends true
-        ? T[K]
-        : never
-      : T[K]
-    : K extends keyof U
-      ? U[K]
-      : never
-}
+type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = [keyof T] extends [never]
+  ? U
+  : {
+      [K in keyof T & keyof U]: Types.Equals<T[K], U[K]> extends true ? T[K] : never
+    }
 
 type MergeState<State, D extends ProtocolDefinition> = [State] extends [never]
   ? S.Union<[S.Struct<D["state"]>]>
