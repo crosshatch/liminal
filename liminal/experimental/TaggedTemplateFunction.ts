@@ -18,7 +18,7 @@ export const raw = Effect.fnUntraced(function* <Substitutions extends Array<unkn
 ): Effect.fn.Return<string, ExtractE<Substitutions[number]>, ExtractR<Substitutions[number]>> {
   return String.raw(
     template,
-    ...(yield* Effect.all(substitutions.map((v) => (Effect.isEffect(v) ? v : Effect.succeed(v)))) as Effect.Effect<
+    ...(yield* Effect.forEach(substitutions, (v) => (Effect.isEffect(v) ? v : Effect.succeed(v))) as Effect.Effect<
       Array<string>,
       ExtractE<Substitutions[number]>,
       ExtractR<Substitutions[number]>
