@@ -37,12 +37,12 @@ export const make = Effect.fnUntraced(function* <
 >({
   actor,
   handlers,
-  onConnect,
+  hydrate,
   introductions,
 }: {
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
   readonly handlers: Handlers
-  readonly onConnect: Effect.Effect<S.Struct<D["state"]>["Type"], E, R>
+  readonly hydrate: Effect.Effect<S.Struct<D["state"]>["Type"], E, R>
   readonly introductions: Stream.Stream<Introduction<Name, AttachmentFields>, IntroductionE, IntroductionR>
 }) {
   const {
@@ -171,16 +171,13 @@ export const make = Effect.fnUntraced(function* <
                     currentClient,
                   })
                   yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-                  const initial = yield* onConnect.pipe(
+                  const initial = yield* hydrate.pipe(
                     entry.mutex,
                     Effect.scoped,
                     span("onConnect"),
                     Effect.provide(ActorLive),
                   )
-                  return yield* backing.send(0, {
-                    _tag: "Audition.Success",
-                    initial,
-                  })
+                  return yield* backing.send(0, { _tag: "Audition.Success", initial })
                 }
                 const { entry, ActorLive } = state.value
                 if (message._tag === "Audition.Payload") {

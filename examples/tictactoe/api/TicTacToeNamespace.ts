@@ -5,7 +5,7 @@ import { handleMove } from "./handleMove.ts"
 import { KvLive } from "./KvLive.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-const onConnect = Effect.gen(function* () {
+const hydrate = Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
   if (clients.size === 1) {
     return {
@@ -24,7 +24,7 @@ const onConnect = Effect.gen(function* () {
 export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
   actor: TicTacToeActor,
   prelude: KvLive,
-  onConnect,
+  hydrate,
   onDisconnect: Effect.void,
   handlers: { Move: handleMove },
   layer: Layer.empty,

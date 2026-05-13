@@ -57,7 +57,7 @@ export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
 
     readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
-    readonly fn: <K extends keyof D["methods"]>(
+    readonly fnRaw: <K extends keyof D["methods"]>(
       tag: K,
       payload: D["methods"][K]["payload"]["Type"],
     ) => Effect.Effect<D["methods"][K]["success"]["Type"], D["methods"][K]["failure"]["Type"], ClientSelf>
@@ -120,7 +120,7 @@ export const Service =
     const fn = ((_tag: keyof D["methods"], ...f: Array<any>) =>
       Effect.fnUntraced(
         function* (payload: any) {
-          const { fn } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
+          const { fnRaw: fn } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
           return yield* fn(_tag, payload)
         },
         Effect.scoped,
@@ -382,7 +382,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
 
         yield* Deferred.await(audition)
 
-        const fn = <K extends keyof D["methods"]>(_tag: K, value: D["methods"][K]["payload"]["Type"]) =>
+        const fnRaw = <K extends keyof D["methods"]>(_tag: K, value: D["methods"][K]["payload"]["Type"]) =>
           Effect.gen(function* () {
             const exit = fiber.pollUnsafe()
             if (exit) {
@@ -437,7 +437,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
             Effect.provide(encodingServices),
           )
 
-        return { state, events, fn, end }
+        return { state, events, fnRaw, end }
       }).pipe(span("acquire", { attributes: { client: client.key } }), Effect.annotateLogs("client", client.key)),
     })
 

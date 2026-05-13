@@ -76,7 +76,7 @@ export interface ActorNamespaceDefinition<
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
   >
 
-  readonly onConnect: Effect.Effect<
+  readonly hydrate: Effect.Effect<
     S.Struct<D["state"]>["Type"],
     never,
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
@@ -184,7 +184,7 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, prelude, handlers, layer, onConnect, onDisconnect } = definition
+    const { hibernation, actor, prelude, handlers, layer, hydrate: onConnect, onDisconnect } = definition
     const {
       definition: {
         name: Name,
@@ -300,7 +300,7 @@ export const Service =
           Layer.provideMerge(Clock.layer),
         )
 
-        const HydrateLive = Effect.gen({ self: this }, function* () {
+        const HydrateClientsLive = Effect.gen({ self: this }, function* () {
           for (const socket of state.getWebSockets()) {
             const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
             yield* directory
@@ -309,7 +309,7 @@ export const Service =
           }
         }).pipe(span("hydrateAttachments"), Layer.effectDiscard)
 
-        const runtime = ManagedRuntime.make(HydrateLive.pipe(Layer.provideMerge(Live), boundLayer("actor")))
+        const runtime = ManagedRuntime.make(HydrateClientsLive.pipe(Layer.provideMerge(Live), boundLayer("actor")))
 
         this.run = flow(Effect.tapCause(logCause), runtime.runPromise)
       }
