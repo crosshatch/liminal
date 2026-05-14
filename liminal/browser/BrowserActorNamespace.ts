@@ -83,7 +83,7 @@ export const make = Effect.fnUntraced(function* <
           ...event,
           ...(trace && { trace }),
         })
-      }).pipe(span("event.send", { attributes: { _tag }, kind: "producer" }))
+      }).pipe(span("send", { attributes: { _tag }, kind: "producer" }))
     },
     close: ({ close }) => close,
     snapshot: () => Effect.void,
@@ -209,7 +209,7 @@ export const make = Effect.fnUntraced(function* <
                     }),
                   }),
                   Effect.andThen((v) => backing.send(0, v)),
-                  span("handler", {
+                  span("handle", {
                     attributes: { _tag },
                     kind: "server",
                     parent,

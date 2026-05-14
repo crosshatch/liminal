@@ -261,7 +261,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 }).pipe(reduceTask)
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* publishTake([event], true).pipe(
-                  span("event.enqueue", {
+                  span("enqueue-event", {
                     attributes: { _tag },
                     kind: "consumer",
                     parent,

@@ -41,7 +41,7 @@ export const layer =
       }
       return Layer.mergeAll(Layer.succeed(tag, resolved), derive?.(resolved) ?? Layer.empty)
     }).pipe(
-      span("makeBinding", {
+      span("make-binding", {
         attributes: { id: tag.key },
       }),
       Layer.unwrap,

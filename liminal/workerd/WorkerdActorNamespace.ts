@@ -184,7 +184,7 @@ export const Service =
     RunROut,
     RunE
   > => {
-    const { hibernation, actor, prelude, handlers, layer, hydrate: onConnect, onDisconnect } = definition
+    const { hibernation, actor, prelude, handlers, layer, hydrate, onDisconnect } = definition
     const {
       definition: {
         name: Name,
@@ -231,7 +231,7 @@ export const Service =
             })
             yield* Effect.sync(() => socket.send(encoded))
           }).pipe(
-            span("event.send", {
+            span("send", {
               attributes: { _tag, ...sessionAttributes(session) },
               kind: "producer",
               links: [sessionLink(session)],
@@ -307,7 +307,7 @@ export const Service =
               .register({ socket, session }, attachments)
               .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
           }
-        }).pipe(span("hydrateAttachments"), Layer.effectDiscard)
+        }).pipe(span("hydrate"), Layer.effectDiscard)
 
         const runtime = ManagedRuntime.make(HydrateClientsLive.pipe(Layer.provideMerge(Live), boundLayer("actor")))
 
@@ -326,12 +326,12 @@ export const Service =
           }
           const currentClient = yield* directory.register({ socket: server, session }, attachments)
           state.acceptWebSocket(server)
-          const initial = yield* onConnect.pipe(
-            span("onConnect", {
+          const initial = yield* hydrate.pipe(
+            provideActor(currentClient),
+            span("hydrate", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
-            provideActor(currentClient),
           )
           server.send(yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
           return new Response(null, {
@@ -360,11 +360,11 @@ export const Service =
           if (message._tag === "Disconnect") {
             yield* currentClient.disconnect
             return yield* onDisconnect.pipe(
-              span("onDisconnect", {
+              provideActor(currentClient),
+              span("disconnect", {
                 attributes: sessionAttributes(session),
                 links: [sessionLink(session)],
               }),
-              provideActor(currentClient),
             )
           }
           const { id, payload } = message
@@ -400,16 +400,16 @@ export const Service =
                   failure: { _tag, value } as never,
                 }),
             }),
+            provideActor(currentClient),
             span("handler", {
               attributes: { _tag, ...sessionAttributes(session) },
               kind: "server",
               parent,
               links,
             }),
-            provideActor(currentClient),
           )
           socket.send(out)
-        }).pipe(Mutex.task, span("webSocketMessage"), this.run)
+        }).pipe(Mutex.task, span("socket-message"), this.run)
       }
 
       override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
@@ -427,13 +427,13 @@ export const Service =
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* directory.unregister(socket)
           yield* onDisconnect.pipe(
-            span("onDisconnect", {
+            provideActor(currentClient),
+            span("disconnect", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
-            provideActor(currentClient),
           )
-        }).pipe(span("webSocketClose"), this.run)
+        }).pipe(span("socket-close"), this.run)
       }
 
       override webSocketError(socket: WebSocket, cause: unknown) {
@@ -445,14 +445,14 @@ export const Service =
           yield* Effect.annotateCurrentSpan(sessionAttributes(session))
           yield* directory.unregister(socket)
           yield* onDisconnect.pipe(
-            span("onDisconnect", {
+            provideActor(currentClient),
+            span("disconnect", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
-            provideActor(currentClient),
           )
           yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
-        }).pipe(span("webSocketError"), this.run)
+        }).pipe(span("socket-error"), this.run)
       }
 
       static readonly upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
