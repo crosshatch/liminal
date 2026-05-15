@@ -20,7 +20,7 @@ const LINES = [
   [[0, 2], [1, 1], [2, 0]],
 ] as const;
 
-export const handleMove = TicTacToeActor.handler(
+export default TicTacToeActor.handler(
   "Move",
   Effect.fn(function* ({ position }) {
     const { currentClient, name: gameId } = yield* TicTacToeActor
