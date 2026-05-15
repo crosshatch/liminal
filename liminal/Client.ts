@@ -253,11 +253,17 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 const state = yield* Deferred.await(stateDeferred)
                 yield* Effect.gen(function* () {
                   const current = yield* Ref.get(state)
-                  const next = yield* reducer(event as never)(current).pipe(
+                  const reduced = yield* reducer(event as never)(current).pipe(
                     Effect.provideService(client, rcr),
-                    Effect.tap((state) => PubSub.publish(statePubsub, state)),
-                  ) as Effect.Effect<S.Struct<D["state"]>["Type"], never, Reducer.Reducers.Services<Self, Reducers>>
-                  yield* Ref.set(state, next)
+                  ) as Effect.Effect<
+                    S.Struct<D["state"]>["Type"] | undefined,
+                    never,
+                    Reducer.Reducers.Services<Self, Reducers>
+                  >
+                  if (reduced) {
+                    yield* PubSub.publish(statePubsub, reduced)
+                    yield* Ref.set(state, reduced)
+                  }
                 }).pipe(reduceTask)
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* publishTake([event], true).pipe(

@@ -27,6 +27,7 @@ export class TicTacToeRuntime extends WorkerdActorRuntime.make({
   prelude: KvLive,
   hydrate,
   onDisconnect: Effect.void,
-  handlers: { Move: handleMove },
+  external: { Move: handleMove },
   layer: Layer.empty,
+  hibernation: "5 seconds",
 }) {}

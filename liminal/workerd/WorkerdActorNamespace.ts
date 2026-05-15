@@ -7,10 +7,12 @@ import * as Spanner from "liminal-util/Spanner"
 import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
+import type { Method } from "../Method.ts"
 
 const span = Spanner.make(import.meta.url)
 
 export interface ActorNamespaceDefinition<
+  Methods extends Record<string, Method>,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -21,12 +23,15 @@ export interface ActorNamespaceDefinition<
 > {
   readonly binding: string
 
+  readonly methods: Methods
+
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
 }
 
 export interface ActorNamespace<
   NamespaceSelf,
   NamespaceId extends string,
+  Methods extends Record<string, Method>,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -37,7 +42,16 @@ export interface ActorNamespace<
 > {
   new (_: never): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
 
-  readonly definition: ActorNamespaceDefinition<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
+  readonly definition: ActorNamespaceDefinition<
+    Methods,
+    ActorSelf,
+    ActorId,
+    Name,
+    AttachmentFields,
+    ClientSelf,
+    ClientId,
+    D
+  >
 
   readonly upgrade: (
     name: Name["Type"],
@@ -58,6 +72,7 @@ export const Service =
   <NamespaceSelf>() =>
   <
     NamespaceId extends string,
+    Methods extends Record<string, Method>,
     ActorSelf,
     ActorId extends string,
     Name extends TopFromString,
@@ -67,10 +82,11 @@ export const Service =
     D extends ProtocolDefinition,
   >(
     id: NamespaceId,
-    definition: ActorNamespaceDefinition<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
+    definition: ActorNamespaceDefinition<Methods, ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
   ): ActorNamespace<
     NamespaceSelf,
     NamespaceId,
+    Methods,
     ActorSelf,
     ActorId,
     Name,

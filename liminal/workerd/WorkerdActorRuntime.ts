@@ -36,6 +36,7 @@ const span = Spanner.make(import.meta.url)
 export interface ActorRuntimeDefinition<
   NamespaceSelf,
   NamespaceId extends string,
+  Methods extends Record<string, Method.Method>,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -53,6 +54,7 @@ export interface ActorRuntimeDefinition<
   readonly namespace: ActorNamespace<
     NamespaceSelf,
     NamespaceId,
+    Methods,
     ActorSelf,
     ActorId,
     Name,
@@ -78,7 +80,7 @@ export interface ActorRuntimeDefinition<
 
   readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
 
-  readonly handlers: Method.Handlers<
+  readonly external: Method.Handlers<
     D["methods"],
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
   >
@@ -101,6 +103,7 @@ export interface ActorRuntimeDefinition<
 export const make = <
   NamespaceSelf,
   NamespaceId extends string,
+  Methods extends Record<string, Method.Method>,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -116,6 +119,7 @@ export const make = <
   definition: ActorRuntimeDefinition<
     NamespaceSelf,
     NamespaceId,
+    Methods,
     ActorSelf,
     ActorId,
     Name,
@@ -132,7 +136,7 @@ export const make = <
   const {
     hibernation,
     prelude,
-    handlers,
+    external: handlers,
     layer,
     hydrate,
     onDisconnect,
@@ -199,28 +203,26 @@ export const make = <
 
   class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/WorkerdActorNamespace/NameDecoded") {}
 
-  const directory = ClientDirectory.make(actor, { transport })
-
-  const provideActor = (currentClient: ClientHandle<ActorSelf, AttachmentFields, D>) =>
-    flow(
-      Effect.provide(
-        Layer.provideMerge(
-          layer,
-          Effect.gen(function* () {
-            const name = yield* NameDecoded
-            return Layer.succeed(actor, {
-              name,
-              clients: directory.handles,
-              currentClient,
-            })
-          }).pipe(Layer.unwrap),
-        ),
-      ),
-      Effect.scoped,
-    )
-
   return class extends DurableObject {
     readonly run
+    readonly directory = ClientDirectory.make(actor, { transport })
+    readonly provideActor = (currentClient: ClientHandle<ActorSelf, AttachmentFields, D>) =>
+      flow(
+        Effect.provide(
+          Layer.provideMerge(
+            layer,
+            Effect.gen({ self: this }, function* () {
+              const name = yield* NameDecoded
+              return Layer.succeed(actor, {
+                name,
+                clients: this.directory.handles,
+                currentClient,
+              })
+            }).pipe(Layer.unwrap),
+          ),
+        ),
+        Effect.scoped,
+      )
     constructor(state: DurableObjectState<{}>, env: Cloudflare.Env) {
       super(state, env)
       if (hibernation) {
@@ -248,7 +250,7 @@ export const make = <
       const HydrateClientsLive = Effect.gen({ self: this }, function* () {
         for (const socket of state.getWebSockets()) {
           const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
-          yield* directory
+          yield* this.directory
             .register({ socket, session }, attachments)
             .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
         }
@@ -260,7 +262,7 @@ export const make = <
     }
 
     override fetch(request: Request): Promise<Response> {
-      return Effect.gen(function* () {
+      return Effect.gen({ self: this }, function* () {
         const url = new URL(request.url)
         const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
         const { 0: webSocket, 1: server } = new WebSocketPair()
@@ -269,10 +271,10 @@ export const make = <
           id: SessionId.make(crypto.randomUUID()),
           trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
         }
-        const currentClient = yield* directory.register({ socket: server, session }, attachments)
+        const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
         state.acceptWebSocket(server)
         const initial = yield* hydrate.pipe(
-          provideActor(currentClient),
+          this.provideActor(currentClient),
           span("hydrate", {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
@@ -294,8 +296,8 @@ export const make = <
     }
 
     override webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
-      Effect.gen(function* () {
-        const { client, handle: currentClient } = yield* directory.entry(socket)
+      Effect.gen({ self: this }, function* () {
+        const { client, handle: currentClient } = yield* this.directory.entry(socket)
         const { session } = client
         yield* Effect.annotateCurrentSpan(sessionAttributes(session))
         const message = yield* decodeClient(raw instanceof ArrayBuffer ? new TextDecoder().decode(raw) : raw)
@@ -305,7 +307,7 @@ export const make = <
         if (message._tag === "Disconnect") {
           yield* currentClient.disconnect
           return yield* onDisconnect.pipe(
-            provideActor(currentClient),
+            this.provideActor(currentClient),
             span("disconnect", {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
@@ -345,7 +347,7 @@ export const make = <
                 failure: { _tag, value } as never,
               }),
           }),
-          provideActor(currentClient),
+          this.provideActor(currentClient),
           span("handler", {
             attributes: { _tag, ...sessionAttributes(session) },
             kind: "server",
@@ -358,8 +360,10 @@ export const make = <
     }
 
     override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
-      Effect.gen(function* () {
-        const entry = yield* directory.entry(socket).pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+      Effect.gen({ self: this }, function* () {
+        const entry = yield* this.directory
+          .entry(socket)
+          .pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
         if (!entry) {
           return
         }
@@ -368,9 +372,9 @@ export const make = <
           handle: currentClient,
         } = entry
         yield* Effect.annotateCurrentSpan(sessionAttributes(session))
-        yield* directory.unregister(socket)
+        yield* this.directory.unregister(socket)
         yield* onDisconnect.pipe(
-          provideActor(currentClient),
+          this.provideActor(currentClient),
           span("disconnect", {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
@@ -380,15 +384,15 @@ export const make = <
     }
 
     override webSocketError(socket: WebSocket, cause: unknown) {
-      Effect.gen(function* () {
+      Effect.gen({ self: this }, function* () {
         const {
           client: { session },
           handle: currentClient,
-        } = yield* directory.entry(socket)
+        } = yield* this.directory.entry(socket)
         yield* Effect.annotateCurrentSpan(sessionAttributes(session))
-        yield* directory.unregister(socket)
+        yield* this.directory.unregister(socket)
         yield* onDisconnect.pipe(
-          provideActor(currentClient),
+          this.provideActor(currentClient),
           span("disconnect", {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
