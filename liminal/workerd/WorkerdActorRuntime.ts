@@ -226,7 +226,7 @@ export const make = <
       if (hibernation) {
         Option.andThen(
           Duration.fromInput(hibernation),
-          flow(Duration.toMillis, state.setHibernatableWebSocketEventTimeout),
+          flow(Duration.toMillis, (timeout) => state.setHibernatableWebSocketEventTimeout(timeout)),
         )
       }
 
