@@ -6,7 +6,7 @@ import * as GameState from "./Games.ts"
 import { KvLive } from "./KvLive.ts"
 import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
-export { TicTacToeNamespace }
+export * from "./TicTacToeRuntime.ts"
 
 const ApiLive = Layer.mergeAll(
   HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
@@ -28,5 +28,5 @@ const ApiLive = Layer.mergeAll(
 
 export default Worker.make({
   handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
-  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer("TICTACTOE"), Assets.layer("ASSETS")),
+  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer, Assets.layer("ASSETS")),
 })

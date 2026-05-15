@@ -57,10 +57,10 @@ export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
 
     readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
-    readonly fnRaw: <K extends keyof D["methods"]>(
+    readonly fnRaw: <K extends keyof D["methods"], M extends D["methods"][K]>(
       tag: K,
-      payload: D["methods"][K]["payload"]["Type"],
-    ) => Effect.Effect<D["methods"][K]["success"]["Type"], D["methods"][K]["failure"]["Type"], ClientSelf>
+      payload: M["payload"]["Type"],
+    ) => Effect.Effect<M["success"]["Type"], M["failure"]["Type"], ClientSelf>
 
     readonly end: Effect.Effect<void>
   },
