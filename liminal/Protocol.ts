@@ -1,16 +1,16 @@
 import { Schema as S, Record } from "effect"
 
-import type { Method } from "./Method.ts"
+import type { Methods } from "./Method.ts"
 import * as Tracing from "./Tracing.ts"
 
 export interface ProtocolDefinition<
   State extends S.Struct.Fields = S.Struct.Fields,
-  Methods extends Record<string, Method> = Record<string, Method>,
+  External extends Methods = Methods,
   Events extends Record<string, S.Struct.Fields> = Record<string, S.Struct.Fields>,
 > {
   readonly state: State
 
-  readonly methods: Methods
+  readonly external: External
 
   readonly events: Events
 }
@@ -44,7 +44,10 @@ export interface Protocol<D extends ProtocolDefinition> {
       {
         readonly id: S.Int
         readonly payload: S.TaggedUnion<{
-          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["payload"] }>
+          readonly [K in keyof D["external"] & string]: S.TaggedStruct<
+            K,
+            { readonly value: D["external"][K]["payload"] }
+          >
         }>
         readonly trace: S.optional<typeof Tracing.TraceEnvelope>
       }
@@ -55,7 +58,10 @@ export interface Protocol<D extends ProtocolDefinition> {
       {
         readonly id: S.Int
         readonly success: S.TaggedUnion<{
-          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["success"] }>
+          readonly [K in keyof D["external"] & string]: S.TaggedStruct<
+            K,
+            { readonly value: D["external"][K]["success"] }
+          >
         }>
       }
     >
@@ -65,7 +71,10 @@ export interface Protocol<D extends ProtocolDefinition> {
       {
         readonly id: S.Int
         readonly failure: S.TaggedUnion<{
-          readonly [K in keyof D["methods"] & string]: S.TaggedStruct<K, { readonly value: D["methods"][K]["failure"] }>
+          readonly [K in keyof D["external"] & string]: S.TaggedStruct<
+            K,
+            { readonly value: D["external"][K]["failure"] }
+          >
         }>
       }
     >
@@ -98,7 +107,7 @@ const AuditionFailure = S.TaggedStruct("Audition.Failure", {
   actual: S.String,
 })
 
-export const Protocol = <D extends ProtocolDefinition>({ state, events, methods }: D): Protocol<D> => {
+export const Protocol = <D extends ProtocolDefinition>({ state, events, external }: D): Protocol<D> => {
   type T = Protocol<D>
 
   const Audition = {
@@ -110,16 +119,16 @@ export const Protocol = <D extends ProtocolDefinition>({ state, events, methods 
   const F: T["F"] = {
     Payload: S.TaggedStruct("F.Payload", {
       id: S.Int,
-      payload: S.TaggedUnion(Record.map(methods, ({ payload: value }) => ({ value }))),
+      payload: S.TaggedUnion(Record.map(external, ({ payload: value }) => ({ value }))),
       trace: S.optional(Tracing.TraceEnvelope),
     }) as never,
     Success: S.TaggedStruct("F.Success", {
       id: S.Int,
-      success: S.TaggedUnion(Record.map(methods, ({ success: value }) => ({ value }))),
+      success: S.TaggedUnion(Record.map(external, ({ success: value }) => ({ value }))),
     }) as never,
     Failure: S.TaggedStruct("F.Failure", {
       id: S.Int,
-      failure: S.TaggedUnion(Record.map(methods, ({ failure: value }) => ({ value }))),
+      failure: S.TaggedUnion(Record.map(external, ({ failure: value }) => ({ value }))),
     }) as never,
   }
 

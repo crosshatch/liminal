@@ -29,7 +29,7 @@ export const make = Effect.fnUntraced(function* <
   ClientSelf,
   ClientId extends string,
   D extends ProtocolDefinition,
-  const Handlers extends Method.Handlers<D["methods"], any>,
+  const Handlers extends Method.Handlers<D["external"], any>,
   E,
   R,
   IntroductionE,
@@ -192,7 +192,7 @@ export const make = Effect.fnUntraced(function* <
                 const transportSpan = yield* Tracing.parent
                 yield* (
                   handlers as Method.Handlers<
-                    D["methods"],
+                    D["external"],
                     Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
                   >
                 )[_tag]!(value).pipe(

@@ -3,28 +3,23 @@ import { Schema as S, Pipeable, Stream, Effect, Function, Types } from "effect"
 import * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 import type { Fn } from "./Fn.ts"
-import type { Method } from "./Method.ts"
+import type { Methods } from "./Method.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
 
 const TypeId = "~liminal/Audition" as const
 
-export interface Audition<
-  AuditionSelf,
-  State extends S.Union<ReadonlyArray<S.Top>>,
-  Methods extends Record<string, Method>,
-  Event,
->
+export interface Audition<AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>>, External extends Methods, Event>
   extends Pipeable.Pipeable {
   readonly [TypeId]: typeof TypeId
 
   readonly state: Stream.Stream<State["Type"], ClientError | S.SchemaError, AuditionSelf | State["DecodingServices"]>
 
-  readonly fn: Fn<AuditionSelf, Methods>
+  readonly fn: Fn<AuditionSelf, External>
 
   readonly events: Stream.Stream<Event, ClientError | S.SchemaError, AuditionSelf>
 }
 
-type MergeMethods<T extends Record<string, Method>, U extends Record<string, Method>> = [keyof T] extends [never]
+type MergeMethods<T extends Methods, U extends Methods> = [keyof T] extends [never]
   ? U
   : { [K in keyof T & keyof U]: Types.Equals<T[K], U[K]> extends true ? T[K] : never }
 
@@ -47,29 +42,29 @@ export const empty: Audition<never, never, {}, never> = {
 export const add: {
   <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>> | never, Methods extends Record<string, Method>, Event>(
-    audition: Audition<AuditionSelf, State, Methods, Event>,
+  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>> | never, External extends Methods, Event>(
+    audition: Audition<AuditionSelf, State, External, Event>,
   ) => Audition<
     AuditionSelf | ClientSelf,
     MergeState<State, ClientD>,
-    MergeMethods<Methods, ClientD["methods"]>,
+    MergeMethods<External, ClientD["external"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
   <
     AuditionSelf,
     State extends S.Union<ReadonlyArray<S.Top>> | never,
-    Methods extends Record<string, Method>,
+    External extends Methods,
     Event,
     ClientSelf,
     ClientId extends string,
     ClientD extends ProtocolDefinition,
   >(
-    audition: Audition<AuditionSelf, State, Methods, Event>,
+    audition: Audition<AuditionSelf, State, External, Event>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
     MergeState<State, ClientD>,
-    MergeMethods<Methods, ClientD["methods"]>,
+    MergeMethods<External, ClientD["external"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   >
 } = Function.dual(
@@ -77,18 +72,18 @@ export const add: {
   <
     AuditionSelf,
     State extends S.Union<ReadonlyArray<S.Top>>,
-    Methods extends Record<string, Method>,
+    External extends Methods,
     Event,
     ClientSelf,
     ClientId extends string,
     ClientD extends ProtocolDefinition,
   >(
-    audition: Audition<AuditionSelf, State, Methods, Event>,
+    audition: Audition<AuditionSelf, State, External, Event>,
     client: Client.Client<ClientSelf, ClientId, ClientD>,
   ): Audition<
     AuditionSelf | ClientSelf,
     MergeState<State, ClientD>,
-    MergeMethods<Methods, ClientD["methods"]>,
+    MergeMethods<External, ClientD["external"]>,
     Event | ReturnType<typeof S.TaggedUnion<ClientD["events"]>>["Type"]
   > => {
     const fn = ((method: string, ...f: [any]) =>
@@ -99,7 +94,7 @@ export const add: {
             .pipe(Effect.catchTag("AuditionError", () => client.fn(method)(payload)))
         },
         ...f,
-      )) as Fn<AuditionSelf | ClientSelf, MergeMethods<Methods, ClientD["methods"]>>
+      )) as Fn<AuditionSelf | ClientSelf, MergeMethods<External, ClientD["external"]>>
 
     const events = audition.events.pipe(
       Stream.catchTag("AuditionError", () => Effect.succeed(client.events).pipe(Stream.unwrap)),

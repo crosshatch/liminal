@@ -1,55 +1,55 @@
 import { Effect, Schema as S } from "effect"
 
 import type { ClientError, UnresolvedError } from "./errors.ts"
-import type { Method } from "./Method.ts"
+import type { Methods } from "./Method.ts"
 
-export type FnPayload<Methods extends Record<string, Method>, K extends keyof Methods> = Methods[K]["payload"]["Type"]
+export type FnPayload<External extends Methods, K extends keyof External> = External[K]["payload"]["Type"]
 
-export type FnError<Methods extends Record<string, Method>, K extends keyof Methods> = [
-  Methods[K]["failure"]["Type"] | ClientError | S.SchemaError | UnresolvedError,
+export type FnError<External extends Methods, K extends keyof External> = [
+  External[K]["failure"]["Type"] | ClientError | S.SchemaError | UnresolvedError,
 ][0]
 
-export type FnEffect<Self, Methods extends Record<string, Method>, K extends keyof Methods> = Effect.Effect<
-  Methods[K]["success"]["Type"],
-  FnError<Methods, K>,
+export type FnEffect<Self, External extends Methods, K extends keyof External> = Effect.Effect<
+  External[K]["success"]["Type"],
+  FnError<External, K>,
   Self
 >
 
-export interface Fn<Self, Methods extends Record<string, Method>> {
-  <K extends keyof Methods>(tag: K): (payload: FnPayload<Methods, K>) => FnEffect<Self, Methods, K>
+export interface Fn<Self, Internal extends Methods> {
+  <K extends keyof Internal>(tag: K): (payload: FnPayload<Internal, K>) => FnEffect<Self, Internal, K>
 
-  <K extends keyof Methods, A>(
+  <K extends keyof Internal, A>(
     tag: K,
-    a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-  ): (payload: FnPayload<Methods, K>) => A
+    a: (effect: FnEffect<Self, Internal, K>, payload: FnPayload<Internal, K>) => A,
+  ): (payload: FnPayload<Internal, K>) => A
 
-  <K extends keyof Methods, A, B>(
+  <K extends keyof Internal, A, B>(
     tag: K,
-    a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnPayload<Methods, K>) => B,
-  ): (payload: FnPayload<Methods, K>) => B
+    a: (effect: FnEffect<Self, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+  ): (payload: FnPayload<Internal, K>) => B
 
-  <K extends keyof Methods, A, B, C>(
+  <K extends keyof Internal, A, B, C>(
     tag: K,
-    a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnPayload<Methods, K>) => B,
-    c: (value: B, payload: FnPayload<Methods, K>) => C,
-  ): (payload: FnPayload<Methods, K>) => C
+    a: (effect: FnEffect<Self, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+  ): (payload: FnPayload<Internal, K>) => C
 
-  <K extends keyof Methods, A, B, C, D>(
+  <K extends keyof Internal, A, B, C, D>(
     tag: K,
-    a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnPayload<Methods, K>) => B,
-    c: (value: B, payload: FnPayload<Methods, K>) => C,
-    d: (value: C, payload: FnPayload<Methods, K>) => D,
-  ): (payload: FnPayload<Methods, K>) => D
+    a: (effect: FnEffect<Self, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+    d: (value: C, payload: FnPayload<Internal, K>) => D,
+  ): (payload: FnPayload<Internal, K>) => D
 
-  <K extends keyof Methods, A, B, C, D, E>(
+  <K extends keyof Internal, A, B, C, D, E>(
     tag: K,
-    a: (effect: FnEffect<Self, Methods, K>, payload: FnPayload<Methods, K>) => A,
-    b: (value: A, payload: FnPayload<Methods, K>) => B,
-    c: (value: B, payload: FnPayload<Methods, K>) => C,
-    d: (value: C, payload: FnPayload<Methods, K>) => D,
-    e: (value: D, payload: FnPayload<Methods, K>) => E,
-  ): (payload: FnPayload<Methods, K>) => E
+    a: (effect: FnEffect<Self, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+    d: (value: C, payload: FnPayload<Internal, K>) => D,
+    e: (value: D, payload: FnPayload<Internal, K>) => E,
+  ): (payload: FnPayload<Internal, K>) => E
 }

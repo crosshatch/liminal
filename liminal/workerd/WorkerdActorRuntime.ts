@@ -26,18 +26,18 @@ import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util
 import type { ActorTransport } from "../ActorTransport.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import type { ClientHandle } from "../ClientHandle.ts"
-import * as Method from "../Method.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
 import * as Tracing from "../Tracing.ts"
 import { sessionAttributes, SessionId, sessionLink } from "../Tracing.ts"
 import type { ActorNamespace } from "./WorkerdActorNamespace.ts"
+import type { Handlers, Methods } from "../Method.ts"
 
 const span = Spanner.make(import.meta.url)
 
 export interface ActorRuntimeDefinition<
   NamespaceSelf,
   NamespaceId extends string,
-  Methods extends Record<string, Method.Method>,
+  Internal extends Methods,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -55,7 +55,7 @@ export interface ActorRuntimeDefinition<
   readonly namespace: ActorNamespace<
     NamespaceSelf,
     NamespaceId,
-    Methods,
+    Internal,
     ActorSelf,
     ActorId,
     Name,
@@ -81,12 +81,9 @@ export interface ActorRuntimeDefinition<
 
   readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
 
-  readonly external: Method.Handlers<
-    D["methods"],
-    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
-  >
+  readonly external: Handlers<D["external"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
 
-  readonly internal: Method.Handlers<Methods, ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
+  readonly internal: Handlers<Internal, ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
 
   readonly hydrate: Effect.Effect<
     S.Struct<D["state"]>["Type"],
@@ -106,7 +103,7 @@ export interface ActorRuntimeDefinition<
 export const make = <
   NamespaceSelf,
   NamespaceId extends string,
-  Methods extends Record<string, Method.Method>,
+  Internal extends Methods,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -122,7 +119,7 @@ export const make = <
   definition: ActorRuntimeDefinition<
     NamespaceSelf,
     NamespaceId,
-    Methods,
+    Internal,
     ActorSelf,
     ActorId,
     Name,
@@ -406,10 +403,10 @@ export const make = <
       }).pipe(span("socket-error"), this.run)
     }
 
-    async rpc<K extends keyof Methods>(
+    async rpc<K extends keyof Internal>(
       method: K,
-      payload: Methods[K]["payload"]["Type"],
-    ): Promise<Exit.Exit<Methods[K]["success"]["Type"], Methods[K]["failure"]["Type"]>> {
+      payload: Internal[K]["payload"]["Type"],
+    ): Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>> {
       const handler = internal[method]
       return await handler(payload).pipe(this.provideActor(null!), span("fn-internal"), Effect.exit, this.run)
     }

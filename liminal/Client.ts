@@ -57,7 +57,7 @@ export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
 
     readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
-    readonly fnRaw: <K extends keyof D["methods"], M extends D["methods"][K]>(
+    readonly fnRaw: <K extends keyof D["external"], M extends D["external"][K]>(
       tag: K,
       payload: M["payload"]["Type"],
     ) => Effect.Effect<M["success"]["Type"], M["failure"]["Type"], ClientSelf>
@@ -91,7 +91,7 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
     Self
   >
 
-  readonly fn: Fn<Self, D["methods"]>
+  readonly fn: Fn<Self, D["external"]>
 
   readonly invalidate: Effect.Effect<void, never, Self>
 
@@ -117,7 +117,7 @@ export const Service =
       Stream.unwrap,
     )
 
-    const fn = ((_tag: keyof D["methods"], ...f: Array<any>) =>
+    const fn = ((_tag: keyof D["external"], ...f: Array<any>) =>
       Effect.fnUntraced(
         function* (payload: any) {
           const { fnRaw: fn } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
@@ -125,7 +125,7 @@ export const Service =
         },
         Effect.scoped,
         ...(f as [any]),
-      )) as Fn<Self, D["methods"]>
+      )) as Fn<Self, D["external"]>
 
     const invalidate = tag.asEffect().pipe(
       Effect.flatMap((rc) =>
@@ -186,7 +186,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
         const inflights: Record<
           string,
           {
-            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["methods"], keyof D["methods"]>>
+            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["external"], keyof D["external"]>>
             readonly span?: Tracer.AnySpan | undefined
           }
         > = {}
@@ -388,7 +388,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
 
         yield* Deferred.await(audition)
 
-        const fnRaw = <K extends keyof D["methods"]>(_tag: K, value: D["methods"][K]["payload"]["Type"]) =>
+        const fnRaw = <K extends keyof D["external"]>(_tag: K, value: D["external"][K]["payload"]["Type"]) =>
           Effect.gen(function* () {
             const exit = fiber.pollUnsafe()
             if (exit) {
@@ -406,7 +406,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
             const id = callId++
             const deferred = yield* Deferred.make<
               _["F"]["Success"]["Type"],
-              FnError<D["methods"], keyof D["methods"]>
+              FnError<D["external"], keyof D["external"]>
             >()
             const span = yield* Tracing.current
             const trace = span ? Tracing.toTraceEnvelope(span) : undefined

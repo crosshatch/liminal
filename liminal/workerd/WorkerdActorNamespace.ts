@@ -7,13 +7,13 @@ import * as Spanner from "liminal-util/Spanner"
 import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
-import type { Method } from "../Method.ts"
+import type { Methods } from "../Method.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
 
 const span = Spanner.make(import.meta.url)
 
 export interface ActorNamespaceDefinition<
-  Methods extends Record<string, Method>,
+  Internal extends Methods,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -24,7 +24,7 @@ export interface ActorNamespaceDefinition<
 > {
   readonly binding: string
 
-  readonly methods: Methods
+  readonly internal: Internal
 
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
 }
@@ -32,7 +32,7 @@ export interface ActorNamespaceDefinition<
 export interface ActorNamespace<
   NamespaceSelf,
   NamespaceId extends string,
-  Methods extends Record<string, Method>,
+  Internal extends Methods,
   ActorSelf,
   ActorId extends string,
   Name extends TopFromString,
@@ -45,7 +45,7 @@ export interface ActorNamespace<
     _: never,
   ): Context.ServiceClass.Shape<
     NamespaceId,
-    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Methods>>
+    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
   >
 
   readonly definition: ActorNamespaceDefinition<
@@ -59,17 +59,17 @@ export interface ActorNamespace<
     D
   >
 
-  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Methods, Name, AttachmentFields>
+  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields>
 
   readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
 export declare namespace WorkerdActorNamespace {
-  export type MakeRpc<Methods extends Record<string, Method>> = {
-    rpc: <K extends keyof Methods>(
+  export type MakeRpc<External extends Methods> = {
+    rpc: <K extends keyof External>(
       method: K,
-      payload: Methods[K]["payload"]["Type"],
-    ) => Promise<Exit.Exit<Methods[K]["success"]["Type"], Methods[K]["failure"]["Type"]>>
+      payload: External[K]["payload"]["Type"],
+    ) => Promise<Exit.Exit<External[K]["success"]["Type"], External[K]["failure"]["Type"]>>
   }
 }
 
@@ -77,7 +77,7 @@ export const Service =
   <NamespaceSelf>() =>
   <
     NamespaceId extends string,
-    Methods extends Record<string, Method>,
+    Internal extends Methods,
     ActorSelf,
     ActorId extends string,
     Name extends TopFromString,
@@ -87,11 +87,11 @@ export const Service =
     D extends ProtocolDefinition,
   >(
     id: NamespaceId,
-    definition: ActorNamespaceDefinition<Methods, ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
+    definition: ActorNamespaceDefinition<Internal, ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>,
   ): ActorNamespace<
     NamespaceSelf,
     NamespaceId,
-    Methods,
+    Internal,
     ActorSelf,
     ActorId,
     Name,
@@ -111,7 +111,7 @@ export const Service =
 
     const tag = Context.Service<
       NamespaceSelf,
-      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Methods>>
+      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
     >()(id)
 
     const encodeName = S.encodeEffect(Name)
@@ -119,7 +119,7 @@ export const Service =
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
 
-    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Methods, Name, AttachmentFields> => {
+    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields> => {
       const getStub = Effect.gen(function* () {
         const namespace = yield* tag
         const nameEncoded = yield* encodeName(name)
@@ -156,7 +156,7 @@ export const Service =
           return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
         }).pipe(span("upgrade", { kind: "client" }))
 
-      const call = Effect.fnUntraced(function* <K extends keyof Methods, M extends Methods[K]>(
+      const call = Effect.fnUntraced(function* <K extends keyof Internal, M extends Internal[K]>(
         method: K,
         payload: M["payload"]["Type"],
       ): Effect.fn.Return<M["success"]["Type"], M["failure"]["Type"], NamespaceSelf> {

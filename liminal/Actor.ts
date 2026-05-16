@@ -57,10 +57,10 @@ export interface Actor<
 
   readonly others: Sender<ActorSelf, D>
 
-  readonly handler: <K extends keyof D["methods"], R>(
+  readonly handler: <K extends keyof D["external"], R>(
     tag: K,
-    f: Method.Handler<D["methods"][K], R>,
-  ) => Method.Handler<D["methods"][K], R>
+    f: Method.Handler<D["external"][K], R>,
+  ) => Method.Handler<D["external"][K], R>
 }
 
 export const Service =
@@ -107,10 +107,10 @@ export const Service =
       }).pipe(span("disconnect-others")),
     }
 
-    const handler = <K extends keyof D["methods"], R>(
+    const handler = <K extends keyof D["external"], R>(
       _tag: K,
-      f: Method.Handler<D["methods"][K], R>,
-    ): Method.Handler<D["methods"][K], R> => f
+      f: Method.Handler<D["external"][K], R>,
+    ): Method.Handler<D["external"][K], R> => f
 
     return Object.assign(tag, {
       [TypeId]: TypeId,

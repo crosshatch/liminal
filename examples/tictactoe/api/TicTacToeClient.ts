@@ -19,7 +19,7 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
       winner: S.optional(Player),
     },
   },
-  methods: {
+  external: {
     Move: {
       payload: S.Struct({
         position: Coordinates,
