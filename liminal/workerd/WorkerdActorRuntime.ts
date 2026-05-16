@@ -336,7 +336,7 @@ export const make = <
               ]
             : []),
         ]
-        const out = yield* external[_tag]!(value).pipe(
+        yield* external[_tag]!(value).pipe(
           Effect.matchEffect({
             onSuccess: (value) =>
               encodeFSuccess({
@@ -351,6 +351,12 @@ export const make = <
                 failure: { _tag, value } as never,
               }),
           }),
+          Effect.andThen((v) =>
+            Effect.try({
+              try: () => socket.send(v),
+              catch: () => {},
+            }),
+          ),
           this.provideActor(currentClient),
           span("handler", {
             attributes: { _tag, ...sessionAttributes(session) },
@@ -359,7 +365,6 @@ export const make = <
             links,
           }),
         )
-        socket.send(out)
       }).pipe(span("socket-message"), this.run)
     }
 

@@ -39,6 +39,25 @@ export const empty: Audition<never, never, {}, never> = {
   events: Stream.fail(new AuditionError()),
 }
 
+export const cycleOn =
+  <Event>(predicate: (event: Event) => boolean) =>
+  <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>>, External extends Methods>(
+    audition: Audition<AuditionSelf, State, External, Event>,
+  ): Audition<AuditionSelf, State, External, Event> => {
+    const events = audition.events.pipe(Stream.takeUntil(predicate), Stream.forever)
+    const state = audition.state.pipe(Stream.forever)
+
+    return {
+      [TypeId]: TypeId,
+      pipe() {
+        return Pipeable.pipeArguments(this, arguments)
+      },
+      events,
+      fn: audition.fn,
+      state,
+    }
+  }
+
 export const add: {
   <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
