@@ -14,4 +14,5 @@ export class TicTacToeRuntime extends WorkerdActorRuntime.make({
   external: { Move },
   layer: Layer.empty,
   hibernation: "5 seconds",
+  internal: {},
 }) {}

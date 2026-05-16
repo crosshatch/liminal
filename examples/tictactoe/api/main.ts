@@ -15,7 +15,7 @@ const ApiLive = Layer.mergeAll(
     "/play",
     Effect.gen(function* () {
       const { gameId, player } = yield* GameState.init
-      return yield* TicTacToeNamespace.upgrade(gameId, { player })
+      return yield* TicTacToeNamespace.bind(gameId).upgrade({ player })
     }),
   ),
   HttpRouter.cors({

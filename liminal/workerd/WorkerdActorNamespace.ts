@@ -1,4 +1,4 @@
-import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Cause } from "effect"
+import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exit } from "effect"
 import { Binding, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
@@ -8,6 +8,7 @@ import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
 import type { Method } from "../Method.ts"
+import type { ActorHandle } from "./ActorHandle.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -40,7 +41,12 @@ export interface ActorNamespace<
   ClientId extends string,
   D extends ProtocolDefinition,
 > {
-  new (_: never): Context.ServiceClass.Shape<NamespaceId, DurableObjectNamespace>
+  new (
+    _: never,
+  ): Context.ServiceClass.Shape<
+    NamespaceId,
+    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Methods>>
+  >
 
   readonly definition: ActorNamespaceDefinition<
     Methods,
@@ -53,19 +59,18 @@ export interface ActorNamespace<
     D
   >
 
-  readonly upgrade: (
-    name: Name["Type"],
-    attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<
-    HttpServerResponse.HttpServerResponse,
-    S.SchemaError | Encoding.EncodingError | Cause.NoSuchElementError,
-    | NamespaceSelf
-    | NativeRequest.NativeRequest
-    | Name["EncodingServices"]
-    | S.Struct<AttachmentFields>["EncodingServices"]
-  >
+  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Methods, Name, AttachmentFields>
 
   readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
+}
+
+export declare namespace WorkerdActorNamespace {
+  export type MakeRpc<Methods extends Record<string, Method>> = {
+    rpc: <K extends keyof Methods>(
+      method: K,
+      payload: Methods[K]["payload"]["Type"],
+    ) => Promise<Exit.Exit<Methods[K]["success"]["Type"], Methods[K]["failure"]["Type"]>>
+  }
 }
 
 export const Service =
@@ -104,51 +109,66 @@ export const Service =
       },
     } = actor
 
-    const tag = Context.Service<NamespaceSelf, DurableObjectNamespace>()(id)
+    const tag = Context.Service<
+      NamespaceSelf,
+      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Methods>>
+    >()(id)
 
     const encodeName = S.encodeEffect(Name)
     const Attachments = S.Struct(AttachmentFields)
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
 
-    const getStub = (name: Name["Type"]) =>
-      Effect.gen({ self: this }, function* () {
+    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Methods, Name, AttachmentFields> => {
+      const getStub = Effect.gen(function* () {
         const namespace = yield* tag
         const nameEncoded = yield* encodeName(name)
         return namespace.getByName(nameEncoded)
       })
 
-    const upgrade = (name: Name["Type"], attachments: S.Struct<AttachmentFields>["Type"]) =>
-      Effect.gen({ self: this }, function* () {
-        const request = yield* NativeRequest.NativeRequest
-        const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
-          Effect.map(flow(String.split(","), Array.map(String.trim))),
-        )
-        const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-        const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
-          Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
-        )
-        if (requestClientId !== clientId) {
-          return close(
-            yield* encodeAuditionFailure({
-              _tag: "Audition.Failure",
-              expected: clientId,
-              actual: requestClientId,
-            }),
+      const upgrade = (attachments: S.Struct<AttachmentFields>["Type"]) =>
+        Effect.gen({ self: this }, function* () {
+          const request = yield* NativeRequest.NativeRequest
+          const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
+            Effect.map(flow(String.split(","), Array.map(String.trim))),
           )
-        }
-        const url = new URL(request.url)
-        url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
-        const actorRequest = new Request(url, request)
-        const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
-        for (const [key, value] of Object.entries(traceHeaders)) {
-          actorRequest.headers.set(key, value)
-        }
-        const stub = yield* getStub(name)
-        return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
-      }).pipe(span("upgrade", { kind: "client" }))
+          const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
+          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+            Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
+          )
+          if (requestClientId !== clientId) {
+            return close(
+              yield* encodeAuditionFailure({
+                _tag: "Audition.Failure",
+                expected: clientId,
+                actual: requestClientId,
+              }),
+            )
+          }
+          const url = new URL(request.url)
+          url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
+          const actorRequest = new Request(url, request)
+          const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
+          for (const [key, value] of Object.entries(traceHeaders)) {
+            actorRequest.headers.set(key, value)
+          }
+          const stub = yield* getStub
+          return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
+        }).pipe(span("upgrade", { kind: "client" }))
 
-    const layer = Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get"])(binding)
+      const call = Effect.fnUntraced(function* <K extends keyof Methods, M extends Methods[K]>(
+        method: K,
+        payload: M["payload"]["Type"],
+      ): Effect.fn.Return<M["success"]["Type"], M["failure"]["Type"], NamespaceSelf> {
+        const stub = yield* getStub
+        const exit = yield* Effect.promise(() => stub.rpc(method as never, payload as never))
+        return yield* exit as any
+      })
 
-    return Object.assign(tag, { definition, upgrade, layer })
+      return { upgrade, call }
+    }
+
+    const layer = Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get", "getByName"])(binding)
+
+    return Object.assign(tag, { definition, bind, layer })
   }

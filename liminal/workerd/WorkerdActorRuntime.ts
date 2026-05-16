@@ -12,6 +12,7 @@ import {
   Option,
   Tracer,
   pipe,
+  Exit,
 } from "effect"
 import { DoState } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
@@ -85,6 +86,8 @@ export interface ActorRuntimeDefinition<
     ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
   >
 
+  readonly internal: Method.Handlers<Methods, ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
+
   readonly hydrate: Effect.Effect<
     S.Struct<D["state"]>["Type"],
     never,
@@ -136,10 +139,11 @@ export const make = <
   const {
     hibernation,
     prelude,
-    external: handlers,
+    external,
     layer,
     hydrate,
     onDisconnect,
+    internal,
     namespace: {
       definition: { actor },
     },
@@ -332,7 +336,7 @@ export const make = <
               ]
             : []),
         ]
-        const out = yield* handlers[_tag]!(value).pipe(
+        const out = yield* external[_tag]!(value).pipe(
           Effect.matchEffect({
             onSuccess: (value) =>
               encodeFSuccess({
@@ -400,6 +404,14 @@ export const make = <
         )
         yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
       }).pipe(span("socket-error"), this.run)
+    }
+
+    async rpc<K extends keyof Methods>(
+      method: K,
+      payload: Methods[K]["payload"]["Type"],
+    ): Promise<Exit.Exit<Methods[K]["success"]["Type"], Methods[K]["failure"]["Type"]>> {
+      const handler = internal[method]
+      return await handler(payload).pipe(this.provideActor(null!), span("fn-internal"), Effect.exit, this.run)
     }
   }
 }
