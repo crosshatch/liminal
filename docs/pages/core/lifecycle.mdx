@@ -1,28 +1,37 @@
 # Lifecycle
 
-`onConnect` runs when a client socket is newly upgraded into an actor.
+`hydrate` runs when a client socket is newly upgraded into an actor.
 
-Use it to send initial state, reject a client, update attachments, or notify other clients.
+Use it to return the connecting client's initial state and notify already-connected clients.
 
-## Send initial events
+## Hydrate initial state
 
 ```ts
 import { Effect } from "effect"
 
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-export const onConnect = Effect.gen(function* () {
-  const { clients, currentClient } = yield* TicTacToeActor
+export const hydrate = Effect.gen(function* () {
+  const { clients } = yield* TicTacToeActor
   if (clients.size === 1) {
-    yield* currentClient.send("AwaitingPartner", {})
-  } else {
-    yield* TicTacToeActor.others.send("GameStarted", { player: "X" })
-    yield* currentClient.send("GameStarted", { player: "O" })
+    return {
+      awaitingPartner: true,
+      name: "X" as const,
+    }
+  }
+
+  yield* TicTacToeActor.others.send("GameStarted", {})
+  return {
+    awaitingPartner: false,
+    name: "O" as const,
   }
 }).pipe(Effect.orDie)
 ```
 
-`onConnect` is the usual place to emit the first snapshot event for a reconnectable client. Tic-tac-toe sends an
-`AwaitingPartner` event to the first socket, then sends `GameStarted` to both players once the second socket connects.
+`hydrate` is the snapshot for a reconnectable client. Tic-tac-toe returns `awaitingPartner: true` to the first socket,
+then sends `GameStarted` to the existing player and returns ready state to the second player.
+
+`onDisconnect` runs when a socket closes or disconnects and is supplied to `WorkerdActorRuntime.make(...)`.
+
 Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the state pattern and
-[Accumulator](/state/accumulator) for the reduction loop.
+[Client State](/state/client-state) for the hydration and reduction loop.

@@ -9,7 +9,7 @@ import { defineConfig } from "vite"
 export default defineConfig({
   envDir: "../..",
   plugins: [
-    cloudflare(),
+    cloudflare({ inspectorPort: 9233 }),
     tanstackRouter({
       autoCodeSplitting: true,
       generatedRouteTree: "routeTree.gen.ts",

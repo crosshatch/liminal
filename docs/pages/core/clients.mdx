@@ -1,16 +1,17 @@
 # Clients
 
-A `Client` defines the wire contract between clients and actors.
+A `Client` defines the wire contract between browser clients and actors.
 
 Everything else in Liminal hangs off that contract:
 
 - actors point at a client definition
-- handlers implement the client's methods
+- external handlers implement the methods callable by connected clients
 - `Audition`s can merge multiple clients into one event stream and call surface
+- reducers derive local state from events after the initial hydration
 
 ## Define a client
 
-A client is a named set of methods and events.
+A client is a named state schema, external method table, and event table.
 
 ```ts
 import { Schema as S } from "effect"
@@ -22,10 +23,7 @@ export const Coordinates = S.Tuple([Coordinate, Coordinate])
 
 export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
   events: {
-    AwaitingPartner: {},
-    GameStarted: {
-      player: Player,
-    },
+    GameStarted: {},
     MoveMade: {
       player: Player,
       position: Coordinates,
@@ -34,7 +32,7 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
       winner: S.optional(Player),
     },
   },
-  methods: {
+  external: {
     Move: {
       payload: S.Struct({
         position: Coordinates,
@@ -43,18 +41,24 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
       failure: S.Never,
     },
   },
+  state: {
+    awaitingPartner: S.Boolean,
+    name: Player,
+  },
 }) {}
 ```
 
 ## Shape
 
-- `methods` is a record of `{ payload, success, failure }`, where each value is a schema.
+- `state` is the struct-fields record hydrated when the client connects.
+- `external` is a record of `{ payload, success, failure }` methods callable through `Client.fn(...)`.
 - `events` is a record of plain struct fields.
 - Liminal tags events automatically with `_tag`.
 
 ## Next concepts
 
 - [Methods](/core/methods) covers reusable method definitions.
-- [Client Calls](/core/client-calls) covers `Client.f(...)`.
+- [Client Calls](/core/client-calls) covers `Client.fn(...)`.
 - [Events](/core/events) covers `Client.events` and replay.
+- [Client State](/state/client-state) covers hydration and reducers.
 - [Actors](/core/actors) covers the server-side runtime for this protocol.

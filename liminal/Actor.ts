@@ -57,10 +57,10 @@ export interface Actor<
 
   readonly others: Sender<ActorSelf, D>
 
-  readonly handler: <K extends keyof D["methods"], R>(
+  readonly handler: <K extends keyof D["external"], R>(
     tag: K,
-    f: Method.Handler<D["methods"][K], R>,
-  ) => Method.Handler<D["methods"][K], R>
+    f: Method.Handler<D["external"][K], R>,
+  ) => Method.Handler<D["external"][K], R>
 }
 
 export const Service =
@@ -84,11 +84,11 @@ export const Service =
           Effect.flatMap(({ clients }) =>
             Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
           ),
-          span("all.send"),
+          span("send-all"),
         ),
       disconnect: tag.asEffect().pipe(
         Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
-        span("all.disconnect"),
+        span("disconnect-all"),
       ),
     }
 
@@ -100,17 +100,17 @@ export const Service =
           (client) => (client === currentClient ? Effect.void : client.send(key, payload)),
           { concurrency: "unbounded" },
         )
-      }, span("others.send")),
+      }, span("send-others")),
       disconnect: Effect.gen(function* () {
         const { clients, currentClient } = yield* tag
         yield* Effect.forEach(clients, (client) => (client === currentClient ? Effect.void : client.disconnect))
-      }).pipe(span("others.disconnect")),
+      }).pipe(span("disconnect-others")),
     }
 
-    const handler = <K extends keyof D["methods"], R>(
+    const handler = <K extends keyof D["external"], R>(
       _tag: K,
-      f: Method.Handler<D["methods"][K], R>,
-    ): Method.Handler<D["methods"][K], R> => f
+      f: Method.Handler<D["external"][K], R>,
+    ): Method.Handler<D["external"][K], R> => f
 
     return Object.assign(tag, {
       [TypeId]: TypeId,

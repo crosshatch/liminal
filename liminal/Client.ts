@@ -22,15 +22,17 @@ import {
   flow,
   Tracer,
   identity,
+  Semaphore,
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 import * as Spanner from "liminal-util/Spanner"
 
 import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
-import { type ClientError, AuditionError, ConnectionError, type FError, UnresolvedError } from "./errors.ts"
-import { type F } from "./F.ts"
+import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
+import type { Fn, FnError } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
+import * as Reducer from "./Reducer.ts"
 import * as Tracing from "./Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
@@ -51,9 +53,14 @@ interface EventTake<A, E> {
 
 export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
   {
+    readonly state: Stream.Stream<S.Struct<D["state"]>["Type"], ClientError | S.SchemaError>
+
     readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
 
-    readonly f: F<ClientSelf, D>
+    readonly fnRaw: <K extends keyof D["external"], M extends D["external"][K]>(
+      tag: K,
+      payload: M["payload"]["Type"],
+    ) => Effect.Effect<M["success"]["Type"], M["failure"]["Type"], ClientSelf>
 
     readonly end: Effect.Effect<void>
   },
@@ -72,15 +79,23 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
 
   readonly protocol: Protocol<D>
 
+  readonly state: Stream.Stream<
+    S.Struct<D["state"]>["Type"],
+    ClientError | S.SchemaError,
+    Self | S.Struct<D["state"]>["DecodingServices"]
+  >
+
   readonly events: Stream.Stream<
     ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
     ClientError | S.SchemaError,
     Self
   >
 
-  readonly f: F<Self, D>
+  readonly fn: Fn<Self, D["external"]>
 
   readonly invalidate: Effect.Effect<void, never, Self>
+
+  readonly reducer: <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_tag: K, f: R) => R
 }
 
 export const Service =
@@ -90,17 +105,27 @@ export const Service =
 
     const protocol = Protocol(definition)
 
+    const state = tag.asEffect().pipe(
+      Effect.flatMap(RcRef.get),
+      Effect.map(({ state }) => state),
+      Stream.unwrap,
+    )
+
     const events = tag.asEffect().pipe(
       Effect.flatMap(RcRef.get),
       Effect.map(({ events }) => events),
       Stream.unwrap,
     )
 
-    const f: F<Self, D> = (_tag) =>
-      Effect.fnUntraced(function* (value) {
-        const { f } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
-        return yield* f(_tag)(value)
-      }, Effect.scoped)
+    const fn = ((_tag: keyof D["external"], ...f: Array<any>) =>
+      Effect.fnUntraced(
+        function* (payload: any) {
+          const { fnRaw: fn } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
+          return yield* fn(_tag, payload)
+        },
+        Effect.scoped,
+        ...(f as [any]),
+      )) as Fn<Self, D["external"]>
 
     const invalidate = tag.asEffect().pipe(
       Effect.flatMap((rc) =>
@@ -113,31 +138,47 @@ export const Service =
       Effect.ignore,
     )
 
+    const reducer = <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_event: K, f: R) => f
+
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       protocol,
+      state,
       events,
-      f,
+      fn,
       invalidate,
+      reducer,
     })
   }
 
-export interface ClientTransport<D extends ProtocolDefinition> {
+export interface ClientTransport<D extends ProtocolDefinition, R> {
   readonly listen: (
-    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError>,
-  ) => Effect.Effect<void, ClientError | S.SchemaError, Scope.Scope | Protocol<D>["Actor"]["DecodingServices"]>
+    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError, R>,
+  ) => Effect.Effect<void, ClientError | S.SchemaError, Scope.Scope | Protocol<D>["Actor"]["DecodingServices"] | R>
 
   readonly send: (
     message: Protocol<D>["F"]["Payload"]["Type"],
   ) => Effect.Effect<void, ClientError | S.SchemaError, Protocol<D>["F"]["Payload"]["EncodingServices"]>
 }
 
-const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
-  client: Client<Self, Id, D>,
-  build: Effect.Effect<ClientTransport<D>, ClientError, R | Scope.Scope>,
-  replay?: ReplayConfig | undefined,
-) =>
+const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers extends Reducer.Reducers<D>, R, CR>({
+  build,
+  client,
+  reducers,
+  onConnect,
+  replay,
+}: {
+  readonly client: Client<Self, Id, D>
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
+  readonly reducers: Reducers
+  readonly build: Effect.Effect<
+    ClientTransport<D, Reducer.Reducers.Services<Self, Reducers> | CR>,
+    ClientError,
+    R | Scope.Scope
+  >
+  readonly replay?: ReplayConfig | undefined
+}) =>
   Effect.gen(function* () {
     const rcr: Service<Self, D> = yield* RcRef.make({
       acquire: Effect.gen(function* () {
@@ -147,17 +188,19 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
         const { listen, send } = yield* build
 
         const audition = yield* Deferred.make<void>()
+        const stateDeferred = yield* Deferred.make<Ref.Ref<S.Struct<D["state"]>["Type"]>>()
 
         const inflights: Record<
           string,
           {
-            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FError<D>>
+            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["external"], keyof D["external"]>>
             readonly span?: Tracer.AnySpan | undefined
           }
         > = {}
         let callId = 0
         let takeCount = 0
-        const pubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
+        const eventsPubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
+        const statePubsub = yield* PubSub.unbounded<S.Struct<D["state"]>["Type"]>({ replay: 1 })
 
         const replayState = yield* Ref.make<{
           readonly startupOpen: boolean
@@ -186,18 +229,25 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 return { startupOpen, buffer }
               })
             }
-            yield* PubSub.publish(pubsub, eventTake)
+            yield* PubSub.publish(eventsPubsub, eventTake)
           })
 
         const outer = yield* Scope.Scope
         const scope = yield* Scope.fork(outer, "sequential")
         const end = Scope.close(scope, Exit.void)
+        const reduceMutex = yield* Semaphore.make(1)
+        const reduceTask = Semaphore.withPermits(reduceMutex, 1)
 
         const fiber = yield* listen(
           Effect.fnUntraced(function* (message) {
             switch (message._tag) {
               case "Audition.Success": {
+                const { initial } = message
+                yield* PubSub.publish(statePubsub, initial)
+                const state = yield* Ref.make(initial)
+                yield* Deferred.succeed(stateDeferred, state)
                 yield* Deferred.succeed(audition, void 0)
+                yield* onConnect?.(initial) ?? Effect.void
                 return
               }
               case "Audition.Failure": {
@@ -207,9 +257,25 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
               case "Event": {
                 const { event } = message
                 const { _tag } = event as never
+                const reducer = reducers[_tag]!
+                const state = yield* Deferred.await(stateDeferred)
+                yield* Effect.gen(function* () {
+                  const current = yield* Ref.get(state)
+                  const reduced = yield* reducer(event as never)(current).pipe(
+                    Effect.provideService(client, rcr),
+                  ) as Effect.Effect<
+                    S.Struct<D["state"]>["Type"] | undefined,
+                    never,
+                    Reducer.Reducers.Services<Self, Reducers>
+                  >
+                  if (reduced) {
+                    yield* PubSub.publish(statePubsub, reduced)
+                    yield* Ref.set(state, reduced)
+                  }
+                }).pipe(reduceTask)
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* publishTake([event], true).pipe(
-                  span("event.enqueue", {
+                  span("enqueue-event", {
                     attributes: { _tag },
                     kind: "consumer",
                     parent,
@@ -267,8 +333,25 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
           Effect.provideService(Scope.Scope, scope),
         )
 
+        const interrupt = Stream.interruptWhen(
+          Fiber.await(fiber).pipe(
+            Effect.flatMap(
+              Exit.match({
+                onSuccess: () => Effect.void,
+                onFailure: flow(
+                  Cause.findError,
+                  Result.match({
+                    onSuccess: Effect.fail,
+                    onFailure: () => Effect.void,
+                  }),
+                ),
+              }),
+            ),
+          ),
+        )
+
         const events = Effect.gen(function* () {
-          const queue = yield* PubSub.subscribe(pubsub)
+          const queue = yield* PubSub.subscribe(eventsPubsub)
           const live = (replayCount: number) =>
             Stream.fromSubscription(queue).pipe(
               Stream.filter((entry) => entry.seq > replayCount),
@@ -305,115 +388,115 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, R>(
                 ),
                 live(replayCount),
               )
-        }).pipe(
-          Stream.unwrap,
-          Stream.interruptWhen(
-            Fiber.await(fiber).pipe(
-              Effect.flatMap(
-                Exit.match({
-                  onSuccess: () => Effect.void,
-                  onFailure: flow(
-                    Cause.findError,
-                    Result.match({
-                      onSuccess: Effect.fail,
-                      onFailure: () => Effect.void,
-                    }),
-                  ),
-                }),
-              ),
-            ),
-          ),
-        )
+        }).pipe(Stream.unwrap, interrupt)
 
-        yield* Deferred.await(audition)
+        const state = Stream.fromPubSub(statePubsub).pipe(interrupt)
 
         const encodingServices = yield* Effect.context<_["F"]["Payload"]["EncodingServices"]>()
 
-        const f: F<Self, D> = (_tag) =>
-          Effect.fnUntraced(
-            function* (value) {
-              const exit = fiber.pollUnsafe()
-              if (exit) {
-                return yield* Exit.match(exit, {
-                  onSuccess: () => new UnresolvedError(),
-                  onFailure: flow(
-                    Cause.findError,
-                    Result.match({
-                      onSuccess: Effect.fail,
-                      onFailure: () => new UnresolvedError(),
-                    }),
-                  ),
-                })
-              }
-              const id = callId++
-              const deferred = yield* Deferred.make<_["F"]["Success"]["Type"], FError<D>>()
-              const span = yield* Tracing.current
-              const trace = span ? Tracing.toTraceEnvelope(span) : undefined
-              inflights[id] = { deferred, span }
-              yield* send({
-                _tag: "F.Payload",
-                id,
-                payload: { _tag, value } as never,
-                ...(trace && { trace }),
-              })
-              return yield* Effect.raceFirst(
-                Deferred.await(deferred),
-                Fiber.await(fiber).pipe(
-                  Effect.flatMap(
-                    (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
-                      Exit.match(exit, {
-                        onSuccess: () => new UnresolvedError().asEffect(),
-                        onFailure: flow(
-                          Cause.findError,
-                          Result.match({
-                            onSuccess: Effect.fail,
-                            onFailure: () => new UnresolvedError().asEffect(),
-                          }),
-                        ),
-                      }),
-                  ),
+        yield* Deferred.await(audition)
+
+        const fnRaw = <K extends keyof D["external"]>(_tag: K, value: D["external"][K]["payload"]["Type"]) =>
+          Effect.gen(function* () {
+            const exit = fiber.pollUnsafe()
+            if (exit) {
+              return yield* Exit.match(exit, {
+                onSuccess: () => new UnresolvedError(),
+                onFailure: flow(
+                  Cause.findError,
+                  Result.match({
+                    onSuccess: Effect.fail,
+                    onFailure: () => new UnresolvedError(),
+                  }),
                 ),
-              )
-            },
-            span("f", {
+              })
+            }
+            const id = callId++
+            const deferred = yield* Deferred.make<
+              _["F"]["Success"]["Type"],
+              FnError<D["external"], keyof D["external"]>
+            >()
+            const span = yield* Tracing.current
+            const trace = span ? Tracing.toTraceEnvelope(span) : undefined
+            inflights[id] = { deferred, span }
+            yield* send({
+              _tag: "F.Payload",
+              id,
+              payload: { _tag, value } as never,
+              ...(trace && { trace }),
+            })
+            return yield* Effect.raceFirst(
+              Deferred.await(deferred),
+              Fiber.await(fiber).pipe(
+                Effect.flatMap(
+                  (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
+                    Exit.match(exit, {
+                      onSuccess: () => new UnresolvedError().asEffect(),
+                      onFailure: flow(
+                        Cause.findError,
+                        Result.match({
+                          onSuccess: Effect.fail,
+                          onFailure: () => new UnresolvedError().asEffect(),
+                        }),
+                      ),
+                    }),
+                ),
+              ),
+            )
+          }).pipe(
+            span("fn", {
               kind: "client",
               attributes: { _tag },
             }),
-            Effect.scoped,
             Effect.provide(encodingServices),
           )
 
-        return { events, f, end }
+        return { state, events, fnRaw, end }
       }).pipe(span("acquire", { attributes: { client: client.key } }), Effect.annotateLogs("client", client.key)),
     })
 
     return rcr
   }).pipe(Layer.effect(client))
 
-export const layerSocket = <Self, Id extends string, D extends ProtocolDefinition>({
+export const layerSocket = <
+  Self,
+  Id extends string,
+  D extends ProtocolDefinition,
+  Reducers extends Reducer.Reducers<D>,
+  CR = never,
+>({
   client,
+  reducers,
   url,
   protocols,
   replay,
+  onConnect,
 }: {
   readonly client: Client<Self, Id, D>
-  readonly url?: string | undefined
-  readonly protocols?: string | Array<string> | undefined
+  readonly reducers: Reducers
   readonly replay?: ReplayConfig | undefined
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
+  readonly protocols?: string | Array<string> | undefined
+  readonly url?: string | undefined
 }): Layer.Layer<
   Self,
   never,
   | Socket.WebSocketConstructor
   | Protocol<D>["Actor"]["DecodingServices"]
   | Protocol<D>["F"]["Payload"]["EncodingServices"]
+  | Reducer.Reducers.Services<Self, Reducers>
+  | CR
 > => {
   const { F, Actor } = client.protocol
   const encodeFPayload = encodeJsonString(F.Payload)
   const decodeActor = decodeJsonString(Actor)
 
-  return make<Self, Id, D, Socket.WebSocketConstructor>(
+  return make<Self, Id, D, Reducers, Socket.WebSocketConstructor, CR>({
     client,
-    Effect.gen(function* () {
+    reducers,
+    onConnect,
+    replay,
+    build: Effect.gen(function* () {
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
@@ -454,24 +537,41 @@ export const layerSocket = <Self, Id extends string, D extends ProtocolDefinitio
         ),
       }
     }),
-    replay,
-  )
+  })
 }
 
-export const layerWorker = <Self, Id extends string, D extends ProtocolDefinition, T extends Protocol<D>>({
+export const layerWorker = <
+  Self,
+  Id extends string,
+  D extends ProtocolDefinition,
+  Reducers extends Reducer.Reducers<D>,
+  T extends Protocol<D>,
+  CR = never,
+>({
   client,
+  reducers,
   replay,
+  onConnect,
 }: {
   readonly client: Client<Self, Id, D>
+  readonly reducers: Reducers
   readonly replay?: ReplayConfig | undefined
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
 }): Layer.Layer<
   Self,
   never,
-  Worker.WorkerPlatform | Worker.Spawner | T["Actor"]["DecodingServices"] | T["F"]["Payload"]["EncodingServices"]
+  | Worker.WorkerPlatform
+  | Worker.Spawner
+  | T["Actor"]["DecodingServices"]
+  | T["F"]["Payload"]["EncodingServices"]
+  | Reducer.Reducers.Services<Self, Reducers>
 > =>
-  make<Self, Id, D, Worker.WorkerPlatform | Worker.Spawner>(
+  make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner, CR>({
     client,
-    Effect.gen(function* () {
+    reducers,
+    onConnect,
+    replay,
+    build: Effect.gen(function* () {
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
         .spawn<T["Actor"]["Type"], T["Client"]["Type"]>(0)
@@ -511,5 +611,4 @@ export const layerWorker = <Self, Id extends string, D extends ProtocolDefinitio
         send,
       }
     }),
-    replay,
-  )
+  })

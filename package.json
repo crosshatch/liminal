@@ -8,8 +8,6 @@
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "dev": "turbo run dev //#watch",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check",
     "prepare": "ts-patch install -s",
     "test": "vitest run",
     "watch": "tsc -b -w"

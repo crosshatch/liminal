@@ -1,17 +1,16 @@
 # Methods
 
-Methods describe request-response calls in a client protocol.
+Methods describe request-response calls in a protocol.
 
-For toy examples, defining methods inline inside a `Client` is fine. For larger apps, define methods separately with
-`Method.make(...)` so they can be reused across clients and actors.
+External methods are callable by connected clients. Internal methods are callable between Durable Object instances
+through a namespace handle.
 
-## Define a method
+## Define a shared method
 
 ```ts
 import { Schema as S } from "effect"
-import { Method } from "liminal"
 
-export const SendMessage = Method.make({
+export const SendMessage = {
   payload: S.Struct({
     content: S.String,
   }),
@@ -20,10 +19,11 @@ export const SendMessage = Method.make({
     timestamp: S.Date,
   }),
   failure: S.Never,
-})
+}
 ```
 
-Shared methods such as `UpdateProfile` or `ReportUser` can live under a common `shared/methods` directory.
+Shared methods such as `UpdateProfile` or `ReportUser` can live under a common `shared/methods` directory and be
+inserted into a client's `external` table or a namespace's `internal` table.
 
 ## Implement a shared handler
 
@@ -31,11 +31,11 @@ If a method is shared, its handler can be shared too.
 
 ```ts
 import { Effect } from "effect"
-import { Method } from "liminal"
+import { handler } from "liminal"
 
 import { UpdateProfile } from "../shared/methods/UpdateProfile.ts"
 
-export default Method.handler(
+export default handler(
   UpdateProfile,
   Effect.fn(function* ({ displayName, avatarUrl }) {
     // shared logic here
@@ -44,5 +44,5 @@ export default Method.handler(
 )
 ```
 
-If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is usually simpler. See
-[Actor Handlers](/core/actor-handlers).
+If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is usually simpler for external methods.
+Internal handlers are supplied to `WorkerdActorRuntime.make({ internal: ... })`.

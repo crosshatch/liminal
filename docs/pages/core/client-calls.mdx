@@ -1,16 +1,16 @@
 # Client Calls
 
-`Client.f(...)` invokes a named method from the client protocol.
+`Client.fn(...)` invokes a named external method from the client protocol.
 
 ```ts
 Effect.gen(function* () {
-  yield* TicTacToeClient.f("Move")({
+  yield* TicTacToeClient.fn("Move")({
     position: [1, 1],
   })
 })
 ```
 
-The method name selects the payload, success, and failure types from the `Client` definition.
+The method name selects the payload, success, and failure types from the client's `external` table.
 
 ## Failure types
 

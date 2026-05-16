@@ -1,6 +1,6 @@
 # HTTP Upgrades
 
-`Namespace.upgrade(name, attachments)` is the handoff from HTTP to the Durable Object.
+`Namespace.bind(name).upgrade(attachments)` is the handoff from HTTP to the Durable Object.
 
 An HTTP route decides:
 
@@ -29,10 +29,10 @@ export const ApiLive = Layer.mergeAll(
 
       if (user) {
         const roomId = yield* getActiveRoom(user.id)
-        return yield* ChatNamespace.upgrade(roomId, { userId: user.id })
+        return yield* ChatNamespace.bind(roomId).upgrade({ userId: user.id })
       }
 
-      return yield* LobbyNamespace.upgrade(sessionToken, {})
+      return yield* LobbyNamespace.bind(sessionToken).upgrade({})
     }),
   ),
 )

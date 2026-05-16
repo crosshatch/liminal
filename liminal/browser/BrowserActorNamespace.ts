@@ -29,8 +29,7 @@ export const make = Effect.fnUntraced(function* <
   ClientSelf,
   ClientId extends string,
   D extends ProtocolDefinition,
-  const Handlers extends Method.Handlers<D["methods"], any>,
-  A,
+  const Handlers extends Method.Handlers<D["external"], any>,
   E,
   R,
   IntroductionE,
@@ -38,12 +37,12 @@ export const make = Effect.fnUntraced(function* <
 >({
   actor,
   handlers,
-  onConnect,
+  hydrate,
   introductions,
 }: {
   readonly actor: Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D>
   readonly handlers: Handlers
-  readonly onConnect: Effect.Effect<A, E, R>
+  readonly hydrate: Effect.Effect<S.Struct<D["state"]>["Type"], E, R>
   readonly introductions: Stream.Stream<Introduction<Name, AttachmentFields>, IntroductionE, IntroductionR>
 }) {
   const {
@@ -84,7 +83,7 @@ export const make = Effect.fnUntraced(function* <
           ...event,
           ...(trace && { trace }),
         })
-      }).pipe(span("event.send", { attributes: { _tag }, kind: "producer" }))
+      }).pipe(span("send", { attributes: { _tag }, kind: "producer" }))
     },
     close: ({ close }) => close,
     snapshot: () => Effect.void,
@@ -172,8 +171,13 @@ export const make = Effect.fnUntraced(function* <
                     currentClient,
                   })
                   yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-                  yield* backing.send(0, { _tag: "Audition.Success" })
-                  return yield* onConnect.pipe(entry.mutex, Effect.scoped, span("onConnect"), Effect.provide(ActorLive))
+                  const initial = yield* hydrate.pipe(
+                    entry.mutex,
+                    Effect.scoped,
+                    span("onConnect"),
+                    Effect.provide(ActorLive),
+                  )
+                  return yield* backing.send(0, { _tag: "Audition.Success", initial })
                 }
                 const { entry, ActorLive } = state.value
                 if (message._tag === "Audition.Payload") {
@@ -188,7 +192,7 @@ export const make = Effect.fnUntraced(function* <
                 const transportSpan = yield* Tracing.parent
                 yield* (
                   handlers as Method.Handlers<
-                    D["methods"],
+                    D["external"],
                     Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
                   >
                 )[_tag]!(value).pipe(
@@ -205,7 +209,7 @@ export const make = Effect.fnUntraced(function* <
                     }),
                   }),
                   Effect.andThen((v) => backing.send(0, v)),
-                  span("handler", {
+                  span("handle", {
                     attributes: { _tag },
                     kind: "server",
                     parent,

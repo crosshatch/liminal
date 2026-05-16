@@ -1,0 +1,134 @@
+# Client State
+
+Client state is part of the `Client.Service(...)` definition. When a client connects, the actor runtime sends an initial
+state value during audition. After that, client-side reducers fold incoming events into the current state.
+
+There is no separate state service. The client itself exposes the state stream, event stream, call surface, and typed
+reducer helper.
+
+## Define state on the client
+
+```ts
+import { Schema as S } from "effect"
+import { Client } from "liminal"
+
+export const Player = S.Literals(["X", "O"])
+export const Coordinate = S.Literals([0, 1, 2])
+export const Coordinates = S.Tuple([Coordinate, Coordinate])
+
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
+  state: {
+    awaitingPartner: S.Boolean,
+    name: Player,
+  },
+  events: {
+    GameStarted: {},
+    MoveMade: {
+      player: Player,
+      position: Coordinates,
+    },
+    GameEnded: {
+      winner: S.optional(Player),
+    },
+  },
+  external: {
+    Move: {
+      payload: S.Struct({ position: Coordinates }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+```
+
+The `state` record is Effect Schema struct fields. The actor runtime must hydrate a value matching that shape for every
+new connection.
+
+## Hydrate on connect
+
+In a Workerd actor runtime, `hydrate` returns the initial state for the connecting client.
+
+```ts
+import { Effect } from "effect"
+
+import { TicTacToeActor } from "./TicTacToeActor.ts"
+
+export default Effect.gen(function* () {
+  const { clients } = yield* TicTacToeActor
+  if (clients.size === 1) {
+    return {
+      awaitingPartner: true,
+      name: "X" as const,
+    }
+  }
+
+  yield* TicTacToeActor.others.send("GameStarted", {})
+  return {
+    awaitingPartner: false,
+    name: "O" as const,
+  }
+}).pipe(Effect.orDie)
+```
+
+Hydration is the snapshot. Events sent after hydration are deltas that reducers apply locally.
+
+## Reduce events
+
+Reducers live next to the client runtime. `Client.reducer(...)` narrows the event tag and returns the reducer unchanged
+at runtime.
+
+```ts
+import { Effect } from "effect"
+
+import { TicTacToeClient } from "./TicTacToeClient.ts"
+
+export const GameStarted = TicTacToeClient.reducer(
+  "GameStarted",
+  () =>
+    ({ name }) =>
+      Effect.succeed({ name, awaitingPartner: false }),
+)
+
+export const MoveMade = TicTacToeClient.reducer("MoveMade", () => (state) => Effect.succeed(state))
+
+export const GameEnded = TicTacToeClient.reducer("GameEnded", () => (state) => Effect.succeed(state))
+```
+
+Each reducer receives the event first and the current state second. Return the next state to publish an update, or
+return `void` to leave the current state unchanged.
+
+## Provide reducers
+
+Pass the reducer table to `Client.layerSocket(...)`.
+
+```ts
+import { BrowserSocket } from "@effect/platform-browser"
+import { Layer } from "effect"
+import { Atom } from "effect/unstable/reactivity"
+import { Client } from "liminal"
+
+import { TicTacToeClient } from "./TicTacToeClient.ts"
+import * as reducers from "./reducers.ts"
+
+export const runtime = Atom.runtime(
+  Client.layerSocket({
+    client: TicTacToeClient,
+    url: "/play",
+    replay: { mode: "startup" },
+    reducers,
+  }).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor)),
+)
+```
+
+## Consume state
+
+`TicTacToeClient.state` is a stream of hydrated and reduced state values.
+
+```ts
+import { runtime } from "./runtime"
+import { TicTacToeClient } from "./TicTacToeClient.ts"
+
+export const stateAtom = runtime.atom(TicTacToeClient.state)
+```
+
+Read [Snapshot and Delta Events](/state/snapshot-delta-events) for event design guidance.

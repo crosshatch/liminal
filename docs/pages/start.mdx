@@ -4,7 +4,7 @@ Liminal is a typed actor framework built on Effect. A minimal app has five piece
 
 1. a `Client` protocol shared by browser and server
 2. an `Actor` that implements that protocol
-3. lifecycle logic for newly connected sockets
+3. hydration logic for newly connected sockets
 4. method handlers that run inside actor context
 5. a runtime host, such as Cloudflare Workers and Durable Objects
 
@@ -12,7 +12,8 @@ This quickstart uses tic-tac-toe as the running example. Each step links to the 
 
 ## Define the client protocol
 
-Create a `Client` with method schemas and event schemas. This is the shared wire contract for browser and server.
+Create a `Client` with state, external method schemas, and event schemas. This is the shared wire contract for browser
+and server.
 
 Read: [Clients](/core/clients), [Methods](/core/methods), and [Events](/core/events).
 
@@ -24,22 +25,23 @@ Read: [Actors](/core/actors) and [Actor Context](/core/actor-context).
 
 ## Add lifecycle and handlers
 
-Use `onConnect` for newly upgraded sockets, especially initial snapshot events. Implement methods with
+Use `hydrate` for newly upgraded sockets, especially initial state. Implement external methods with
 `Actor.handler(...)`.
 
 Read: [Lifecycle](/core/lifecycle), [Actor Handlers](/core/actor-handlers), and [Client Handles](/core/client-handles).
 
 ## Host on Cloudflare
 
-Cloudflare hosting wraps the actor as a Durable Object namespace, then upgrades an HTTP route into that namespace.
+Cloudflare hosting defines a Durable Object namespace and a separate actor runtime, then upgrades an HTTP route into a
+bound actor instance.
 
 Read: [Actor Namespace](/core/actor-namespace), [HTTP Upgrades](/actor-routing/upgrades), and
 [Worker Entrypoint](/actor-routing/worker-entrypoint).
 
 ## Connect from the browser
 
-Provide the protocol with `Client.layerSocket(...)` and `BrowserSocket.layerWebSocketConstructor`. Once the layer is in
-scope, use `Client.f(...)` for calls and `Client.events` for events.
+Provide the protocol with `Client.layerSocket(...)`, reducers, and `BrowserSocket.layerWebSocketConstructor`. Once the
+layer is in scope, use `Client.fn(...)` for calls, `Client.events` for events, and `Client.state` for hydrated state.
 
 Read: [Client Layer](/core/client-layer), [Client Calls](/core/client-calls), [Events](/core/events), and
-[Accumulator](/state/accumulator).
+[Client State](/state/client-state).
