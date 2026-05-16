@@ -1,5 +1,11 @@
 # effect-workerd
 
+## 0.0.5
+
+### Patch Changes
+
+- ab30d60: Move accumulator api directly into client and implement internal actor method bindings.
+
 ## 0.0.4
 
 ### Patch Changes

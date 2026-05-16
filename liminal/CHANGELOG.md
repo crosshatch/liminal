@@ -1,5 +1,13 @@
 # liminal
 
+## 0.17.15
+
+### Patch Changes
+
+- ab30d60: Move accumulator api directly into client and implement internal actor method bindings.
+- Updated dependencies [ab30d60]
+  - effect-workerd@0.0.5
+
 ## 0.17.14
 
 ### Patch Changes
