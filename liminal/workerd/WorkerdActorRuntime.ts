@@ -177,24 +177,27 @@ export const make = <
     D
   > = {
     key: ({ socket }) => socket,
-    send: ({ socket, session }, event) =>
-      Effect.gen(function* () {
-        const { _tag } = event.event as never
-        yield* Effect.gen(function* () {
-          const trace = yield* Tracing.currentTrace
-          const encoded = yield* encodeEvent({
-            ...event,
-            ...(trace && { trace }),
-          })
-          yield* Effect.sync(() => socket.send(encoded))
-        }).pipe(
-          span("send", {
-            attributes: { _tag, ...sessionAttributes(session) },
-            kind: "producer",
-            links: [sessionLink(session)],
-          }),
-        )
-      }),
+    send: ({ socket, session }, event) => {
+      const { _tag } = event.event as never
+      return Effect.gen(function* () {
+        const trace = yield* Tracing.currentTrace
+        const encoded = yield* encodeEvent({
+          ...event,
+          ...(trace && { trace }),
+        })
+        // @effect-diagnostics-next-line tryCatchInEffectGen:off
+        try {
+          socket.send(encoded)
+          // oxlint-disable-next-line no-unused-vars
+        } catch (_e) {}
+      }).pipe(
+        span("send", {
+          attributes: { _tag, ...sessionAttributes(session) },
+          kind: "producer",
+          links: [sessionLink(session)],
+        }),
+      )
+    },
     close: ({ socket }) => Effect.sync(() => socket.close(1000)),
     snapshot: ({ socket, session }, attachments) =>
       encodeSocketAttachment({ attachments, session }).pipe(
