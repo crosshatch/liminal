@@ -1,26 +1,24 @@
 # Snapshot and Delta Events
 
-The accumulator design depends on a deliberate event pattern:
+Client state depends on a deliberate snapshot-and-delta pattern:
 
-1. `onConnect` sends a snapshot event such as `GameStarted` or `RoomSnapshot`.
+1. `hydrate` returns the initial state during audition.
 2. Later handlers emit delta events such as `MoveMade` or `GameEnded`.
-3. `initial` extracts state from the snapshot.
-4. `reduce` folds deltas into that state.
+3. Client reducers fold deltas into the hydrated state.
 
-Without a snapshot event, a reconnecting UI usually needs a separate imperative fetch path.
+Without hydration, a reconnecting UI usually needs a separate imperative fetch path.
 
-## Snapshot on connect
+## Hydrate on connect
 
 ```ts
-export const onConnect = Effect.gen(function* () {
-  const { currentClient } = yield* RoomActor
+export const hydrate = Effect.gen(function* () {
   const room = yield* loadRoom
 
-  yield* currentClient.send("RoomSnapshot", {
+  return {
     roomId: room.id,
     members: room.members,
     messages: room.messages,
-  })
+  }
 })
 ```
 
@@ -39,21 +37,20 @@ export const sendMessage = RoomActor.handler(
 )
 ```
 
-## Accumulate locally
+## Reduce locally
 
 ```ts
-const initial = Effect.fn(function* (event: RoomEvent) {
-  if (event._tag === "RoomSnapshot") {
-    return Option.some({
-      roomId: event.roomId,
-      members: event.members,
-      messages: event.messages,
-    })
-  }
-  return Option.none()
-})
+export const MessageAdded = RoomClient.reducer(
+  "MessageAdded",
+  ({ message }) =>
+    (state) =>
+      Effect.succeed({
+        ...state,
+        messages: [...state.messages, message],
+      }),
+)
 ```
 
-This keeps the client state model event-driven from the first usable value onward.
+This keeps the client state model hydrated before the UI sees it and event-driven afterward.
 
-Read [Lifecycle](/core/lifecycle) for `onConnect` and [Accumulator](/state/accumulator) for the reduction loop.
+Read [Lifecycle](/core/lifecycle) for `hydrate` and [Client State](/state/client-state) for the reduction loop.

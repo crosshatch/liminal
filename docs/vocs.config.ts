@@ -103,8 +103,8 @@ export default defineConfig({
         text: "State",
         items: [
           {
-            link: "/state/accumulator",
-            text: "Accumulator",
+            link: "/state/client-state",
+            text: "Client State",
           },
           {
             link: "/state/snapshot-delta-events",

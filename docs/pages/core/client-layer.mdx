@@ -6,7 +6,7 @@ Use it in browser runtimes that connect to a Liminal actor through an HTTP upgra
 
 ## Define the layer
 
-Provide the client definition, the socket endpoint, and the platform WebSocket constructor.
+Provide the client definition, reducers, the socket endpoint, and the platform WebSocket constructor.
 
 ```ts
 import { BrowserSocket } from "@effect/platform-browser"
@@ -14,20 +14,24 @@ import { Layer } from "effect"
 import { Client } from "liminal"
 
 import { TicTacToeClient } from "./TicTacToeClient.ts"
+import * as reducers from "./reducers.ts"
 
 const TicTacToeClientLive = Client.layerSocket({
   client: TicTacToeClient,
   url: "/play",
   replay: { mode: "startup" },
+  reducers,
 }).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor))
 ```
 
 `layerSocket` accepts:
 
 - `client`: the `Client` definition
+- `reducers`: a reducer table keyed by event tag
 - `url`: the WebSocket endpoint path, defaulting to `"/"`
 - `protocols`: one or more extra WebSocket sub-protocols
 - `replay`: optional event replay configuration
+- `onConnect`: optional effect that runs with the hydrated state once audition succeeds
 
 Replay semantics are covered in [Events](/core/events).
 
@@ -36,6 +40,7 @@ Replay semantics are covered in [Events](/core/events).
 
 ## Use the live client
 
-After providing the layer, calls use `Client.f(...)` and event streams use `Client.events`.
+After providing the layer, calls use `Client.fn(...)`, event streams use `Client.events`, and hydrated state uses
+`Client.state`.
 
 Read [Client Calls](/core/client-calls) and [Events](/core/events) for those APIs.

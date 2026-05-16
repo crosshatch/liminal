@@ -1,47 +1,84 @@
 # Actor Namespace
 
-`WorkerdActorNamespace` is the Cloudflare Durable Object wrapper around a Liminal actor.
+`WorkerdActorNamespace` is the Worker-side handle for a Cloudflare Durable Object actor.
 
-A namespace wraps one actor type as one Durable Object class.
+The namespace is separate from the actor runtime. It binds a Cloudflare Durable Object namespace, validates upgrade
+requests, and exposes handles for upgrading clients or calling internal methods between Durable Object instances.
 
 ```ts
-// TicTacToeNamespace.ts
-import { Effect, Layer } from "effect"
 import { WorkerdActorNamespace } from "liminal/workerd"
 
-import { handleMove } from "./handleMove.ts"
-import { KvLive } from "./KvLive.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-const onConnect = Effect.gen(function* () {
-  const { clients, currentClient } = yield* TicTacToeActor
-  if (clients.size === 1) {
-    yield* currentClient.send("AwaitingPartner", {})
-  } else {
-    yield* TicTacToeActor.others.send("GameStarted", { player: "X" })
-    yield* currentClient.send("GameStarted", { player: "O" })
-  }
-}).pipe(Effect.orDie)
-
 export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
+  binding: "TICTACTOE",
   actor: TicTacToeActor,
-  prelude: KvLive,
-  onConnect,
-  handlers: { Move: handleMove },
-  layer: Layer.empty,
+  internal: {},
 }) {}
 ```
 
 ## Fields
 
+- `binding`: the Cloudflare Durable Object binding name
 - `actor`: the Liminal actor definition
-- `prelude`: long-lived runtime dependencies for the Durable Object instance
-- `layer`: short-lived, request-local dependencies derived from actor context
-- `onConnect`: logic that runs for newly upgraded sockets
-- `handlers`: the method implementation table
-- `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
+- `internal`: methods callable through namespace handles from other Durable Object instances or Worker code
 
-The Durable Object binding name is not part of the definition. It is supplied later when you call
-`TicTacToeNamespace.layer("TICTACTOE")` to provide the namespace to your Worker runtime.
+## Bind an actor instance
+
+Use `Namespace.bind(name)` to get a handle for one Durable Object instance.
+
+```ts
+const game = TicTacToeNamespace.bind(gameId)
+
+yield* game.upgrade({ player: "X" })
+yield* game.call("SomeInternalMethod", { value: 1 })
+```
+
+`upgrade(...)` forwards the current request into the Durable Object as a WebSocket upgrade. `call(...)` invokes one of the
+namespace's internal methods through Durable Object RPC.
+
+## Provide the namespace
+
+Use `TicTacToeNamespace.layer` in the Worker runtime. The binding name comes from the namespace definition.
+
+```ts
+const WorkerLive = TicTacToeNamespace.layer
+```
+
+## Define the runtime
+
+The Durable Object class itself comes from `WorkerdActorRuntime.make(...)`.
+
+```ts
+import { Effect, Layer } from "effect"
+import { WorkerdActorRuntime } from "liminal/workerd"
+
+import Move from "./handleMove.ts"
+import hydrate from "./hydrate.ts"
+import { KvLive } from "./KvLive.ts"
+import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
+
+export class TicTacToeRuntime extends WorkerdActorRuntime.make({
+  namespace: TicTacToeNamespace,
+  prelude: KvLive,
+  hydrate,
+  onDisconnect: Effect.void,
+  external: { Move },
+  internal: {},
+  layer: Layer.empty,
+  hibernation: "5 seconds",
+}) {}
+```
+
+Runtime fields:
+
+- `namespace`: the namespace definition this Durable Object implements
+- `prelude`: long-lived runtime dependencies for the Durable Object instance
+- `hydrate`: returns initial client state during audition
+- `external`: handlers for client-callable methods from `Client.external`
+- `internal`: handlers for namespace-callable methods from `Namespace.internal`
+- `layer`: short-lived, invocation-scoped dependencies derived from actor context
+- `onDisconnect`: cleanup or notifications for closed sockets
+- `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
 
 Read [Prelude vs Layer](/core/prelude-vs-layer) for the dependency model.
