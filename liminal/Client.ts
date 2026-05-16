@@ -152,26 +152,33 @@ export const Service =
     })
   }
 
-export interface ClientTransport<D extends ProtocolDefinition, ReducerR> {
+export interface ClientTransport<D extends ProtocolDefinition, R> {
   readonly listen: (
-    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError, ReducerR>,
-  ) => Effect.Effect<
-    void,
-    ClientError | S.SchemaError,
-    Scope.Scope | Protocol<D>["Actor"]["DecodingServices"] | ReducerR
-  >
+    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError, R>,
+  ) => Effect.Effect<void, ClientError | S.SchemaError, Scope.Scope | Protocol<D>["Actor"]["DecodingServices"] | R>
 
   readonly send: (
     message: Protocol<D>["F"]["Payload"]["Type"],
   ) => Effect.Effect<void, ClientError | S.SchemaError, Protocol<D>["F"]["Payload"]["EncodingServices"]>
 }
 
-const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers extends Reducer.Reducers<D>, R>(
-  client: Client<Self, Id, D>,
-  reducers: Reducers,
-  build: Effect.Effect<ClientTransport<D, Reducer.Reducers.Services<Self, Reducers>>, ClientError, R | Scope.Scope>,
-  replay?: ReplayConfig | undefined,
-) =>
+const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers extends Reducer.Reducers<D>, R, CR>({
+  build,
+  client,
+  reducers,
+  onConnect,
+  replay,
+}: {
+  readonly client: Client<Self, Id, D>
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
+  readonly reducers: Reducers
+  readonly build: Effect.Effect<
+    ClientTransport<D, Reducer.Reducers.Services<Self, Reducers> | CR>,
+    ClientError,
+    R | Scope.Scope
+  >
+  readonly replay?: ReplayConfig | undefined
+}) =>
   Effect.gen(function* () {
     const rcr: Service<Self, D> = yield* RcRef.make({
       acquire: Effect.gen(function* () {
@@ -240,6 +247,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 const state = yield* Ref.make(initial)
                 yield* Deferred.succeed(stateDeferred, state)
                 yield* Deferred.succeed(audition, void 0)
+                yield* onConnect?.(initial) ?? Effect.void
                 return
               }
               case "Audition.Failure": {
@@ -455,18 +463,21 @@ export const layerSocket = <
   Id extends string,
   D extends ProtocolDefinition,
   Reducers extends Reducer.Reducers<D>,
+  CR = never,
 >({
   client,
   reducers,
   url,
   protocols,
   replay,
+  onConnect,
 }: {
   readonly client: Client<Self, Id, D>
   readonly reducers: Reducers
-  readonly url?: string | undefined
-  readonly protocols?: string | Array<string> | undefined
   readonly replay?: ReplayConfig | undefined
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
+  readonly protocols?: string | Array<string> | undefined
+  readonly url?: string | undefined
 }): Layer.Layer<
   Self,
   never,
@@ -474,15 +485,18 @@ export const layerSocket = <
   | Protocol<D>["Actor"]["DecodingServices"]
   | Protocol<D>["F"]["Payload"]["EncodingServices"]
   | Reducer.Reducers.Services<Self, Reducers>
+  | CR
 > => {
   const { F, Actor } = client.protocol
   const encodeFPayload = encodeJsonString(F.Payload)
   const decodeActor = decodeJsonString(Actor)
 
-  return make<Self, Id, D, Reducers, Socket.WebSocketConstructor>(
+  return make<Self, Id, D, Reducers, Socket.WebSocketConstructor, CR>({
     client,
     reducers,
-    Effect.gen(function* () {
+    onConnect,
+    replay,
+    build: Effect.gen(function* () {
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
       })
@@ -523,8 +537,7 @@ export const layerSocket = <
         ),
       }
     }),
-    replay,
-  )
+  })
 }
 
 export const layerWorker = <
@@ -533,14 +546,17 @@ export const layerWorker = <
   D extends ProtocolDefinition,
   Reducers extends Reducer.Reducers<D>,
   T extends Protocol<D>,
+  CR = never,
 >({
   client,
   reducers,
   replay,
+  onConnect,
 }: {
   readonly client: Client<Self, Id, D>
   readonly reducers: Reducers
   readonly replay?: ReplayConfig | undefined
+  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
 }): Layer.Layer<
   Self,
   never,
@@ -550,10 +566,12 @@ export const layerWorker = <
   | T["F"]["Payload"]["EncodingServices"]
   | Reducer.Reducers.Services<Self, Reducers>
 > =>
-  make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner>(
+  make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner, CR>({
     client,
     reducers,
-    Effect.gen(function* () {
+    onConnect,
+    replay,
+    build: Effect.gen(function* () {
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
         .spawn<T["Actor"]["Type"], T["Client"]["Type"]>(0)
@@ -593,5 +611,4 @@ export const layerWorker = <
         send,
       }
     }),
-    replay,
-  )
+  })
