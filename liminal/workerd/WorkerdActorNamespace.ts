@@ -6,8 +6,8 @@ import * as Spanner from "liminal-util/Spanner"
 
 import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
 import type { Methods } from "../Method.ts"
+import type { ProtocolDefinition } from "../Protocol.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
 
 const span = Spanner.make(import.meta.url)

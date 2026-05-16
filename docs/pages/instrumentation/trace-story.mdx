@@ -7,8 +7,7 @@ A typical browser-to-actor method call produces a connected trace across client,
 1. The browser calls `client.fn("Move")(...)`.
 2. `Client.fn` creates a client span.
 3. The client encodes that span into `F.Payload.trace`.
-4. The Durable Object receives the WebSocket message and creates a
-   `socket-message` transport span.
+4. The Durable Object receives the WebSocket message and creates a `socket-message` transport span.
 5. The actor handler span is parented to `F.Payload.trace` and linked to the local transport span.
 6. If the handler emits an event, `event.send` creates a producer span and attaches `Event.trace`.
 7. The browser receives the event and creates an `event.enqueue` consumer span parented to `Event.trace`.

@@ -1,5 +1,6 @@
-import { TicTacToeActor } from "./TicTacToeActor.ts"
 import { Effect } from "effect"
+
+import { TicTacToeActor } from "./TicTacToeActor.ts"
 
 export default Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor

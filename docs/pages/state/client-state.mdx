@@ -74,8 +74,8 @@ Hydration is the snapshot. Events sent after hydration are deltas that reducers 
 
 ## Reduce events
 
-Reducers live next to the client runtime. `Client.reducer(...)` narrows the event tag and returns the reducer unchanged at
-runtime.
+Reducers live next to the client runtime. `Client.reducer(...)` narrows the event tag and returns the reducer unchanged
+at runtime.
 
 ```ts
 import { Effect } from "effect"
@@ -94,8 +94,8 @@ export const MoveMade = TicTacToeClient.reducer("MoveMade", () => (state) => Eff
 export const GameEnded = TicTacToeClient.reducer("GameEnded", () => (state) => Effect.succeed(state))
 ```
 
-Each reducer receives the event first and the current state second. Return the next state to publish an update, or return
-`void` to leave the current state unchanged.
+Each reducer receives the event first and the current state second. Return the next state to publish an update, or
+return `void` to leave the current state unchanged.
 
 ## Provide reducers
 

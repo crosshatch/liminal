@@ -1,8 +1,9 @@
 import { Schema as S, Effect, Cause, Encoding } from "effect"
 import { NativeRequest } from "effect-workerd"
 import { HttpServerResponse } from "effect/unstable/http"
-import type { Methods } from "../Method.ts"
+
 import type { TopFromString } from "../_util/schema.ts"
+import type { Methods } from "../Method.ts"
 
 export interface ActorHandle<
   NamespaceSelf,

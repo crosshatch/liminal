@@ -30,12 +30,12 @@ Use `Namespace.bind(name)` to get a handle for one Durable Object instance.
 ```ts
 const game = TicTacToeNamespace.bind(gameId)
 
-yield* game.upgrade({ player: "X" })
-yield* game.call("SomeInternalMethod", { value: 1 })
+yield * game.upgrade({ player: "X" })
+yield * game.call("SomeInternalMethod", { value: 1 })
 ```
 
-`upgrade(...)` forwards the current request into the Durable Object as a WebSocket upgrade. `call(...)` invokes one of the
-namespace's internal methods through Durable Object RPC.
+`upgrade(...)` forwards the current request into the Durable Object as a WebSocket upgrade. `call(...)` invokes one of
+the namespace's internal methods through Durable Object RPC.
 
 ## Provide the namespace
 

@@ -26,11 +26,11 @@ import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util
 import type { ActorTransport } from "../ActorTransport.ts"
 import * as ClientDirectory from "../ClientDirectory.ts"
 import type { ClientHandle } from "../ClientHandle.ts"
+import type { Handlers, Methods } from "../Method.ts"
 import type { ProtocolDefinition } from "../Protocol.ts"
 import * as Tracing from "../Tracing.ts"
 import { sessionAttributes, SessionId, sessionLink } from "../Tracing.ts"
 import type { ActorNamespace } from "./WorkerdActorNamespace.ts"
-import type { Handlers, Methods } from "../Method.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -132,7 +132,7 @@ export const make = <
     RunROut,
     RunE
   >,
-): (new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject) => {
+): new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject => {
   const {
     hibernation,
     prelude,
