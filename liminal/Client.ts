@@ -67,11 +67,11 @@ export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
   ClientError
 >
 
-export interface Client<Self, ClientId extends string, D extends ProtocolDefinition> extends Context.Service<
+export interface Client<Self, Id extends string, D extends ProtocolDefinition> extends Context.Service<
   Self,
   Service<Self, D>
 > {
-  new (_: never): Context.ServiceClass.Shape<ClientId, Service<Self, D>> & {
+  new (_: never): Context.ServiceClass.Shape<Id, Service<Self, D>> & {
     readonly State: S.Struct<D["state"]>["Type"]
   }
 
@@ -142,7 +142,7 @@ export const Service =
 
     const reducer = <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_event: K, f: R) => f
 
-    return Object.assign(tag as never, {
+    return Object.assign(tag satisfies Context.ServiceClass.Shape<Id, Service<Self, D>> as never, {
       [TypeId]: TypeId,
       definition,
       protocol,

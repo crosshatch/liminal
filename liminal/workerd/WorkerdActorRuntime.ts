@@ -132,7 +132,7 @@ export const make = <
     RunROut,
     RunE
   >,
-): new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject => {
+): (new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject) => {
   const {
     hibernation,
     prelude,
