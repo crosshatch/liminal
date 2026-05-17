@@ -1,4 +1,5 @@
 import { Schema as S } from "effect"
+
 import { Coordinates } from "./domain.ts"
 import { OutOfTurnError, SlotTakenError } from "./errors.ts"
 

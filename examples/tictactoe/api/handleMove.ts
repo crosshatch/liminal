@@ -1,11 +1,11 @@
 import { Effect } from "effect"
 import { handler } from "liminal"
 
+import { OutOfTurnError, SlotTakenError } from "./errors.ts"
+import { Move } from "./external.ts"
 import { setBoard, getBoard } from "./Games.ts"
 import { mapInternalError } from "./mapInternalError.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
-import { OutOfTurnError, SlotTakenError } from "./errors.ts"
-import { Move } from "./external.ts"
 
 // oxfmt-ignore
 const LINES = [
