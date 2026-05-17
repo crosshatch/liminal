@@ -4,7 +4,6 @@ import * as Spanner from "liminal-util/Spanner"
 import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
-import * as Method from "./Method.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"
 
 const span = Spanner.make(import.meta.url)
@@ -56,11 +55,6 @@ export interface Actor<
   readonly all: Sender<ActorSelf, D>
 
   readonly others: Sender<ActorSelf, D>
-
-  readonly handler: <K extends keyof D["external"], R>(
-    tag: K,
-    f: Method.Handler<D["external"][K], R>,
-  ) => Method.Handler<D["external"][K], R>
 }
 
 export const Service =
@@ -107,16 +101,10 @@ export const Service =
       }).pipe(span("disconnect-others")),
     }
 
-    const handler = <K extends keyof D["external"], R>(
-      _tag: K,
-      f: Method.Handler<D["external"][K], R>,
-    ): Method.Handler<D["external"][K], R> => f
-
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       all,
       others,
-      handler,
     })
   }

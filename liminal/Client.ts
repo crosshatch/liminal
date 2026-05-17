@@ -71,7 +71,9 @@ export interface Client<Self, ClientId extends string, D extends ProtocolDefinit
   Self,
   Service<Self, D>
 > {
-  new (_: never): Context.ServiceClass.Shape<ClientId, Service<Self, D>>
+  new (_: never): Context.ServiceClass.Shape<ClientId, Service<Self, D>> & {
+    readonly State: S.Struct<D["state"]>["Type"]
+  }
 
   readonly [TypeId]: typeof TypeId
 
@@ -140,7 +142,7 @@ export const Service =
 
     const reducer = <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_event: K, f: R) => f
 
-    return Object.assign(tag, {
+    return Object.assign(tag as never, {
       [TypeId]: TypeId,
       definition,
       protocol,
