@@ -1,15 +1,18 @@
 import { Schema as S, Effect, Cause, Encoding } from "effect"
 import { NativeRequest } from "effect-workerd"
 import { HttpServerResponse } from "effect/unstable/http"
+import type { ProtocolDefinition } from "../Protocol.ts"
 
 import type { TopFromString } from "../_util/schema.ts"
 import type { Methods } from "../Method.ts"
+import type { Send } from "../ClientHandle.ts"
 
 export interface ActorHandle<
   NamespaceSelf,
   Internal extends Methods,
   Name extends TopFromString,
   AttachmentFields extends S.Struct.Fields,
+  D extends ProtocolDefinition,
 > {
   readonly upgrade: (
     attachments: S.Struct<AttachmentFields>["Type"],
@@ -26,4 +29,6 @@ export interface ActorHandle<
     method: K,
     payload: M["payload"]["Type"],
   ) => Effect.Effect<M["success"]["Type"], M["failure"]["Type"], NamespaceSelf>
+
+  readonly proxySendAll: Send<D, NamespaceSelf>
 }

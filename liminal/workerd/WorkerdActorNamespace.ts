@@ -45,7 +45,7 @@ export interface ActorNamespace<
     _: never,
   ): Context.ServiceClass.Shape<
     NamespaceId,
-    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
+    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal, D>>
   >
 
   readonly definition: ActorNamespaceDefinition<
@@ -59,17 +59,19 @@ export interface ActorNamespace<
     D
   >
 
-  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields>
+  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields, D>
 
   readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
 export declare namespace WorkerdActorNamespace {
-  export type MakeRpc<External extends Methods> = {
-    rpc: <K extends keyof External>(
+  export type MakeRpc<Internal extends Methods, D extends ProtocolDefinition> = {
+    rpc: <K extends keyof Internal>(
       method: K,
-      payload: External[K]["payload"]["Type"],
-    ) => Promise<Exit.Exit<External[K]["success"]["Type"], External[K]["failure"]["Type"]>>
+      payload: Internal[K]["payload"]["Type"],
+    ) => Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>>
+
+    proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]): void
   }
 }
 
@@ -111,7 +113,7 @@ export const Service =
 
     const tag = Context.Service<
       NamespaceSelf,
-      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
+      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal, D>>
     >()(id)
 
     const encodeName = S.encodeEffect(Name)
@@ -119,7 +121,7 @@ export const Service =
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
 
-    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields> => {
+    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields, D> => {
       const getStub = Effect.gen(function* () {
         const namespace = yield* tag
         const nameEncoded = yield* encodeName(name)
@@ -165,7 +167,16 @@ export const Service =
         return yield* exit as any
       })
 
-      return { upgrade, call }
+      // TODO:
+      const proxySendAll = Effect.fnUntraced(function* <K extends keyof D["events"]>(
+        event: K,
+        payload: S.Struct<D["events"][K]>["Type"],
+      ) {
+        const stub = yield* getStub
+        yield* Effect.promise(() => stub.proxySendAll(event as never, payload as never))
+      }) as never
+
+      return { upgrade, call, proxySendAll }
     }
 
     const layer = Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get", "getByName"])(binding)

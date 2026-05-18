@@ -418,5 +418,12 @@ export const make = <
       const handler = internal[method]
       return await handler(payload).pipe(this.provideActor(null!), span("fn-internal"), Effect.exit, this.run)
     }
+
+    async proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]) {
+      await Effect.gen(function* () {
+        const { clients } = yield* actor
+        yield* Effect.forEach(clients, ({ send }) => send(event, payload), { concurrency: "unbounded" })
+      }).pipe(this.provideActor(null!), span("fn-internal"), this.run)
+    }
   }
 }

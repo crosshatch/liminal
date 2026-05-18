@@ -52,9 +52,9 @@ export interface Actor<
 
   readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly all: Sender<ActorSelf, D>
+  readonly all: Sender<D, ActorSelf>
 
-  readonly others: Sender<ActorSelf, D>
+  readonly others: Sender<D, ActorSelf>
 }
 
 export const Service =
@@ -72,7 +72,7 @@ export const Service =
   ): Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D> => {
     const tag = Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>>()(id)
 
-    const all: Sender<ActorSelf, D> = {
+    const all: Sender<D, ActorSelf> = {
       send: (key, payload) =>
         tag.asEffect().pipe(
           Effect.flatMap(({ clients }) =>
@@ -86,7 +86,7 @@ export const Service =
       ),
     }
 
-    const others: Sender<ActorSelf, D> = {
+    const others: Sender<D, ActorSelf> = {
       send: Effect.fnUntraced(function* (key, payload) {
         const { clients, currentClient } = yield* tag
         yield* Effect.forEach(
