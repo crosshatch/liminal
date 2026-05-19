@@ -460,6 +460,8 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
     return rcr
   }).pipe(Layer.effect(client))
 
+const clientId = crypto.randomUUID()
+
 export const layerSocket = <
   Self,
   Id extends string,
@@ -500,7 +502,12 @@ export const layerSocket = <
     replay,
     build: Effect.gen(function* () {
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
-        protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
+        protocols: [
+          "liminal",
+          clientId,
+          Encoding.encodeBase64Url(client.key),
+          ...(protocols ? Array.ensure(protocols) : []),
+        ],
       })
       return {
         listen: Effect.fnUntraced(function* (publish) {

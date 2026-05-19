@@ -135,7 +135,8 @@ export const Service =
             Effect.map(flow(String.split(","), Array.map(String.trim))),
           )
           const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+          const liminalClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1])
+          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 2]).pipe(
             Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
           )
           if (requestClientId !== clientId) {
@@ -149,6 +150,7 @@ export const Service =
           }
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
+          url.searchParams.set("__liminal_client_id", liminalClientId)
           const actorRequest = new Request(url, request)
           const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
           for (const [key, value] of Object.entries(traceHeaders)) {

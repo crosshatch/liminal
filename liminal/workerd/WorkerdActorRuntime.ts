@@ -132,7 +132,7 @@ export const make = <
     RunROut,
     RunE
   >,
-): (new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject) => {
+): new (state: DurableObjectState<{}>, env: Cloudflare.Env) => DurableObject => {
   const {
     hibernation,
     prelude,
@@ -269,10 +269,11 @@ export const make = <
       return Effect.gen({ self: this }, function* () {
         const url = new URL(request.url)
         const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
+        const clientId = yield* Effect.fromNullishOr(url.searchParams.get("__liminal_client_id"))
         const { 0: webSocket, 1: server } = new WebSocketPair()
         const state = yield* DoState.DoState
         const session = {
-          id: SessionId.make(crypto.randomUUID()),
+          id: SessionId.make(clientId),
           trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
         }
         const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
