@@ -10,41 +10,30 @@ export interface KvDefinition {
   readonly binding: string
 }
 
-S.toCodecJson
-
 export interface Kv<Self, Id extends string, D extends KvDefinition> extends Context.Service<Self, KVNamespace> {
   new (_: never): Context.ServiceClass.Shape<Id, KVNamespace>
 
-  readonly definition: D
-
-  readonly valueJson: S.fromJsonString<
-    S.Codec<D["value"]["Type"], S.Json, D["value"]["DecodingServices"], D["value"]["EncodingServices"]>
-  >
-  readonly encodeKey: ReturnType<typeof S.encodeEffect<D["key"]>>
-  readonly decodeKey: ReturnType<typeof S.decodeEffect<D["key"]>>
-  readonly encodeValue: ReturnType<typeof S.encodeEffect<this["valueJson"]>>
-  readonly decodeValue: ReturnType<typeof S.decodeUnknownEffect<this["valueJson"]>>
-
   readonly layer: Layer.Layer<Self, S.SchemaError, never>
+
+  readonly "~": {
+    readonly key: D["key"]
+
+    readonly value: S.fromJsonString<
+      S.Codec<D["value"]["Type"], S.Json, D["value"]["DecodingServices"], D["value"]["EncodingServices"]>
+    >
+  }
 }
 
 export const Service =
   <Self>() =>
   <Id extends string, D extends KvDefinition>(id: Id, definition: D): Kv<Self, Id, D> => {
     const tag = Context.Service<Self, KVNamespace>()(id)
-
-    const { key, value, binding } = definition
-
-    const valueJson = S.fromJsonString(S.toCodecJson(value))
-
     return Object.assign(tag, {
-      definition,
-      valueJson,
-      encodeKey: S.encodeEffect(key),
-      decodeKey: S.decodeEffect(key),
-      encodeValue: S.encodeEffect(valueJson),
-      decodeValue: S.decodeUnknownEffect(valueJson),
-      layer: Binding.layer(tag, ["get", "put", "delete", "list", "getWithMetadata"])(binding),
+      layer: Binding.layer(tag, ["get", "put", "delete", "list", "getWithMetadata"])(definition.binding),
+      "~": {
+        key: definition.key,
+        value: S.fromJsonString(S.toCodecJson(definition.value)),
+      },
     })
   }
 
@@ -54,8 +43,8 @@ export const put = Effect.fnUntraced(function* <Self, Id extends string, D exten
   value: D["value"]["Type"],
 ) {
   const resolved = yield* kv
-  const keyEncoded = yield* kv.encodeKey(key)
-  const valueEncoded = yield* kv.encodeValue(value)
+  const keyEncoded = yield* S.encodeEffect(kv["~"].key)(key)
+  const valueEncoded = yield* S.encodeEffect(kv["~"].value)(value)
   yield* Effect.promise(() => resolved.put(keyEncoded, valueEncoded))
 })
 
@@ -64,12 +53,12 @@ export const get = Effect.fnUntraced(function* <Self, Id extends string, D exten
   key: D["key"]["Type"],
 ) {
   const resolved = yield* kv
-  const keyEncoded = yield* kv.encodeKey(key)
+  const keyEncoded = yield* S.encodeEffect(kv["~"].key)(key)
   const value = yield* Effect.promise(() => resolved.get(keyEncoded))
   if (value === null) {
     return Option.none()
   }
-  return yield* kv.decodeValue(value).pipe(Effect.map(Option.some))
+  return yield* S.decodeUnknownEffect(kv["~"].value)(value).pipe(Effect.map(Option.some))
 })
 
 export const remove = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(
@@ -77,6 +66,6 @@ export const remove = Effect.fnUntraced(function* <Self, Id extends string, D ex
   key: D["key"]["Type"],
 ) {
   const resolved = yield* kv
-  const keyEncoded = yield* kv.encodeKey(key)
+  const keyEncoded = yield* S.encodeEffect(kv["~"].key)(key)
   yield* Effect.promise(() => resolved.delete(keyEncoded))
 })

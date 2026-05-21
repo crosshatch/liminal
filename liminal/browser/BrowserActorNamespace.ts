@@ -55,9 +55,6 @@ export const make = Effect.fnUntraced(function* <
     },
   } = actor
 
-  const validateClientMessage = S.decodeUnknownEffect(S.toType(ClientM))
-  const encodeName = S.encodeEffect(Name)
-
   interface BrowserClient {
     readonly port: MessagePort
 
@@ -145,7 +142,7 @@ export const make = Effect.fnUntraced(function* <
             Effect.fnUntraced(function* (_portId, raw) {
               const state = yield* Ref.get(stateRef)
               yield* Effect.gen(function* () {
-                const message = yield* validateClientMessage(raw)
+                const message = yield* S.decodeUnknownEffect(S.toType(ClientM))(raw)
                 if (state._tag === "None") {
                   if (message._tag !== "Audition.Payload") {
                     return yield* Effect.die(undefined)
@@ -159,7 +156,7 @@ export const make = Effect.fnUntraced(function* <
                     })
                     return yield* closeScope
                   }
-                  const key = yield* encodeName(name)
+                  const key = yield* S.encodeEffect(Name)(name)
                   const entry = yield* getEntry(key)
                   const currentClient = yield* entry.directory.register(
                     { port, backing, close: closeScope },

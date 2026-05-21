@@ -17,33 +17,25 @@ export interface Vectorize<Self, Id extends string, D extends VectorizeDefinitio
 > {
   new (_: never): Context.ServiceClass.Shape<Id, VectorizeIndex>
 
-  readonly encodeId: ReturnType<typeof S.encodeEffect<D["id"]>>
-  readonly decodeId: ReturnType<typeof S.decodeEffect<D["id"]>>
-
-  readonly metadata: S.Struct<D["metadata"]>
-  readonly encodeMetadata: ReturnType<typeof S.encodeEffect<this["metadata"]>>
-  readonly decodeMetadata: ReturnType<typeof S.decodeUnknownEffect<this["metadata"]>>
-
-  readonly definition: D
-
   readonly layer: Layer.Layer<Self, S.SchemaError>
+
+  readonly "~": {
+    readonly id: D["id"]
+
+    readonly metadata: S.Struct<D["metadata"]>
+  }
 }
 
 export const Service =
   <Self>() =>
   <Id extends string, D extends VectorizeDefinition>(id: Id, definition: D): Vectorize<Self, Id, D> => {
     const tag = Context.Service<Self, VectorizeIndex>()(id)
-
-    const metadata = S.Struct(definition.metadata) as S.Struct<D["metadata"]>
-
     return Object.assign(tag, {
-      definition,
-      encodeId: S.encodeEffect(definition.id),
-      decodeId: S.decodeEffect(definition.id),
-      metadata,
-      encodeMetadata: S.encodeEffect(metadata),
-      decodeMetadata: S.decodeUnknownEffect(metadata),
       layer: Binding.layer(tag, ["upsert", "query"])(definition.binding),
+      "~": {
+        id: definition.id,
+        metadata: S.Struct(definition.metadata),
+      },
     })
   }
 
@@ -54,8 +46,8 @@ export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D ex
   metadata: S.Struct<D["metadata"]>["Type"],
 ) {
   const i = yield* index
-  const idEncoded = yield* index.encodeId(id)
-  const metadataEncoded = yield* index.encodeMetadata(metadata)
+  const idEncoded = yield* S.encodeEffect(index["~"].id)(id)
+  const metadataEncoded = yield* S.encodeEffect(index["~"].metadata)(metadata)
   yield* Effect.promise(() =>
     i.upsert([
       {
@@ -74,20 +66,18 @@ export const query = Effect.fnUntraced(function* <Self, Id extends string, D ext
 ) {
   const i = yield* index
   const { matches } = yield* Effect.promise(() => i.query(values, options))
-  const result = yield* Effect.forEach(
+  const decodeId = S.decodeEffect(index["~"].id)
+  const decodeMetadata = S.decodeUnknownEffect(index["~"].metadata)
+  return yield* Effect.forEach(
     matches,
     ({ id, metadata }) =>
       Effect.all(
         {
-          id: index.encodeId(id),
-          metadata: index.decodeMetadata(metadata),
+          id: decodeId(id),
+          metadata: decodeMetadata(metadata),
         },
         { concurrency: "unbounded" },
       ),
     { concurrency: "unbounded" },
   )
-  return result as ReadonlyArray<{
-    readonly id: D["id"]["Type"]
-    readonly metadata: S.Struct<D["metadata"]>["Type"]
-  }>
 })
