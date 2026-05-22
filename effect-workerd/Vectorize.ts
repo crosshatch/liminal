@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema as S } from "effect"
+import { Context, Data, Effect, Layer, Schema as S } from "effect"
 import type { TopFromString } from "liminal/_util/schema"
 
 import * as Binding from "./Binding.ts"
@@ -39,6 +39,10 @@ export const Service =
     })
   }
 
+export class VectorizeUpsertError extends Data.TaggedError("VectorizeUpsertError")<{
+  readonly cause: unknown
+}> {}
+
 export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D extends VectorizeDefinition>(
   index: Vectorize<Self, Id, D>,
   id: D["id"]["Type"],
@@ -48,7 +52,7 @@ export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D ex
   const i = yield* index
   const idEncoded = yield* S.encodeEffect(index["~"].id)(id)
   const metadataEncoded = yield* S.encodeEffect(index["~"].metadata)(metadata)
-  yield* Effect.promise(() =>
+  yield* Effect.tryPromise(() =>
     i.upsert([
       {
         id: idEncoded,
@@ -56,8 +60,12 @@ export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D ex
         metadata: metadataEncoded,
       },
     ]),
-  )
+  ).pipe(Effect.catchTag("UnknownError", (cause) => new VectorizeUpsertError({ cause }).asEffect()))
 })
+
+export class VectorizeQueryError extends Data.TaggedError("VectorizeQueryError")<{
+  readonly cause: unknown
+}> {}
 
 export const query = Effect.fnUntraced(function* <Self, Id extends string, D extends VectorizeDefinition>(
   index: Vectorize<Self, Id, D>,
@@ -65,7 +73,9 @@ export const query = Effect.fnUntraced(function* <Self, Id extends string, D ext
   options?: VectorizeQueryOptions | undefined,
 ) {
   const i = yield* index
-  const { matches } = yield* Effect.promise(() => i.query(values, options))
+  const { matches } = yield* Effect.tryPromise(() => i.query(values, options)).pipe(
+    Effect.catchTag("UnknownError", (cause) => new VectorizeQueryError({ cause }).asEffect()),
+  )
   const decodeId = S.decodeEffect(index["~"].id)
   const decodeMetadata = S.decodeUnknownEffect(index["~"].metadata)
   return yield* Effect.forEach(
