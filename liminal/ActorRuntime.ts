@@ -205,7 +205,7 @@ export const make = <
       ),
   }
 
-  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/WorkerdActorNamespace/NameDecoded") {}
+  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/ActorNamespace/NameDecoded") {}
 
   return class extends DurableObject {
     readonly run

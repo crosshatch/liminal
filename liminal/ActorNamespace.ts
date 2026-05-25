@@ -45,7 +45,7 @@ export interface ActorNamespace<
     _: never,
   ): Context.ServiceClass.Shape<
     NamespaceId,
-    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal, D>>
+    DurableObjectNamespace<Rpc.DurableObjectBranded & ActorNamespace.MakeRpc<Internal, D>>
   >
 
   readonly definition: ActorNamespaceDefinition<
@@ -64,7 +64,7 @@ export interface ActorNamespace<
   readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
-export declare namespace WorkerdActorNamespace {
+export declare namespace ActorNamespace {
   export type MakeRpc<Internal extends Methods, D extends ProtocolDefinition> = {
     rpc: <K extends keyof Internal>(
       method: K,
@@ -113,7 +113,7 @@ export const Service =
 
     const tag = Context.Service<
       NamespaceSelf,
-      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal, D>>
+      DurableObjectNamespace<Rpc.DurableObjectBranded & ActorNamespace.MakeRpc<Internal, D>>
     >()(id)
 
     const encodeName = S.encodeEffect(Name)
