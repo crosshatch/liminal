@@ -2,10 +2,10 @@ import { Schema as S, Effect, Cause, Encoding } from "effect"
 import { NativeRequest } from "effect-workerd"
 import { HttpServerResponse } from "effect/unstable/http"
 
-import type { TopFromString } from "../_util/schema.ts"
-import type { Send } from "../ClientHandle.ts"
-import type { Methods } from "../Method.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
+import type { TopFromString } from "./_util/schema.ts"
+import type { Send } from "./ClientHandle.ts"
+import type { Methods } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 export interface ActorHandle<
   NamespaceSelf,

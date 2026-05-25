@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect"
-import { WorkerdActorRuntime } from "liminal/workerd"
+import { WorkerdActorRuntime } from "liminal"
 
 import Move from "./handleMove.ts"
 import hydrate from "./hydrate.ts"

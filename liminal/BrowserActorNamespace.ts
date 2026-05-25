@@ -4,15 +4,14 @@ import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
 
-import { encodeJsonString, decodeJsonString } from "../_util/schema.ts"
-import type { TopFromString } from "../_util/schema.ts"
-import type { Actor } from "../Actor.ts"
-import type { ActorTransport } from "../ActorTransport.ts"
-import * as ClientDirectory from "../ClientDirectory.ts"
-import type { ClientHandle } from "../ClientHandle.ts"
-import * as Method from "../Method.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
-import * as Tracing from "../Tracing.ts"
+import { encodeJsonString, decodeJsonString, type TopFromString } from "./_util/schema.ts"
+import type { Actor } from "./Actor.ts"
+import type { ActorTransport } from "./ActorTransport.ts"
+import * as ClientDirectory from "./ClientDirectory.ts"
+import type { ClientHandle } from "./ClientHandle.ts"
+import * as Method from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
+import * as Tracing from "./Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -48,10 +47,7 @@ export const make = Effect.fnUntraced(function* <
 }) {
   const {
     definition: {
-      client: {
-        protocol: P,
-        key: expected,
-      },
+      client: { protocol: P, key: expected },
       name: Name,
     },
   } = actor
@@ -147,97 +143,96 @@ export const make = Effect.fnUntraced(function* <
             Effect.fnUntraced(function* (_portId, raw) {
               const state = yield* Ref.get(stateRef)
               const message = yield* decodeClient(raw)
-                if (state._tag === "None") {
-                  if (message._tag !== "Audition.Payload") {
-                    return yield* Effect.die(undefined)
-                  }
-                  const { client: actual } = message
-                  if (actual !== expected) {
-                    yield* backing.send(
+              if (state._tag === "None") {
+                if (message._tag !== "Audition.Payload") {
+                  return yield* Effect.die(undefined)
+                }
+                const { client: actual } = message
+                if (actual !== expected) {
+                  yield* backing
+                    .send(
                       0,
                       yield* encodeAuditionFailure({
                         _tag: "Audition.Failure",
                         expected,
                         actual,
                       }),
-                    ).pipe(Effect.orDie)
-                    return yield* closeScope
-                  }
-                  const key = yield* S.encodeEffect(Name)(name)
-                  const entry = yield* getEntry(key)
-                  const currentClient = yield* entry.directory.register(
-                    { port, backing, close: closeScope },
-                    attachments,
-                  )
-                  const ActorLive = Layer.succeed(actor, {
-                    name,
-                    clients: entry.directory.handles,
-                    currentClient,
-                  })
-                  yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
-                  const initial = yield* hydrate.pipe(
-                    entry.mutex,
-                    Effect.scoped,
-                    span("onConnect"),
-                    Effect.provide(ActorLive),
-                  )
-                  return yield* backing
-                    .send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
+                    )
                     .pipe(Effect.orDie)
-                }
-                const { entry, ActorLive } = state.value
-                if (message._tag === "Audition.Payload") {
-                  return yield* Effect.die(undefined)
-                }
-                if (message._tag === "Disconnect") {
                   return yield* closeScope
                 }
-                const { id, payload } = message
-                const { _tag, value } = payload as never
-                const parent = message.trace && Tracer.externalSpan(message.trace)
-                const transportSpan = yield* Tracing.parent
-                yield* (
-                  handlers as Method.Handlers<
-                    D["external"],
-                    Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
-                  >
-                )[_tag]!(value).pipe(
-                  Effect.matchEffect({
-                    onSuccess: (value) =>
-                      encodeFSuccess({
-                        _tag: "F.Success",
-                        id,
-                        success: { _tag, value } as never,
-                      }),
-                    onFailure: (value) =>
-                      encodeFFailure({
-                        _tag: "F.Failure",
-                        id,
-                        failure: { _tag, value } as never,
-                      }),
-                  }),
-                  Effect.andThen((v) => backing.send(0, v as string).pipe(Effect.orDie)),
-                  span("handle", {
-                    attributes: { _tag },
-                    kind: "server",
-                    parent,
-                    links:
-                      parent && transportSpan
-                        ? [
-                            {
-                              span: transportSpan,
-                              attributes: {
-                                "liminal.link": "transport",
-                                "liminal.transport": "worker",
-                              },
-                            },
-                          ]
-                        : undefined,
-                  }),
-                  Effect.scoped,
-                  Effect.provide(ActorLive),
+                const key = yield* S.encodeEffect(Name)(name)
+                const entry = yield* getEntry(key)
+                const currentClient = yield* entry.directory.register({ port, backing, close: closeScope }, attachments)
+                const ActorLive = Layer.succeed(actor, {
+                  name,
+                  clients: entry.directory.handles,
+                  currentClient,
+                })
+                yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
+                const initial = yield* hydrate.pipe(
                   entry.mutex,
+                  Effect.scoped,
+                  span("onConnect"),
+                  Effect.provide(ActorLive),
                 )
+                return yield* backing
+                  .send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
+                  .pipe(Effect.orDie)
+              }
+              const { entry, ActorLive } = state.value
+              if (message._tag === "Audition.Payload") {
+                return yield* Effect.die(undefined)
+              }
+              if (message._tag === "Disconnect") {
+                return yield* closeScope
+              }
+              const { id, payload } = message
+              const { _tag, value } = payload as never
+              const parent = message.trace && Tracer.externalSpan(message.trace)
+              const transportSpan = yield* Tracing.parent
+              yield* (
+                handlers as Method.Handlers<
+                  D["external"],
+                  Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
+                >
+              )[_tag]!(value).pipe(
+                Effect.matchEffect({
+                  onSuccess: (value) =>
+                    encodeFSuccess({
+                      _tag: "F.Success",
+                      id,
+                      success: { _tag, value } as never,
+                    }),
+                  onFailure: (value) =>
+                    encodeFFailure({
+                      _tag: "F.Failure",
+                      id,
+                      failure: { _tag, value } as never,
+                    }),
+                }),
+                Effect.andThen((v) => backing.send(0, v as string).pipe(Effect.orDie)),
+                span("handle", {
+                  attributes: { _tag },
+                  kind: "server",
+                  parent,
+                  links:
+                    parent && transportSpan
+                      ? [
+                          {
+                            span: transportSpan,
+                            attributes: {
+                              "liminal.link": "transport",
+                              "liminal.transport": "worker",
+                            },
+                          },
+                        ]
+                      : undefined,
+                }),
+                Effect.scoped,
+                Effect.provide(ActorLive),
+                entry.mutex,
+              )
             }, span("message")),
           )
           .pipe(

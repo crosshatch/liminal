@@ -14,20 +14,26 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./index.ts",
+    ".": {
+      "workerd": "./index.ts",
+      "browser": "./index.browser.ts",
+      "node": "./index.browser.ts",
+      "default": "./index.ts"
+    },
     "./*": "./*.ts",
-    "./browser": "./browser/index.ts",
     "./experimental": "./experimental/index.ts",
-    "./workerd": "./workerd/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {
-      ".": "./dist/index.js",
+      ".": {
+        "workerd": "./dist/index.js",
+        "browser": "./dist/index.browser.js",
+        "node": "./dist/index.browser.js",
+        "default": "./dist/index.js"
+      },
       "./*": "./dist/*.js",
-      "./browser": "./dist/browser/index.js",
       "./experimental": "./dist/experimental/index.js",
-      "./workerd": "./dist/workerd/index.js",
       "./package.json": "./package.json"
     }
   },

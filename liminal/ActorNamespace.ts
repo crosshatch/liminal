@@ -4,11 +4,11 @@ import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
 import * as Spanner from "liminal-util/Spanner"
 
-import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
-import type { Actor } from "../Actor.ts"
-import type { Methods } from "../Method.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
+import { type TopFromString, encodeJsonString } from "./_util/schema.ts"
+import type { Actor } from "./Actor.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
+import type { Methods } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 const span = Spanner.make(import.meta.url)
 

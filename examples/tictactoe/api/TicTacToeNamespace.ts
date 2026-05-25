@@ -1,4 +1,4 @@
-import { WorkerdActorNamespace } from "liminal/workerd"
+import { WorkerdActorNamespace } from "liminal"
 
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
