@@ -80,7 +80,7 @@ export const make = Effect.fnUntraced(function* <
       const { _tag } = event.event as never
       return Effect.gen(function* () {
         const trace = yield* Tracing.currentTrace
-        yield* backing.send(0, yield* encodeEvent({ ...event, ...(trace && { trace }) })).pipe(Effect.orDie)
+        yield* backing.send(0, yield* encodeEvent({ ...event, ...(trace && { trace }) }))
       }).pipe(span("send", { attributes: { _tag }, kind: "producer" }))
     },
     close: ({ close }) => close,
@@ -149,16 +149,14 @@ export const make = Effect.fnUntraced(function* <
                 }
                 const { client: actual } = message
                 if (actual !== expected) {
-                  yield* backing
-                    .send(
-                      0,
-                      yield* encodeAuditionFailure({
-                        _tag: "Audition.Failure",
-                        expected,
-                        actual,
-                      }),
-                    )
-                    .pipe(Effect.orDie)
+                  yield* backing.send(
+                    0,
+                    yield* encodeAuditionFailure({
+                      _tag: "Audition.Failure",
+                      expected,
+                      actual,
+                    }),
+                  )
                   return yield* closeScope
                 }
                 const key = yield* S.encodeEffect(Name)(name)
@@ -176,9 +174,7 @@ export const make = Effect.fnUntraced(function* <
                   span("onConnect"),
                   Effect.provide(ActorLive),
                 )
-                return yield* backing
-                  .send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
-                  .pipe(Effect.orDie)
+                return yield* backing.send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
               }
               const { entry, ActorLive } = state.value
               if (message._tag === "Audition.Payload") {
@@ -211,7 +207,7 @@ export const make = Effect.fnUntraced(function* <
                       failure: { _tag, value } as never,
                     }),
                 }),
-                Effect.andThen((v) => backing.send(0, v as string).pipe(Effect.orDie)),
+                Effect.andThen((v) => backing.send(0, v)),
                 span("handle", {
                   attributes: { _tag },
                   kind: "server",
