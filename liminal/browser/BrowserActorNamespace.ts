@@ -4,6 +4,7 @@ import { WorkerRunner } from "effect/unstable/workers"
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
 
+import { encodeJsonString, decodeJsonString } from "../_util/schema.ts"
 import type { TopFromString } from "../_util/schema.ts"
 import type { Actor } from "../Actor.ts"
 import type { ActorTransport } from "../ActorTransport.ts"
@@ -48,17 +49,24 @@ export const make = Effect.fnUntraced(function* <
   const {
     definition: {
       client: {
-        protocol: { Client: ClientM, Actor },
+        protocol: P,
         key: expected,
       },
       name: Name,
     },
   } = actor
+  const { Client: ClientM } = P
+  const decodeClient = decodeJsonString(ClientM)
+  const encodeAuditionSuccess = encodeJsonString(P.Audition.Success)
+  const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
+  const encodeFSuccess = encodeJsonString(P.F.Success)
+  const encodeFFailure = encodeJsonString(P.F.Failure)
+  const encodeEvent = encodeJsonString(P.Event)
 
   interface BrowserClient {
     readonly port: MessagePort
 
-    readonly backing: WorkerRunner.WorkerRunner<typeof Actor.Type, typeof ClientM.Type>
+    readonly backing: WorkerRunner.WorkerRunner<string, string>
 
     readonly close: Effect.Effect<void>
   }
@@ -76,10 +84,7 @@ export const make = Effect.fnUntraced(function* <
       const { _tag } = event.event as never
       return Effect.gen(function* () {
         const trace = yield* Tracing.currentTrace
-        yield* backing.send(0, {
-          ...event,
-          ...(trace && { trace }),
-        })
+        yield* backing.send(0, yield* encodeEvent({ ...event, ...(trace && { trace }) })).pipe(Effect.orDie)
       }).pipe(span("send", { attributes: { _tag }, kind: "producer" }))
     },
     close: ({ close }) => close,
@@ -118,7 +123,7 @@ export const make = Effect.fnUntraced(function* <
         const scope = yield* Scope.fork(outerScope, "sequential")
         const closeScope = Scope.close(scope, Exit.void)
 
-        const backing = yield* BrowserWorkerRunner.make(port).start<typeof Actor.Type, typeof ClientM.Type>()
+        const backing = yield* BrowserWorkerRunner.make(port).start<string, string>()
 
         yield* Scope.addFinalizer(
           scope,
@@ -141,19 +146,21 @@ export const make = Effect.fnUntraced(function* <
           .run(
             Effect.fnUntraced(function* (_portId, raw) {
               const state = yield* Ref.get(stateRef)
-              yield* Effect.gen(function* () {
-                const message = yield* S.decodeUnknownEffect(S.toType(ClientM))(raw)
+              const message = yield* decodeClient(raw)
                 if (state._tag === "None") {
                   if (message._tag !== "Audition.Payload") {
                     return yield* Effect.die(undefined)
                   }
                   const { client: actual } = message
                   if (actual !== expected) {
-                    yield* backing.send(0, {
-                      _tag: "Audition.Failure",
-                      expected,
-                      actual,
-                    })
+                    yield* backing.send(
+                      0,
+                      yield* encodeAuditionFailure({
+                        _tag: "Audition.Failure",
+                        expected,
+                        actual,
+                      }),
+                    ).pipe(Effect.orDie)
                     return yield* closeScope
                   }
                   const key = yield* S.encodeEffect(Name)(name)
@@ -174,7 +181,9 @@ export const make = Effect.fnUntraced(function* <
                     span("onConnect"),
                     Effect.provide(ActorLive),
                   )
-                  return yield* backing.send(0, { _tag: "Audition.Success", initial })
+                  return yield* backing
+                    .send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
+                    .pipe(Effect.orDie)
                 }
                 const { entry, ActorLive } = state.value
                 if (message._tag === "Audition.Payload") {
@@ -193,19 +202,21 @@ export const make = Effect.fnUntraced(function* <
                     Handlers[keyof Handlers] extends (v: never) => Effect.Effect<any, any, infer R> ? R : never
                   >
                 )[_tag]!(value).pipe(
-                  Effect.match({
-                    onSuccess: (value) => ({
-                      _tag: "F.Success" as const,
-                      id,
-                      success: { _tag, value } as never,
-                    }),
-                    onFailure: (value) => ({
-                      _tag: "F.Failure" as const,
-                      id,
-                      failure: { _tag, value } as never,
-                    }),
+                  Effect.matchEffect({
+                    onSuccess: (value) =>
+                      encodeFSuccess({
+                        _tag: "F.Success",
+                        id,
+                        success: { _tag, value } as never,
+                      }),
+                    onFailure: (value) =>
+                      encodeFFailure({
+                        _tag: "F.Failure",
+                        id,
+                        failure: { _tag, value } as never,
+                      }),
                   }),
-                  Effect.andThen((v) => backing.send(0, v)),
+                  Effect.andThen((v) => backing.send(0, v as string).pipe(Effect.orDie)),
                   span("handle", {
                     attributes: { _tag },
                     kind: "server",
@@ -227,7 +238,6 @@ export const make = Effect.fnUntraced(function* <
                   Effect.provide(ActorLive),
                   entry.mutex,
                 )
-              })
             }, span("message")),
           )
           .pipe(
