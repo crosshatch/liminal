@@ -26,9 +26,9 @@ import {
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import { decodeJsonString, encodeJsonString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
 import type { Fn, FnError } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
@@ -67,11 +67,13 @@ export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
   ClientError
 >
 
-export interface Client<Self, ClientId extends string, D extends ProtocolDefinition> extends Context.Service<
+export interface Client<Self, Id extends string, D extends ProtocolDefinition> extends Context.Service<
   Self,
   Service<Self, D>
 > {
-  new (_: never): Context.ServiceClass.Shape<ClientId, Service<Self, D>>
+  new (_: never): Context.ServiceClass.Shape<Id, Service<Self, D>> & {
+    readonly State: S.Struct<D["state"]>["Type"]
+  }
 
   readonly [TypeId]: typeof TypeId
 
@@ -140,7 +142,7 @@ export const Service =
 
     const reducer = <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_event: K, f: R) => f
 
-    return Object.assign(tag, {
+    return Object.assign(tag satisfies Context.ServiceClass.Shape<Id, Service<Self, D>> as never, {
       [TypeId]: TypeId,
       definition,
       protocol,
@@ -263,6 +265,8 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                   const current = yield* Ref.get(state)
                   const reduced = yield* reducer(event as never)(current).pipe(
                     Effect.provideService(client, rcr),
+                    // TODO: rework error-handling
+                    Effect.catchDefect(() => Effect.succeed(undefined)),
                   ) as Effect.Effect<
                     S.Struct<D["state"]>["Type"] | undefined,
                     never,
@@ -458,6 +462,8 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
     return rcr
   }).pipe(Layer.effect(client))
 
+const clientId = crypto.randomUUID()
+
 export const layerSocket = <
   Self,
   Id extends string,
@@ -498,7 +504,12 @@ export const layerSocket = <
     replay,
     build: Effect.gen(function* () {
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
-        protocols: ["liminal", Encoding.encodeBase64Url(client.key), ...(protocols ? Array.ensure(protocols) : [])],
+        protocols: [
+          "liminal",
+          clientId,
+          Encoding.encodeBase64Url(client.key),
+          ...(protocols ? Array.ensure(protocols) : []),
+        ],
       })
       return {
         listen: Effect.fnUntraced(function* (publish) {
@@ -563,10 +574,14 @@ export const layerWorker = <
   | Worker.WorkerPlatform
   | Worker.Spawner
   | T["Actor"]["DecodingServices"]
-  | T["F"]["Payload"]["EncodingServices"]
+  | T["Client"]["EncodingServices"]
   | Reducer.Reducers.Services<Self, Reducers>
-> =>
-  make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner, CR>({
+> => {
+  const { Actor, Client: ClientM } = client.protocol
+  const encodeClient = encodeJsonString(ClientM)
+  const decodeActor = decodeJsonString(Actor)
+
+  return make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner, CR>({
     client,
     reducers,
     onConnect,
@@ -574,11 +589,12 @@ export const layerWorker = <
     build: Effect.gen(function* () {
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform
-        .spawn<T["Actor"]["Type"], T["Client"]["Type"]>(0)
+        .spawn<string, string>(0)
         .pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
 
       const send = (message: T["Client"]["Type"]) =>
-        backing.send(message).pipe(
+        encodeClient(message).pipe(
+          Effect.flatMap((encoded) => backing.send(encoded)),
           Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
           span("send"),
         )
@@ -586,21 +602,21 @@ export const layerWorker = <
       return {
         listen: Effect.fnUntraced(function* (publish) {
           const stop = yield* Deferred.make<void>()
+          const audition = yield* encodeClient({
+            _tag: "Audition.Payload",
+            client: client.key,
+          })
           yield* backing
             .run(
-              Effect.fnUntraced(function* (message) {
+              Effect.fnUntraced(function* (raw) {
+                const message = yield* decodeActor(raw)
                 yield* publish(message)
                 if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
                   yield* Deferred.succeed(stop, void 0)
                 }
               }),
               {
-                onSpawn: backing
-                  .send({
-                    _tag: "Audition.Payload",
-                    client: client.key,
-                  })
-                  .pipe(Effect.orDie),
+                onSpawn: backing.send(audition).pipe(Effect.orDie),
               },
             )
             .pipe(
@@ -612,3 +628,4 @@ export const layerWorker = <
       }
     }),
   })
+}

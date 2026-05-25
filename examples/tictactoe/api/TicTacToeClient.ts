@@ -1,12 +1,8 @@
 import { Schema as S } from "effect"
 import { Client } from "liminal"
 
-export const Player = S.Literals(["X", "O"])
-export const Coordinate = S.Literals([0, 1, 2])
-export const Coordinates = S.Tuple([Coordinate, Coordinate])
-
-export class OutOfTurnError extends S.TaggedErrorClass<OutOfTurnError>()("OutOfTurnError", {}) {}
-export class SlotTakenError extends S.TaggedErrorClass<SlotTakenError>()("SlotTakenError", {}) {}
+import { Coordinates, Player } from "./domain.ts"
+import * as external from "./external.ts"
 
 export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
   events: {
@@ -19,15 +15,7 @@ export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples
       winner: S.optional(Player),
     },
   },
-  external: {
-    Move: {
-      payload: S.Struct({
-        position: Coordinates,
-      }),
-      failure: S.Never,
-      success: S.Void,
-    },
-  },
+  external,
   state: {
     awaitingPartner: S.Boolean,
     name: Player,

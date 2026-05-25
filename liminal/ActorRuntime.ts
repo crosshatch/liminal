@@ -20,17 +20,17 @@ import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"
 import { boundLayer } from "liminal-util/boundLayer"
 import { logCause } from "liminal-util/logCause"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import { type TopFromString, encodeJsonString, decodeJsonString } from "../_util/schema.ts"
-import type { ActorTransport } from "../ActorTransport.ts"
-import * as ClientDirectory from "../ClientDirectory.ts"
-import type { ClientHandle } from "../ClientHandle.ts"
-import type { Handlers, Methods } from "../Method.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
-import * as Tracing from "../Tracing.ts"
-import { sessionAttributes, SessionId, sessionLink } from "../Tracing.ts"
-import type { ActorNamespace } from "./WorkerdActorNamespace.ts"
+import type { ActorNamespace } from "./ActorNamespace.ts"
+import type { ActorTransport } from "./ActorTransport.ts"
+import * as ClientDirectory from "./ClientDirectory.ts"
+import type { ClientHandle } from "./ClientHandle.ts"
+import type { Handlers, Methods } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
+import * as Tracing from "./Tracing.ts"
+import { sessionAttributes, SessionId, sessionLink } from "./Tracing.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -205,7 +205,7 @@ export const make = <
       ),
   }
 
-  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/WorkerdActorNamespace/NameDecoded") {}
+  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/ActorNamespace/NameDecoded") {}
 
   return class extends DurableObject {
     readonly run
@@ -269,10 +269,11 @@ export const make = <
       return Effect.gen({ self: this }, function* () {
         const url = new URL(request.url)
         const attachments = yield* decodeAttachmentsString(url.searchParams.get("__liminal_attachments"))
+        const clientId = yield* Effect.fromNullishOr(url.searchParams.get("__liminal_client_id"))
         const { 0: webSocket, 1: server } = new WebSocketPair()
         const state = yield* DoState.DoState
         const session = {
-          id: SessionId.make(crypto.randomUUID()),
+          id: SessionId.make(clientId),
           trace: yield* Effect.currentSpan.pipe(Effect.map(Tracing.toTraceEnvelope)),
         }
         const currentClient = yield* this.directory.register({ socket: server, session }, attachments)
@@ -417,6 +418,13 @@ export const make = <
     ): Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>> {
       const handler = internal[method]
       return await handler(payload).pipe(this.provideActor(null!), span("fn-internal"), Effect.exit, this.run)
+    }
+
+    async proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]) {
+      await Effect.gen(function* () {
+        const { clients } = yield* actor
+        yield* Effect.forEach(clients, ({ send }) => send(event, payload), { concurrency: "unbounded" })
+      }).pipe(this.provideActor(null!), span("fn-internal"), this.run)
     }
   }
 }

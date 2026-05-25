@@ -1,10 +1,9 @@
 import { Context, Schema as S, Effect } from "effect"
+import type { TopFromString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
-import * as Method from "./Method.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"
 
 const span = Spanner.make(import.meta.url)
@@ -53,14 +52,9 @@ export interface Actor<
 
   readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
 
-  readonly all: Sender<ActorSelf, D>
+  readonly all: Sender<D, ActorSelf>
 
-  readonly others: Sender<ActorSelf, D>
-
-  readonly handler: <K extends keyof D["external"], R>(
-    tag: K,
-    f: Method.Handler<D["external"][K], R>,
-  ) => Method.Handler<D["external"][K], R>
+  readonly others: Sender<D, ActorSelf>
 }
 
 export const Service =
@@ -78,7 +72,7 @@ export const Service =
   ): Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D> => {
     const tag = Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>>()(id)
 
-    const all: Sender<ActorSelf, D> = {
+    const all: Sender<D, ActorSelf> = {
       send: (key, payload) =>
         tag.asEffect().pipe(
           Effect.flatMap(({ clients }) =>
@@ -92,7 +86,7 @@ export const Service =
       ),
     }
 
-    const others: Sender<ActorSelf, D> = {
+    const others: Sender<D, ActorSelf> = {
       send: Effect.fnUntraced(function* (key, payload) {
         const { clients, currentClient } = yield* tag
         yield* Effect.forEach(
@@ -107,16 +101,10 @@ export const Service =
       }).pipe(span("disconnect-others")),
     }
 
-    const handler = <K extends keyof D["external"], R>(
-      _tag: K,
-      f: Method.Handler<D["external"][K], R>,
-    ): Method.Handler<D["external"][K], R> => f
-
     return Object.assign(tag, {
       [TypeId]: TypeId,
       definition,
       all,
       others,
-      handler,
     })
   }

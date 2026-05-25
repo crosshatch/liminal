@@ -1,9 +1,11 @@
 import { Effect } from "effect"
+import { handler } from "liminal"
 
+import { OutOfTurnError, SlotTakenError } from "./errors.ts"
+import { Move } from "./external.ts"
 import { setBoard, getBoard } from "./Games.ts"
 import { mapInternalError } from "./mapInternalError.ts"
 import { TicTacToeActor } from "./TicTacToeActor.ts"
-import { OutOfTurnError, SlotTakenError } from "./TicTacToeClient.ts"
 
 // oxfmt-ignore
 const LINES = [
@@ -20,8 +22,8 @@ const LINES = [
   [[0, 2], [1, 1], [2, 0]],
 ] as const;
 
-export default TicTacToeActor.handler(
-  "Move",
+export default handler(
+  Move,
   Effect.fn(function* ({ position }) {
     const { currentClient, name: gameId } = yield* TicTacToeActor
     const { board, turn } = yield* getBoard(gameId)

@@ -1,7 +1,7 @@
 import { Effect, Types } from "effect"
 import { KeyValueStore } from "effect/unstable/persistence"
 
-import type { Player } from "./TicTacToeClient.ts"
+import type { Player } from "./domain.ts"
 
 export type Board = Types.TupleOf<3, Types.TupleOf<3, typeof Player.Type | undefined>>
 

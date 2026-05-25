@@ -2,13 +2,13 @@ import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exi
 import { Binding, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
+import { type TopFromString, encodeJsonString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import { type TopFromString, encodeJsonString } from "../_util/schema.ts"
-import type { Actor } from "../Actor.ts"
-import type { Methods } from "../Method.ts"
-import type { ProtocolDefinition } from "../Protocol.ts"
+import type { Actor } from "./Actor.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
+import type { Methods } from "./Method.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -45,7 +45,7 @@ export interface ActorNamespace<
     _: never,
   ): Context.ServiceClass.Shape<
     NamespaceId,
-    DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
+    DurableObjectNamespace<Rpc.DurableObjectBranded & ActorNamespace.MakeRpc<Internal, D>>
   >
 
   readonly definition: ActorNamespaceDefinition<
@@ -59,17 +59,19 @@ export interface ActorNamespace<
     D
   >
 
-  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields>
+  readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields, D>
 
   readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
 }
 
-export declare namespace WorkerdActorNamespace {
-  export type MakeRpc<External extends Methods> = {
-    rpc: <K extends keyof External>(
+export declare namespace ActorNamespace {
+  export type MakeRpc<Internal extends Methods, D extends ProtocolDefinition> = {
+    rpc: <K extends keyof Internal>(
       method: K,
-      payload: External[K]["payload"]["Type"],
-    ) => Promise<Exit.Exit<External[K]["success"]["Type"], External[K]["failure"]["Type"]>>
+      payload: Internal[K]["payload"]["Type"],
+    ) => Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>>
+
+    proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]): void
   }
 }
 
@@ -111,7 +113,7 @@ export const Service =
 
     const tag = Context.Service<
       NamespaceSelf,
-      DurableObjectNamespace<Rpc.DurableObjectBranded & WorkerdActorNamespace.MakeRpc<Internal>>
+      DurableObjectNamespace<Rpc.DurableObjectBranded & ActorNamespace.MakeRpc<Internal, D>>
     >()(id)
 
     const encodeName = S.encodeEffect(Name)
@@ -119,7 +121,7 @@ export const Service =
     const encodeAttachmentsString = encodeJsonString(Attachments)
     const encodeAuditionFailure = encodeJsonString(P.Audition.Failure)
 
-    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields> => {
+    const bind = (name: Name["Type"]): ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields, D> => {
       const getStub = Effect.gen(function* () {
         const namespace = yield* tag
         const nameEncoded = yield* encodeName(name)
@@ -133,7 +135,8 @@ export const Service =
             Effect.map(flow(String.split(","), Array.map(String.trim))),
           )
           const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
-          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1]).pipe(
+          const liminalClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1])
+          const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 2]).pipe(
             Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
           )
           if (requestClientId !== clientId) {
@@ -147,6 +150,7 @@ export const Service =
           }
           const url = new URL(request.url)
           url.searchParams.set("__liminal_attachments", yield* encodeAttachmentsString(attachments))
+          url.searchParams.set("__liminal_client_id", liminalClientId)
           const actorRequest = new Request(url, request)
           const traceHeaders = yield* Effect.currentSpan.pipe(Effect.map(HttpTraceContext.toHeaders))
           for (const [key, value] of Object.entries(traceHeaders)) {
@@ -165,7 +169,16 @@ export const Service =
         return yield* exit as any
       })
 
-      return { upgrade, call }
+      // TODO:
+      const proxySendAll = Effect.fnUntraced(function* <K extends keyof D["events"]>(
+        event: K,
+        payload: S.Struct<D["events"][K]>["Type"],
+      ) {
+        const stub = yield* getStub
+        yield* Effect.promise(() => stub.proxySendAll(event as never, payload as never))
+      }) as never
+
+      return { upgrade, call, proxySendAll }
     }
 
     const layer = Binding.layer(tag, ["idFromName", "idFromString", "newUniqueId", "get", "getByName"])(binding)

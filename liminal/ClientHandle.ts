@@ -2,20 +2,22 @@ import { Schema as S, Effect } from "effect"
 
 import type { ProtocolDefinition } from "./Protocol.ts"
 
-export interface Sender<ActorSelf, D extends ProtocolDefinition> {
-  readonly send: <K extends keyof D["events"]>(
-    tag: K,
-    payload: S.Struct<D["events"][K]>["Type"],
-  ) => Effect.Effect<void, S.SchemaError, ActorSelf | ReturnType<typeof S.TaggedUnion<D["events"]>>["EncodingServices"]>
+export type Send<D extends ProtocolDefinition, RIn> = <K extends keyof D["events"]>(
+  tag: K,
+  payload: S.Struct<D["events"][K]>["Type"],
+) => Effect.Effect<void, S.SchemaError, RIn | ReturnType<typeof S.TaggedUnion<D["events"]>>["EncodingServices"]>
 
-  readonly disconnect: Effect.Effect<void, never, ActorSelf>
+export interface Sender<D extends ProtocolDefinition, R> {
+  readonly send: Send<D, R>
+
+  readonly disconnect: Effect.Effect<void, never, R>
 }
 
 export interface ClientHandle<
   ActorSelf,
   AttachmentFields extends S.Struct.Fields,
   D extends ProtocolDefinition,
-> extends Sender<ActorSelf, D> {
+> extends Sender<D, ActorSelf> {
   readonly attachments: Effect.Effect<S.Struct<AttachmentFields>["Type"]>
 
   readonly save: (

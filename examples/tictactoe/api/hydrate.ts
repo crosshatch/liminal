@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
 import { TicTacToeActor } from "./TicTacToeActor.ts"
+import type { TicTacToeClient } from "./TicTacToeClient.ts"
 
 export default Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
@@ -8,12 +9,14 @@ export default Effect.gen(function* () {
     return {
       awaitingPartner: true,
       name: "X" as const,
-    }
+    } satisfies TicTacToeClient["State"]
   } else {
-    yield* TicTacToeActor.others.send("GameStarted", {})
+    yield* Effect.addFinalizer(() =>
+      TicTacToeActor.others.send("GameStarted", {}).pipe(Effect.catchTag("SchemaError", Effect.die)),
+    )
     return {
       awaitingPartner: false,
       name: "O" as const,
-    }
+    } satisfies TicTacToeClient["State"]
   }
 }).pipe(Effect.orDie)
