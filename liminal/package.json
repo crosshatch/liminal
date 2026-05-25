@@ -16,8 +16,8 @@
   "exports": {
     ".": {
       "workerd": "./index.ts",
-      "browser": "./index.browser.ts",
-      "node": "./index.browser.ts",
+      "browser": "./index.non-workerd.ts",
+      "node": "./index.non-workerd.ts",
       "default": "./index.ts"
     },
     "./*": "./*.ts",
@@ -28,8 +28,8 @@
     "exports": {
       ".": {
         "workerd": "./dist/index.js",
-        "browser": "./dist/index.browser.js",
-        "node": "./dist/index.browser.js",
+        "browser": "./dist/index.non-workerd.js",
+        "node": "./dist/index.non-workerd.js",
         "default": "./dist/index.js"
       },
       "./*": "./dist/*.js",
