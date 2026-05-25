@@ -1,8 +1,8 @@
 import { Schema as S, Effect, Cause, Ref } from "effect"
+import type { TopFromString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
 import { phantom } from "./_util/phantom.ts"
-import type { TopFromString } from "./_util/schema.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientHandle from "./ClientHandle.ts"

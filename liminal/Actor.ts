@@ -1,7 +1,7 @@
 import { Context, Schema as S, Effect } from "effect"
+import type { TopFromString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import type { TopFromString } from "./_util/schema.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"

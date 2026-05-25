@@ -2,9 +2,9 @@ import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exi
 import { Binding, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
+import { type TopFromString, encodeJsonString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import { type TopFromString, encodeJsonString } from "./_util/schema.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
 import type { Methods } from "./Method.ts"

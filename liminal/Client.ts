@@ -26,9 +26,9 @@ import {
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import { decodeJsonString, encodeJsonString } from "liminal-util/schema"
 import * as Spanner from "liminal-util/Spanner"
 
-import { decodeJsonString, encodeJsonString } from "./_util/schema.ts"
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
 import type { Fn, FnError } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"

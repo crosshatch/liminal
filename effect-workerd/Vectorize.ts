@@ -1,11 +1,12 @@
 import { Context, Data, Effect, Layer, Schema as S } from "effect"
+import type { TopFromString } from "liminal-util/schema"
 
 import * as Binding from "./Binding.ts"
 
 export interface VectorizeDefinition {
   readonly binding: string
 
-  readonly id: S.Top & { Encoded: string }
+  readonly id: TopFromString
 
   readonly metadata: Record<string, S.Top & { Encoded: string | number | boolean | Array<string> }>
 }
