@@ -540,7 +540,9 @@ export const layerSocket = <
             const write = yield* socket.writer
             const message = yield* encodeFPayload(v)
             yield* write(message).pipe(
-              Effect.catchTag("SocketError", (cause) => new ConnectionError({ cause }).asEffect()),
+              Effect.catchTags({
+                SocketError: (cause) => new ConnectionError({ cause }).asEffect(),
+              }),
             )
           },
           span("send"),
@@ -588,14 +590,18 @@ export const layerWorker = <
     replay,
     build: Effect.gen(function* () {
       const platform = yield* Worker.WorkerPlatform
-      const backing = yield* platform
-        .spawn<string, string>(0)
-        .pipe(Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()))
+      const backing = yield* platform.spawn<string, string>(0).pipe(
+        Effect.catchTags({
+          WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+        }),
+      )
 
       const send = (message: T["Client"]["Type"]) =>
         encodeClient(message).pipe(
           Effect.flatMap((encoded) => backing.send(encoded)),
-          Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
+          Effect.catchTags({
+            WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+          }),
           span("send"),
         )
 
@@ -621,7 +627,9 @@ export const layerWorker = <
             )
             .pipe(
               Effect.raceFirst(Deferred.await(stop)),
-              Effect.catchTag("WorkerError", (cause) => new ConnectionError({ cause }).asEffect()),
+              Effect.catchTags({
+                WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+              }),
             )
         }, span("listen")),
         send,

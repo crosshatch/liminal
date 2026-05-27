@@ -60,7 +60,11 @@ export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D ex
         metadata: metadataEncoded,
       },
     ]),
-  ).pipe(Effect.catchTag("UnknownError", (cause) => new VectorizeUpsertError({ cause }).asEffect()))
+  ).pipe(
+    Effect.catchTags({
+      UnknownError: (cause) => new VectorizeUpsertError({ cause }).asEffect(),
+    }),
+  )
 })
 
 export class VectorizeQueryError extends Data.TaggedError("VectorizeQueryError")<{
@@ -74,7 +78,9 @@ export const query = Effect.fnUntraced(function* <Self, Id extends string, D ext
 ) {
   const i = yield* index
   const { matches } = yield* Effect.tryPromise(() => i.query(values, options)).pipe(
-    Effect.catchTag("UnknownError", (cause) => new VectorizeQueryError({ cause }).asEffect()),
+    Effect.catchTags({
+      UnknownError: (cause) => new VectorizeQueryError({ cause }).asEffect(),
+    }),
   )
   const decodeId = S.decodeEffect(index["~"].id)
   const decodeMetadata = S.decodeUnknownEffect(index["~"].metadata)

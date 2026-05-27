@@ -371,9 +371,11 @@ export const make = <
 
     override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
       Effect.gen({ self: this }, function* () {
-        const entry = yield* this.directory
-          .entry(socket)
-          .pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+        const entry = yield* this.directory.entry(socket).pipe(
+          Effect.catchTags({
+            NoSuchElementError: () => Effect.undefined,
+          }),
+        )
         if (!entry) {
           return
         }
