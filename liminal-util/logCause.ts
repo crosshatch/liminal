@@ -5,4 +5,5 @@ const formatReason = <E>(reason: Cause.Reason<E>): unknown => {
   return S.isSchemaError(value) ? value.toString() : value
 }
 
-export const logCause = <E>(cause: Cause.Cause<E>) => Effect.forEach(cause.reasons, flow(formatReason, Effect.logError))
+export const logCause = <E>(cause: Cause.Cause<E>) =>
+  Effect.forEach(cause.reasons, flow(formatReason, Effect.logError), { concurrency: "unbounded" })

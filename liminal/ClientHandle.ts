@@ -5,7 +5,7 @@ import type { ProtocolDefinition } from "./Protocol.ts"
 export type Send<D extends ProtocolDefinition, RIn> = <K extends keyof D["events"]>(
   tag: K,
   payload: S.Struct<D["events"][K]>["Type"],
-) => Effect.Effect<void, S.SchemaError, RIn | ReturnType<typeof S.TaggedUnion<D["events"]>>["EncodingServices"]>
+) => Effect.Effect<void, never, RIn | ReturnType<typeof S.TaggedUnion<D["events"]>>["EncodingServices"]>
 
 export interface Sender<D extends ProtocolDefinition, R> {
   readonly send: Send<D, R>

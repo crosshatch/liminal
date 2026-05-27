@@ -8,12 +8,12 @@ export interface ActorTransport<Key, Client, AttachmentFields extends S.Struct.F
   readonly send: (
     client: Client,
     event: Protocol<D>["Event"]["Type"],
-  ) => Effect.Effect<void, S.SchemaError, Protocol<D>["Event"]["EncodingServices"]>
+  ) => Effect.Effect<void, never, Protocol<D>["Event"]["EncodingServices"]>
 
   readonly close: (client: Client) => Effect.Effect<void>
 
   readonly snapshot: (
     client: Client,
     attachments: S.Struct<AttachmentFields>["Type"],
-  ) => Effect.Effect<void, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
+  ) => Effect.Effect<void, never, S.Struct<AttachmentFields>["EncodingServices"]>
 }
