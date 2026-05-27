@@ -182,7 +182,9 @@ export const make = <
       return Effect.gen(function* () {
         const trace = yield* Tracing.currentTrace
         const encoded = yield* encodeEvent({ ...event, ...(trace && { trace }) }).pipe(
-          Effect.catchTags({ SchemaError: Effect.die }),
+          Effect.catchTags({
+            SchemaError: Effect.die,
+          }),
         )
         // @effect-diagnostics-next-line tryCatchInEffectGen:off
         try {
@@ -200,7 +202,9 @@ export const make = <
     close: ({ socket }) => Effect.sync(() => socket.close(1000)),
     snapshot: ({ socket, session }, attachments) =>
       encodeSocketAttachment({ attachments, session }).pipe(
-        Effect.catchTags({ SchemaError: Effect.die }),
+        Effect.catchTags({
+          SchemaError: Effect.die,
+        }),
         Effect.andThen((v) => Effect.sync(() => socket.serializeAttachment(v))),
       ),
   }

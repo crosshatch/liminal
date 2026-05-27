@@ -82,7 +82,11 @@ export const make = Effect.fnUntraced(function* <
         const trace = yield* Tracing.currentTrace
         yield* backing.send(
           0,
-          yield* encodeEvent({ ...event, ...(trace && { trace }) }).pipe(Effect.catchTags({ SchemaError: Effect.die })),
+          yield* encodeEvent({ ...event, ...(trace && { trace }) }).pipe(
+            Effect.catchTags({
+              SchemaError: Effect.die,
+            }),
+          ),
         )
       }).pipe(span("send", { attributes: { _tag }, kind: "producer" }))
     },
