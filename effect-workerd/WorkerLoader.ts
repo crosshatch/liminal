@@ -28,7 +28,7 @@ export const run = (id: string, request: Request) =>
   Effect.gen({ self: this }, function* () {
     const loader = yield* WorkerLoader
     const worker = loader.get(id, () => absurd<never>(null!))
-    return yield* Effect.tryPromise(() => worker.getEntrypoint().fetch(request)).pipe(
+    return yield* Effect.promise(() => worker.getEntrypoint().fetch(request)).pipe(
       Effect.map(HttpServerResponse.fromWeb),
     )
   }).pipe(span("run", { attributes: { id } }))

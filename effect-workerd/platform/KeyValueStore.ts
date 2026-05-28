@@ -21,90 +21,36 @@ export const layerR2 = ({ root }: { readonly root?: string | undefined } = {}) =
       const r2 = yield* R2
       return KeyValueStore.make({
         get: (key) =>
-          Effect.tryPromise({
-            try: async () => {
-              const object = await r2.get(toKey(key))
-              return object === null ? undefined : await object.text()
-            },
-            catch: (cause) =>
-              new KeyValueStore.KeyValueStoreError({
-                method: "get",
-                key,
-                message: `Unable to get item with key ${key}`,
-                cause,
-              }),
+          Effect.promise(async () => {
+            const object = await r2.get(toKey(key))
+            return object === null ? undefined : await object.text()
           }),
         getUint8Array: (key) =>
-          Effect.tryPromise({
-            try: async () => {
-              const object = await r2.get(toKey(key))
-              return object === null ? undefined : new Uint8Array(await object.arrayBuffer())
-            },
-            catch: (cause) =>
-              new KeyValueStore.KeyValueStoreError({
-                method: "getUint8Array",
-                key,
-                message: `Unable to get item with key ${key}`,
-                cause,
-              }),
+          Effect.promise(async () => {
+            const object = await r2.get(toKey(key))
+            return object === null ? undefined : new Uint8Array(await object.arrayBuffer())
           }),
-        set: (key, value) =>
-          Effect.tryPromise({
-            try: () => r2.put(toKey(key), value),
-            catch: (cause) =>
-              new KeyValueStore.KeyValueStoreError({
-                method: "set",
-                key,
-                message: `Unable to set item with key ${key}`,
-                cause,
-              }),
-          }).pipe(Effect.asVoid),
-        remove: (key) =>
-          Effect.tryPromise({
-            try: () => r2.delete(toKey(key)),
-            catch: (cause) =>
-              new KeyValueStore.KeyValueStoreError({
-                method: "remove",
-                key,
-                message: `Unable to remove item with key ${key}`,
-                cause,
-              }),
-          }),
-        clear: Effect.tryPromise({
-          try: async () => {
-            let cursor: string | undefined
-            do {
-              const listed = await r2.list(lsOptions(cursor))
-              if (listed.objects.length > 0) {
-                await r2.delete(listed.objects.map((o) => o.key))
-              }
-              cursor = listed.truncated ? listed.cursor : undefined
-            } while (cursor)
-          },
-          catch: (cause) =>
-            new KeyValueStore.KeyValueStoreError({
-              method: "clear",
-              message: `Unable to clear storage`,
-              cause,
-            }),
+        set: (key, value) => Effect.promise(() => r2.put(toKey(key), value)).pipe(Effect.asVoid),
+        remove: (key) => Effect.promise(() => r2.delete(toKey(key))),
+        clear: Effect.promise(async () => {
+          let cursor: string | undefined
+          do {
+            const listed = await r2.list(lsOptions(cursor))
+            if (listed.objects.length > 0) {
+              await r2.delete(listed.objects.map((o) => o.key))
+            }
+            cursor = listed.truncated ? listed.cursor : undefined
+          } while (cursor)
         }),
-        size: Effect.tryPromise({
-          try: async () => {
-            let total = 0
-            let cursor: string | undefined
-            do {
-              const listed = await r2.list(lsOptions(cursor))
-              total += listed.objects.length
-              cursor = listed.truncated ? listed.cursor : undefined
-            } while (cursor)
-            return total
-          },
-          catch: (cause) =>
-            new KeyValueStore.KeyValueStoreError({
-              method: "size",
-              message: `Unable to get size`,
-              cause,
-            }),
+        size: Effect.promise(async () => {
+          let total = 0
+          let cursor: string | undefined
+          do {
+            const listed = await r2.list(lsOptions(cursor))
+            total += listed.objects.length
+            cursor = listed.truncated ? listed.cursor : undefined
+          } while (cursor)
+          return total
         }),
       })
     }),
