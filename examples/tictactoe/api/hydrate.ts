@@ -11,9 +11,7 @@ export default Effect.gen(function* () {
       name: "X" as const,
     } satisfies TicTacToeClient["State"]
   } else {
-    yield* Effect.addFinalizer(() =>
-      TicTacToeActor.others.send("GameStarted", {}).pipe(Effect.catchTag("SchemaError", Effect.die)),
-    )
+    yield* Effect.addFinalizer(() => TicTacToeActor.others.send("GameStarted", {}))
     return {
       awaitingPartner: false,
       name: "O" as const,

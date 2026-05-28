@@ -19,9 +19,17 @@ export const Session = S.Struct({
   trace: TraceEnvelope,
 })
 
-export const parent = Effect.currentParentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+export const parent = Effect.currentParentSpan.pipe(
+  Effect.catchTags({
+    NoSuchElementError: () => Effect.undefined,
+  }),
+)
 
-export const current = Effect.currentSpan.pipe(Effect.catchTag("NoSuchElementError", () => Effect.undefined))
+export const current = Effect.currentSpan.pipe(
+  Effect.catchTags({
+    NoSuchElementError: () => Effect.undefined,
+  }),
+)
 
 export const currentTrace = current.pipe(Effect.map((span) => (span ? toTraceEnvelope(span) : undefined)))
 

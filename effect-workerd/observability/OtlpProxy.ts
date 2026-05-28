@@ -21,15 +21,11 @@ export const layer = ({ endpoint }: { readonly endpoint: string }) =>
             body.set(chunk, offset)
             offset += chunk.byteLength
           }
-          const upstream = yield* Effect.tryPromise(() =>
-            fetch(new URL(url, endpoint), {
-              body,
-              headers,
-              method,
-            } as RequestInit),
+          const upstream = yield* Effect.promise(() =>
+            fetch(new URL(url, endpoint), { body, headers, method } as RequestInit),
           )
           const responseBody =
-            upstream.body === null ? null : new Uint8Array(yield* Effect.tryPromise(() => upstream.arrayBuffer()))
+            upstream.body === null ? null : new Uint8Array(yield* Effect.promise(() => upstream.arrayBuffer()))
           return responseBody === null
             ? HttpServerResponse.empty({
                 headers: upstream.headers,
