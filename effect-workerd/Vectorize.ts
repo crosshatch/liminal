@@ -52,19 +52,17 @@ export const upsert = Effect.fnUntraced(function* <Self, Id extends string, D ex
   const i = yield* index
   const idEncoded = yield* S.encodeEffect(index["~"].id)(id)
   const metadataEncoded = yield* S.encodeEffect(index["~"].metadata)(metadata)
-  yield* Effect.tryPromise(() =>
-    i.upsert([
-      {
-        id: idEncoded,
-        values,
-        metadata: metadataEncoded,
-      },
-    ]),
-  ).pipe(
-    Effect.catchTags({
-      UnknownError: (cause) => new VectorizeUpsertError({ cause }).asEffect(),
-    }),
-  )
+  yield* Effect.tryPromise({
+    try: () =>
+      i.upsert([
+        {
+          id: idEncoded,
+          values,
+          metadata: metadataEncoded,
+        },
+      ]),
+    catch: (cause) => new VectorizeUpsertError({ cause }),
+  })
 })
 
 export class VectorizeQueryError extends Data.TaggedError("VectorizeQueryError")<{
@@ -77,11 +75,10 @@ export const query = Effect.fnUntraced(function* <Self, Id extends string, D ext
   options?: VectorizeQueryOptions | undefined,
 ) {
   const i = yield* index
-  const { matches } = yield* Effect.tryPromise(() => i.query(values, options)).pipe(
-    Effect.catchTags({
-      UnknownError: (cause) => new VectorizeQueryError({ cause }).asEffect(),
-    }),
-  )
+  const { matches } = yield* Effect.tryPromise({
+    try: () => i.query(values, options),
+    catch: (cause) => new VectorizeQueryError({ cause }),
+  })
   const decodeId = S.decodeEffect(index["~"].id)
   const decodeMetadata = S.decodeUnknownEffect(index["~"].metadata)
   return yield* Effect.forEach(
