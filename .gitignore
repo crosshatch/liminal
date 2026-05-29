@@ -1,5 +1,6 @@
 *.tsbuildinfo
 .DS_Store
+.alchemy
 .dev.vars
 .direnv/
 .env*
