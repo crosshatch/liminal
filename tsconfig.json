@@ -6,6 +6,7 @@
     { "path": "./examples" },
     { "path": "./liminal" },
     { "path": "./liminal-util" },
-    { "path": "./scripts" }
+    { "path": "./scripts" },
+    { "path": "./stacks" }
   ]
 }
