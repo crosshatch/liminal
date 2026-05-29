@@ -25,3 +25,6 @@
 [submodule "repos/vitest"]
 	path = repos/vitest
 	url = git@github.com:vitest-dev/vitest.git
+[submodule "repos/alchemy-effect"]
+	path = repos/alchemy-effect
+	url = git@github.com:alchemy-run/alchemy-effect.git

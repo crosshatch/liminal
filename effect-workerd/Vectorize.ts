@@ -2,6 +2,7 @@ import { Context, Data, Effect, Layer, Schema as S } from "effect"
 import type { TopFromString } from "liminal-util/schema"
 
 import * as Binding from "./Binding.ts"
+import type { Env } from "./Env.ts"
 
 export interface VectorizeDefinition {
   readonly binding: string
@@ -17,7 +18,7 @@ export interface Vectorize<Self, Id extends string, D extends VectorizeDefinitio
 > {
   new (_: never): Context.ServiceClass.Shape<Id, VectorizeIndex>
 
-  readonly layer: Layer.Layer<Self, S.SchemaError>
+  readonly layer: Layer.Layer<Self, S.SchemaError, Env>
 
   readonly "~": {
     readonly id: D["id"]

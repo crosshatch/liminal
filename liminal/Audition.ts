@@ -35,7 +35,7 @@ export const empty: Audition<never, never, {}, never> = {
     return Pipeable.pipeArguments(this, arguments)
   },
   state: Stream.fail(new AuditionError()),
-  fn: () => () => new AuditionError().asEffect(),
+  fn: () => () => new AuditionError(),
   events: Stream.fail(new AuditionError()),
 }
 

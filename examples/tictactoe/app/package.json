@@ -9,7 +9,6 @@
     "serve": "vite preview"
   },
   "dependencies": {
-    "@cloudflare/vite-plugin": "catalog:",
     "@effect/atom-react": "catalog:",
     "@effect/platform-browser": "catalog:",
     "@liminal-examples/tictactoe": "workspace:*",

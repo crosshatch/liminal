@@ -1,6 +1,7 @@
 import { Effect, Schema as S, Option, Context, Layer } from "effect"
 
 import * as Binding from "./Binding.ts"
+import type { Env } from "./Env.ts"
 
 export interface KvDefinition {
   readonly key: S.Top & { Encoded: string }
@@ -13,7 +14,7 @@ export interface KvDefinition {
 export interface Kv<Self, Id extends string, D extends KvDefinition> extends Context.Service<Self, KVNamespace> {
   new (_: never): Context.ServiceClass.Shape<Id, KVNamespace>
 
-  readonly layer: Layer.Layer<Self, S.SchemaError, never>
+  readonly layer: Layer.Layer<Self, S.SchemaError, Env>
 
   readonly "~": {
     readonly key: D["key"]

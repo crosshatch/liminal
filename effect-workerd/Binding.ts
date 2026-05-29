@@ -1,6 +1,7 @@
-import { env } from "cloudflare:workers"
 import { Context, Layer, Effect, Schema as S, SchemaIssue } from "effect"
 import * as Spanner from "liminal-util/Spanner"
+
+import { Env } from "./Env.ts"
 
 const span = Spanner.make(import.meta.url)
 
@@ -12,8 +13,9 @@ export const layer =
   ) =>
   (binding: string) =>
     Effect.gen(function* () {
-      const resolved = (env as never)[binding]
-      if (!resolved) {
+      const env = yield* Env
+      const resolved = env[binding]
+      if (!resolved || typeof resolved !== "object" || resolved === null) {
         return yield* Effect.fail(
           new S.SchemaError(
             new SchemaIssue.Pointer(
@@ -39,7 +41,7 @@ export const layer =
           )
         }
       }
-      return Layer.mergeAll(Layer.succeed(tag, resolved), derive?.(resolved) ?? Layer.empty)
+      return Layer.mergeAll(Layer.succeed(tag, resolved as never), derive?.(resolved as never) ?? Layer.empty)
     }).pipe(
       span("make-binding", {
         attributes: { id: tag.key },
