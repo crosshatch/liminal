@@ -11,25 +11,32 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const accountId = yield* Config.string("CLOUDFLARE_ACCOUNT_ID")
-    const { value } = yield* Cloudflare.AccountApiToken("DeployApiToken", {
+    const { value: apiToken } = yield* Cloudflare.AccountApiToken("DeployApiToken", {
       name: "liminal-deploy",
       accountId,
       policies: [
         {
           effect: "allow",
           permissionGroups: [
-            "Workers Scripts Write",
+            "Account Settings Write",
+            "D1 Write",
+            "Pages Write",
+            "Queues Write",
+            "Secrets Store Write",
             "Workers KV Storage Write",
             "Workers R2 Storage Write",
-            "D1 Write",
-            "Queues Write",
-            "Pages Write",
-            "Account Settings Write",
-            "Secrets Store Write",
+            "Workers Scripts Write",
             "Workers Tail Read",
           ],
+          resources: { [`com.cloudflare.api.account.${accountId}`]: "*" },
+        },
+        {
+          effect: "allow",
+          permissionGroups: ["DNS Write", "Zone Read"],
           resources: {
-            [`com.cloudflare.api.account.${accountId}`]: "*",
+            [`com.cloudflare.api.account.${accountId}`]: {
+              "com.cloudflare.api.account.zone.*": "*",
+            } as never as string,
           },
         },
       ],
@@ -39,8 +46,8 @@ export default Alchemy.Stack(
       repository: "liminal",
       environment: "deploy",
       secrets: {
-        CLOUDFLARE_API_TOKEN: value,
         CLOUDFLARE_ACCOUNT_ID: Redacted.make(accountId),
+        CLOUDFLARE_API_TOKEN: Redacted.make(apiToken),
       },
     })
   }).pipe(Effect.orDie),
