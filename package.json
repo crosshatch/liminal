@@ -6,8 +6,11 @@
     "changeset": "changeset",
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
+    "deploy": "alchemy deploy",
     "sync-repos": "node ./konfik/main.ts sync-repos",
+    "destroy": "alchemy destroy",
     "dev": "turbo run dev //#watch",
+    "plan": "alchemy plan",
     "prepare": "ts-patch install -s",
     "test": "vitest run",
     "watch": "tsc -b -w"
@@ -24,6 +27,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/expect": "catalog:",
     "@vitest/web-worker": "catalog:",
+    "alchemy": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
     "oxfmt": "catalog:",
@@ -35,5 +39,5 @@
     "vitest": "catalog:",
     "wrangler": "catalog:"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@11.5.0"
 }

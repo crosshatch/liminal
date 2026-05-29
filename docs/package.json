@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/react": "catalog:",
+    "alchemy": "catalog:",
     "effect": "catalog:",
     "liminal": "workspace:*",
     "portless": "catalog:",

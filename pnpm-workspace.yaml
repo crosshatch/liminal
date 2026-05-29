@@ -7,6 +7,12 @@ packages:
   - liminal-util
   - scripts
 
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  sharp: true
+  workerd: true
+
 allowUnusedPatches: true
 
 catalog:
@@ -15,15 +21,15 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.14.7
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^4.20260414.1
-  "@effect/ai-openai-compat": 4.0.0-beta.57
-  "@effect/atom-react": 4.0.0-beta.57
-  "@effect/language-service": 0.85.1
-  "@effect/openapi-generator": 4.0.0-beta.57
-  "@effect/platform-browser": 4.0.0-beta.57
-  "@effect/platform-node": 4.0.0-beta.57
-  "@effect/sql-d1": 4.0.0-beta.57
-  "@effect/sql-pg": 4.0.0-beta.57
-  "@effect/vitest": 4.0.0-beta.57
+  "@effect/ai-openai-compat": 4.0.0-beta.66
+  "@effect/atom-react": 4.0.0-beta.66
+  "@effect/language-service": 0.86.2
+  "@effect/openapi-generator": 4.0.0-beta.66
+  "@effect/platform-browser": 4.0.0-beta.66
+  "@effect/platform-node": 4.0.0-beta.66
+  "@effect/sql-d1": 4.0.0-beta.66
+  "@effect/sql-pg": 4.0.0-beta.66
+  "@effect/vitest": 4.0.0-beta.66
   "@playwright/test": ^1.58.2
   "@tailwindcss/vite": ^4.1.18
   "@tanstack/react-router": ^1.159.4
@@ -36,8 +42,9 @@ catalog:
   "@vitest/coverage-v8": ^4.1.4
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
+  alchemy: ^2.0.0-beta.44
   babel-plugin-react-compiler: ^1.0.0
-  effect: 4.0.0-beta.57
+  effect: 4.0.0-beta.66
   happy-dom: ^20.9.0
   oxfmt: ^0.48.0
   oxlint: ^1.62.0
@@ -59,7 +66,7 @@ catalog:
   yaml: ^2.8.3
 
 overrides:
-  "@effect/sql-pg": 4.0.0-beta.57
+  "@effect/sql-pg": 4.0.0-beta.66
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
   react: ^19.2.4
@@ -68,3 +75,20 @@ overrides:
 patchedDependencies:
   miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
   vocs@1.4.1: konfik/patches/vocs@1.4.1.patch
+
+minimumReleaseAgeExclude:
+  - "@aws-sdk/client-cognito-identity"
+  - "@aws-sdk/core"
+  - "@aws-sdk/credential-provider-cognito-identity"
+  - "@aws-sdk/credential-provider-env"
+  - "@aws-sdk/credential-provider-http"
+  - "@aws-sdk/credential-provider-ini"
+  - "@aws-sdk/credential-provider-login"
+  - "@aws-sdk/credential-provider-node"
+  - "@aws-sdk/credential-provider-process"
+  - "@aws-sdk/credential-provider-sso"
+  - "@aws-sdk/credential-provider-web-identity"
+  - "@aws-sdk/credential-providers"
+  - "@aws-sdk/nested-clients"
+  - "@aws-sdk/signature-v4-multi-region"
+  - "@aws-sdk/token-providers"
