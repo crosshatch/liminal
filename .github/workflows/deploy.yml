@@ -20,7 +20,7 @@ jobs:
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: ./konfik/.github/actions/configure_environment
       - run: pnpm build
-      - run: pnpm deploy -- --stage prod --yes
+      - run: pnpm exec alchemy deploy --stage prod --yes
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
