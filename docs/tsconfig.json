@@ -1,6 +1,6 @@
 {
   "extends": "../konfik/tsconfig.base",
   "include": ["."],
-  "exclude": ["dist", "vocs.config.ts"],
+  "exclude": ["alchemy.run.ts", "dist", "vocs.config.ts"],
   "references": [{ "path": "../liminal" }]
 }
