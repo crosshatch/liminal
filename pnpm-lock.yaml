@@ -211,6 +211,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.66
+      effect-workerd:
+        specifier: workspace:*
+        version: link:../effect-workerd
       liminal:
         specifier: workspace:*
         version: link:../liminal
