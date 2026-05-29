@@ -6,6 +6,4 @@ export class Hyperdrive extends Context.Service<Hyperdrive, globalThis.Hyperdriv
 
 export const layer = Binding.layer(Hyperdrive, ["connectionString"])
 
-export const connectionString = Hyperdrive.asEffect().pipe(
-  Effect.map(({ connectionString }) => Redacted.make(connectionString)),
-)
+export const connectionString = Hyperdrive.pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))

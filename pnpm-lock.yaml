@@ -9,9 +9,6 @@ catalogs:
     '@changesets/cli':
       specifier: ^2.30.0
       version: 2.30.0
-    '@cloudflare/vite-plugin':
-      specifier: ^1.32.3
-      version: 1.32.3
     '@cloudflare/vitest-pool-workers':
       specifier: ^0.14.7
       version: 0.14.7
@@ -313,9 +310,6 @@ importers:
 
   examples/tictactoe/app:
     dependencies:
-      '@cloudflare/vite-plugin':
-        specifier: 'catalog:'
-        version: 1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))
       '@effect/atom-react':
         specifier: 'catalog:'
         version: 4.0.0-beta.66(effect@4.0.0-beta.66)(react@19.2.5)(scheduler@0.27.0)
@@ -717,12 +711,6 @@ packages:
     peerDependenciesMeta:
       workerd:
         optional: true
-
-  '@cloudflare/vite-plugin@1.32.3':
-    resolution: {integrity: sha512-a8ZkCA/SOiJ36jT3LlBLkUb7ZzGInhYJoTY4BMRBGdk+nsh44HavbNvtu/RdaqS5VJEMLM4+LqVIJ+V0ahGeFg==}
-    peerDependencies:
-      vite: ^6.1.0 || ^7.0.0 || ^8.0.0
-      wrangler: ^4.83.0
 
   '@cloudflare/vitest-pool-workers@0.14.7':
     resolution: {integrity: sha512-6LooO25358uPn/7U3LUg5f5pLULncDTShGuOf00TyEn3VIBW2otq92dTNf8ScIR3gV9QDztXNfChc4mqPCSBEA==}
@@ -7240,19 +7228,6 @@ snapshots:
       unenv: 2.0.0-rc.24
     optionalDependencies:
       workerd: 1.20260415.1
-
-  '@cloudflare/vite-plugin@1.32.3(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))(workerd@1.20260415.1)(wrangler@4.83.0(@cloudflare/workers-types@4.20260416.2))':
-    dependencies:
-      '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
-      miniflare: 4.20260415.0(patch_hash=239c845a45ddc8a139a212672a91a0f0e7bdcc429e15b7cff9f929d1d1b300ad)
-      unenv: 2.0.0-rc.24
-      vite: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
-      wrangler: 4.83.0(@cloudflare/workers-types@4.20260416.2)
-      ws: 8.18.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-      - workerd
 
   '@cloudflare/vitest-pool-workers@0.14.7(@cloudflare/workers-types@4.20260416.2)(@vitest/runner@4.1.4)(@vitest/snapshot@4.1.4)(vitest@4.1.4)':
     dependencies:

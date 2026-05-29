@@ -1,4 +1,3 @@
-import { env } from "cloudflare:workers"
 import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Option, pipe } from "effect"
 import {
   Headers,
@@ -12,6 +11,7 @@ import {
 import { logCause } from "liminal-util/logCause"
 import * as Spanner from "liminal-util/Spanner"
 
+import { Env } from "./Env.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 import * as Clock from "./platform/Clock.ts"
@@ -19,13 +19,14 @@ import * as Clock from "./platform/Clock.ts"
 const span = Spanner.make(import.meta.url)
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
-  readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient>
+  readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient | Env>
 
   readonly handler: Effect.Effect<
     HttpServerResponse.HttpServerResponse,
     E,
     | ExecutionContext
     | HttpServerRequest.HttpServerRequest
+    | Env
     | HttpClient.HttpClient
     | NativeRequest
     | PreludeROut
@@ -35,11 +36,11 @@ export interface WorkerDefinition<PreludeROut, PreludeE, E> {
 }
 
 export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefinition<PreludeROut, PreludeE, E>) => {
-  const fetch = (request: Request, _env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
+  const fetch = (request: Request, env: unknown, ctx: globalThis.ExecutionContext): Promise<Response> => {
     let runtime:
       | undefined
       | ManagedRuntime.ManagedRuntime<
-          PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient,
+          PreludeROut | Layer.Success<typeof HttpServer.layerServices> | HttpClient.HttpClient | Env,
           PreludeE
         >
     runtime ??= ManagedRuntime.make(
@@ -48,6 +49,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
           Layer.mergeAll(
             FetchHttpClient.layer,
             ConfigProvider.layer(ConfigProvider.fromUnknown(env)),
+            Layer.succeed(Env, env as never),
             HttpServer.layerServices,
           ),
         ),

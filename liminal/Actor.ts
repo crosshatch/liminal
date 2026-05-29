@@ -74,13 +74,13 @@ export const Service =
 
     const all: Sender<D, ActorSelf> = {
       send: (key, payload) =>
-        tag.asEffect().pipe(
+        tag.pipe(
           Effect.flatMap(({ clients }) =>
             Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
           ),
           span("send-all"),
         ),
-      disconnect: tag.asEffect().pipe(
+      disconnect: tag.pipe(
         Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
         span("disconnect-all"),
       ),

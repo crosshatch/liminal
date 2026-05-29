@@ -15,6 +15,7 @@ import {
   Exit,
 } from "effect"
 import { DoState } from "effect-workerd"
+import { Env } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"
@@ -76,25 +77,28 @@ export interface ActorRuntimeDefinition<
     | Name["EncodingServices"]
     | Name["DecodingServices"],
     PreludeE,
-    HttpClient.HttpClient
+    HttpClient.HttpClient | Env
   >
 
-  readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | PreludeROut>
+  readonly layer: Layer.Layer<RunROut, RunE, ActorSelf | HttpClient.HttpClient | Env | PreludeROut>
 
-  readonly external: Handlers<D["external"], ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
+  readonly external: Handlers<
+    D["external"],
+    ActorSelf | HttpClient.HttpClient | Env | PreludeROut | RunROut | Scope.Scope
+  >
 
   readonly internal: Handlers<Internal, ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope>
 
   readonly hydrate: Effect.Effect<
     S.Struct<D["state"]>["Type"],
     never,
-    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
+    ActorSelf | HttpClient.HttpClient | Env | PreludeROut | RunROut | Scope.Scope
   >
 
   readonly onDisconnect: Effect.Effect<
     void,
     never,
-    ActorSelf | HttpClient.HttpClient | PreludeROut | RunROut | Scope.Scope
+    ActorSelf | HttpClient.HttpClient | Env | PreludeROut | RunROut | Scope.Scope
   >
 
   readonly hibernation?: Duration.Input | undefined
@@ -243,12 +247,17 @@ export const make = <
       const Live = Layer.mergeAll(
         FetchHttpClient.layer,
         Layer.succeed(DoState.DoState, state),
+        Layer.succeed(Env, env as never),
         Layer.effect(NameDecoded, S.decodeUnknownEffect(Name)(state.id.name)),
       ).pipe(
         Layer.provideMerge(
           prelude.pipe(
             Layer.provideMerge(
-              Layer.mergeAll(FetchHttpClient.layer, ConfigProvider.layer(ConfigProvider.fromUnknown(env))),
+              Layer.mergeAll(
+                FetchHttpClient.layer,
+                ConfigProvider.layer(ConfigProvider.fromUnknown(env)),
+                Layer.succeed(Env, env as never),
+              ),
             ),
           ),
         ),

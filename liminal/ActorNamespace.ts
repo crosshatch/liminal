@@ -1,5 +1,5 @@
 import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exit } from "effect"
-import { Binding, NativeRequest } from "effect-workerd"
+import { Binding, Env, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
 import { type TopFromString, encodeJsonString } from "liminal-util/schema"
@@ -61,7 +61,7 @@ export interface ActorNamespace<
 
   readonly bind: (name: Name["Type"]) => ActorHandle<NamespaceSelf, Internal, Name, AttachmentFields, D>
 
-  readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, never>
+  readonly layer: Layer.Layer<NamespaceSelf, S.SchemaError, Env>
 }
 
 export declare namespace ActorNamespace {
@@ -134,10 +134,10 @@ export const Service =
           const protocols = yield* Effect.fromNullishOr(request.headers.get(SecWebSocketProtocol)).pipe(
             Effect.map(flow(String.split(","), Array.map(String.trim))),
           )
-          const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal")
+          const liminalTokenI = yield* Array.findFirstIndex(protocols, (v) => v === "liminal").pipe(Effect.fromOption)
           const liminalClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 1])
           const requestClientId = yield* Effect.fromNullishOr(protocols[liminalTokenI + 2]).pipe(
-            Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).asEffect()),
+            Effect.flatMap((v) => Encoding.decodeBase64UrlString(v).pipe(Effect.fromResult)),
           )
           if (requestClientId !== clientId) {
             return close(

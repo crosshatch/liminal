@@ -107,13 +107,13 @@ export const Service =
 
     const protocol = Protocol(definition)
 
-    const state = tag.asEffect().pipe(
+    const state = tag.pipe(
       Effect.flatMap(RcRef.get),
       Effect.map(({ state }) => state),
       Stream.unwrap,
     )
 
-    const events = tag.asEffect().pipe(
+    const events = tag.pipe(
       Effect.flatMap(RcRef.get),
       Effect.map(({ events }) => events),
       Stream.unwrap,
@@ -122,14 +122,14 @@ export const Service =
     const fn = ((_tag: keyof D["external"], ...f: Array<any>) =>
       Effect.fnUntraced(
         function* (payload: any) {
-          const { fnRaw: fn } = yield* tag.asEffect().pipe(Effect.flatMap(RcRef.get))
+          const { fnRaw: fn } = yield* tag.pipe(Effect.flatMap(RcRef.get))
           return yield* fn(_tag, payload)
         },
         Effect.scoped,
         ...(f as [any]),
       )) as Fn<Self, D["external"]>
 
-    const invalidate = tag.asEffect().pipe(
+    const invalidate = tag.pipe(
       Effect.flatMap((rc) =>
         RcRef.get(rc).pipe(
           Effect.flatMap(({ end }) => end),
@@ -435,12 +435,12 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 Effect.flatMap(
                   (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
                     Exit.match(exit, {
-                      onSuccess: () => new UnresolvedError().asEffect(),
+                      onSuccess: () => new UnresolvedError(),
                       onFailure: flow(
                         Cause.findError,
                         Result.match({
                           onSuccess: Effect.fail,
-                          onFailure: () => new UnresolvedError().asEffect(),
+                          onFailure: () => new UnresolvedError(),
                         }),
                       ),
                     }),
@@ -462,7 +462,13 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
     return rcr
   }).pipe(Layer.effect(client))
 
-const clientId = crypto.randomUUID()
+let clientId_: string | undefined
+const clientId = () => {
+  if (!clientId_) {
+    clientId_ = crypto.randomUUID()
+  }
+  return clientId_
+}
 
 export const layerSocket = <
   Self,
@@ -506,7 +512,7 @@ export const layerSocket = <
       const socket = yield* Socket.makeWebSocket(url ?? "/", {
         protocols: [
           "liminal",
-          clientId,
+          clientId(),
           Encoding.encodeBase64Url(client.key),
           ...(protocols ? Array.ensure(protocols) : []),
         ],
@@ -541,7 +547,7 @@ export const layerSocket = <
             const message = yield* encodeFPayload(v)
             yield* write(message).pipe(
               Effect.catchTags({
-                SocketError: (cause) => new ConnectionError({ cause }).asEffect(),
+                SocketError: (cause) => new ConnectionError({ cause }),
               }),
             )
           },
@@ -592,7 +598,7 @@ export const layerWorker = <
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform.spawn<string, string>(0).pipe(
         Effect.catchTags({
-          WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+          WorkerError: (cause) => new ConnectionError({ cause }),
         }),
       )
 
@@ -600,7 +606,7 @@ export const layerWorker = <
         encodeClient(message).pipe(
           Effect.flatMap((encoded) => backing.send(encoded)),
           Effect.catchTags({
-            WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+            WorkerError: (cause) => new ConnectionError({ cause }),
           }),
           span("send"),
         )
@@ -628,7 +634,7 @@ export const layerWorker = <
             .pipe(
               Effect.raceFirst(Deferred.await(stop)),
               Effect.catchTags({
-                WorkerError: (cause) => new ConnectionError({ cause }).asEffect(),
+                WorkerError: (cause) => new ConnectionError({ cause }),
               }),
             )
         }, span("listen")),
