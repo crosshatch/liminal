@@ -36,7 +36,7 @@ export default Alchemy.Stack(
           resources: {
             [`com.cloudflare.api.account.${accountId}`]: {
               "com.cloudflare.api.account.zone.*": "*",
-            },
+            } as never as string,
           },
         },
       ],
