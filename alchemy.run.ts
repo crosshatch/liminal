@@ -1,6 +1,6 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
-import * as Effect from "effect/Effect"
+import { Effect } from "effect"
 
 import { LiminalDocs } from "./docs/alchemy.run.ts"
 import { TicTacToe } from "./examples/tictactoe/alchemy.run.ts"

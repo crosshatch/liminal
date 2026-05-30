@@ -1,6 +1,6 @@
 import * as Build from "alchemy/Build"
 import * as Cloudflare from "alchemy/Cloudflare"
-import * as Effect from "effect/Effect"
+import { Effect } from "effect"
 
 export const TicTacToe = Effect.gen(function* () {
   const app = yield* Build.Command("Build", {
