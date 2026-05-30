@@ -1,9 +1,7 @@
 import { Context, Layer, Effect, Schema as S, SchemaIssue } from "effect"
-import * as Spanner from "liminal-util/Spanner"
+import * as Boundary from "liminal-util/Boundary"
 
 import { Env } from "./Env.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export const layer =
   <Self, Identifier extends string, Shape, ROut = never, E = never, RIn = never>(
@@ -43,7 +41,7 @@ export const layer =
       }
       return Layer.mergeAll(Layer.succeed(tag, resolved as never), derive?.(resolved as never) ?? Layer.empty)
     }).pipe(
-      span("make-binding", {
+      Boundary.span("make-binding", import.meta.url, {
         attributes: { id: tag.key },
       }),
       Layer.unwrap,

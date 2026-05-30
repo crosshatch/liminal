@@ -47,7 +47,7 @@ export default Alchemy.Stack(
       environment: "deploy",
       secrets: {
         CLOUDFLARE_ACCOUNT_ID: Redacted.make(accountId),
-        CLOUDFLARE_API_TOKEN: Redacted.make(apiToken),
+        CLOUDFLARE_API_TOKEN: apiToken,
       },
     })
   }).pipe(Effect.orDie),

@@ -1,12 +1,10 @@
 import { Context, Schema as S, Effect } from "effect"
+import * as Boundary from "liminal-util/Boundary"
 import type { TopFromString } from "liminal-util/schema"
-import * as Spanner from "liminal-util/Spanner"
 
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
 import { type ProtocolDefinition } from "./Protocol.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export const TypeId = "~liminal/Actor" as const
 
@@ -78,27 +76,30 @@ export const Service =
           Effect.flatMap(({ clients }) =>
             Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
           ),
-          span("send-all"),
+          Boundary.span("send-all", import.meta.url),
         ),
       disconnect: tag.pipe(
         Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
-        span("disconnect-all"),
+        Boundary.span("disconnect-all", import.meta.url),
       ),
     }
 
     const others: Sender<D, ActorSelf> = {
-      send: Effect.fnUntraced(function* (key, payload) {
-        const { clients, currentClient } = yield* tag
-        yield* Effect.forEach(
-          clients,
-          (client) => (client === currentClient ? Effect.void : client.send(key, payload)),
-          { concurrency: "unbounded" },
-        )
-      }, span("send-others")),
+      send: Effect.fnUntraced(
+        function* (key, payload) {
+          const { clients, currentClient } = yield* tag
+          yield* Effect.forEach(
+            clients,
+            (client) => (client === currentClient ? Effect.void : client.send(key, payload)),
+            { concurrency: "unbounded" },
+          )
+        },
+        Boundary.span("send-others", import.meta.url),
+      ),
       disconnect: Effect.gen(function* () {
         const { clients, currentClient } = yield* tag
         yield* Effect.forEach(clients, (client) => (client === currentClient ? Effect.void : client.disconnect))
-      }).pipe(span("disconnect-others")),
+      }).pipe(Boundary.span("disconnect-others", import.meta.url)),
     }
 
     return Object.assign(tag, {
