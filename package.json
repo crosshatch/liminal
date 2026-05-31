@@ -30,6 +30,7 @@
     "alchemy": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
+    "liminal-util": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "playwright": "catalog:",
