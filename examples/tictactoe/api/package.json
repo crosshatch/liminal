@@ -14,7 +14,6 @@
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
     "liminal-util": "workspace:*",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "vitest": "catalog:"
   }
 }

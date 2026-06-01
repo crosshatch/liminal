@@ -8,7 +8,7 @@ export default Alchemy.Stack(
   "liminal-github",
   {
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
-    state: Alchemy.localState(),
+    state: Cloudflare.state(),
   },
   github({ repository: "liminal" }).pipe(Effect.orDie),
 )

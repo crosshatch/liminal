@@ -7,7 +7,7 @@
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "dev": "alchemy dev",
-    "deploy:github": "alchemy deploy stacks/github.ts --stage prod --yes --env-file .env --profile liminal-env",
+    "sync-gh": "alchemy deploy stacks/github.ts --stage prod --yes --env-file .env --profile liminal-env",
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
@@ -37,8 +37,7 @@
     "ts-patch": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@11.5.0"
 }
