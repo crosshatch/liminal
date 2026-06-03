@@ -13,9 +13,9 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const { url } = yield* Cloudflare.StaticSite("Docs", {
-      ...WorkerConfig({
+      ...(yield* WorkerConfig({
         domain: "liminal.actor",
-      }),
+      })),
       command: "vocs build",
       outdir: "dist",
       dev: { command: "vocs dev" },

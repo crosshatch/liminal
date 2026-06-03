@@ -2,36 +2,38 @@ import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Drizzle from "alchemy/Drizzle"
 import * as Planetscale from "alchemy/Planetscale"
-import { Effect, Redacted } from "effect"
+import { Effect, Redacted, Config, Schema as S } from "effect"
 
-const devOrigin = (connectionString: string): Cloudflare.HyperdriveDevOrigin => {
-  const url = new URL(connectionString)
-  return {
-    scheme: url.protocol.slice(0, -1) as Cloudflare.HyperdriveScheme,
-    host: url.hostname,
-    port: Number(url.port || Cloudflare.defaultPort(url.protocol.slice(0, -1) as Cloudflare.HyperdriveScheme)),
-    database: url.pathname.slice(1),
-    user: decodeURIComponent(url.username),
-    password: Redacted.make(decodeURIComponent(url.password)),
-  }
-}
-
-export const tables = Effect.fn(function* ({ database, dev }: { database: string; dev: string }) {
+export const tables = Effect.fn(function* ({
+  database,
+  devConnectionUrl,
+}: {
+  database: string
+  devConnectionUrl: string
+}) {
   const stage = yield* Alchemy.Stage
-  const branch = stage === "prod" ? "main" : stage
   const { out: migrationsDir } = yield* Drizzle.Schema("Schema", {
     schema: "../tables/T.ts",
-    out: "../migrations",
+    out: "../tables/migrations",
   })
   const { origin } = yield* Planetscale.PostgresRole("Admin", {
     database,
     inheritedRoles: ["postgres"],
     branch: Planetscale.PostgresBranch("Branch", {
-      name: branch,
+      name: stage === "prod" ? "main" : stage,
       database,
-      parentBranch: "main",
       migrationsDir,
+      ...(stage === "prod" ? {} : { parentBranch: "main" }),
     }),
   })
-  return yield* Cloudflare.Hyperdrive("Hyperdrive", { dev: devOrigin(dev), origin })
+  const { hostname, port, pathname, username, password } = new URL(devConnectionUrl)
+  const dev: Cloudflare.HyperdriveDevOrigin = {
+    scheme: "postgres",
+    host: hostname,
+    port: yield* S.decodeEffect(S.NumberFromString.pipe(S.decodeTo(Config.Port)))(port),
+    database: pathname.slice(1),
+    user: decodeURIComponent(username),
+    password: Redacted.make(decodeURIComponent(password)),
+  }
+  return yield* Cloudflare.Hyperdrive("Hyperdrive", { dev, origin })
 })
