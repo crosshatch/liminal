@@ -1,6 +1,6 @@
 import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
-import { Config, Context, Effect, Layer, String } from "effect"
+import { Config, Context, Data, Effect, Layer, String } from "effect"
 
 export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchemicals/GithubEnv", {
   make: Config.all({
@@ -19,7 +19,9 @@ export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchem
   static readonly layer = Layer.effect(this, this.make)
 }
 
-export const commentPr =
+export class NotInPrError extends Data.TaggedError("NotInPrError")<{}> {}
+
+export const PrComment =
   (resourceId: string) =>
   <Args extends Array<any>>(template: TemplateStringsArray, ...args: Args) =>
     Effect.gen(function* () {
@@ -34,6 +36,6 @@ export const commentPr =
       })
     }).pipe(
       Effect.catchTags({
-        NoSuchElementError: Effect.die,
+        NoSuchElementError: () => new NotInPrError(),
       }),
     )

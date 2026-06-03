@@ -1,6 +1,6 @@
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect, String } from "effect"
-import { GithubEnv, commentPr } from "liminal-util/alchemicals/GithubEnv"
+import { GithubEnv, PrComment } from "liminal-util/alchemicals/GithubEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: string }) {
@@ -19,13 +19,17 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
   if (githubEnv) {
     const { GITHUB_SHA, PULL_REQUEST } = githubEnv
     if (PULL_REQUEST._tag === "Some") {
-      yield* commentPr("PreviewComment")`
+      yield* PrComment("PreviewComment")`
       | ## Docs Preview
       |
       | URL: ${url}
       |
       | Commit: ${GITHUB_SHA.slice(0, 7)!}
-      `
+      `.pipe(
+        Effect.catchTags({
+          NotInPrError: Effect.succeed,
+        }),
+      )
     }
   }
   return { url }
