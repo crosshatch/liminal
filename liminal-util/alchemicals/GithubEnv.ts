@@ -1,6 +1,6 @@
 import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
-import { Config, Context, Data, Effect, Layer, String } from "effect"
+import { Array, flow, Config, Context, Data, Effect, Layer, String } from "effect"
 
 export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchemicals/GithubEnv", {
   make: Config.all({
@@ -8,7 +8,16 @@ export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchem
     GITHUB_SHA: Config.string("GITHUB_SHA"),
     GITHUB_REPOSITORY_OWNER: Config.string("GITHUB_REPOSITORY_OWNER"),
     GITHUB_REPOSITORY_NAME: Config.string("GITHUB_REPOSITORY").pipe(
-      Config.map((repository) => repository.split("/")[1]!),
+      Config.mapOrFail(
+        flow(
+          String.split("/"),
+          Array.head,
+          Effect.fromOption,
+          Effect.catchTags({
+            NoSuchElementError: Effect.die,
+          }),
+        ),
+      ),
     ),
   }).pipe(
     Effect.catchTags({
