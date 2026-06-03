@@ -7,7 +7,7 @@ export const WorkerConfig = ({ domain, assets }: { readonly domain: string; read
       ({
         observability: { enabled: true },
         placement: { mode: "smart" },
-        domain: stage === "prod" ? [domain, `www.${domain}`] : [`${stage}.${domain}`],
+        ...(stage === "prod" ? { domain: [domain, `www.${domain}`] } : {}),
         compatibility: {
           date: "2026-02-05",
           flags: ["nodejs_compat", "global_fetch_strictly_public"],
