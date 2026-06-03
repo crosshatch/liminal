@@ -43,6 +43,8 @@ catalog:
   "@vitest/web-worker": ^4.1.4
   alchemy: 2.0.0-beta.51
   babel-plugin-react-compiler: ^1.0.0
+  drizzle-kit: 1.0.0-rc.3
+  drizzle-orm: 1.0.0-rc.3
   effect: 4.0.0-beta.74
   happy-dom: ^20.9.0
   oxfmt: ^0.48.0

@@ -29,6 +29,8 @@
     "@vitest/expect": "catalog:",
     "@vitest/web-worker": "catalog:",
     "alchemy": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
     "liminal-util": "workspace:*",
