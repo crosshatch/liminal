@@ -41,7 +41,7 @@ catalog:
   "@vitest/coverage-v8": ^4.1.4
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
-  alchemy: 2.0.0-beta.46
+  alchemy: 2.0.0-beta.51
   babel-plugin-react-compiler: ^1.0.0
   effect: 4.0.0-beta.74
   happy-dom: ^20.9.0
@@ -67,7 +67,7 @@ overrides:
   "@effect/sql-pg": 4.0.0-beta.74
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
-  alchemy: 2.0.0-beta.46
+  alchemy: 2.0.0-beta.51
   react: ^19.2.4
   react-dom: ^19.2.4
 
@@ -97,4 +97,4 @@ minimumReleaseAgeExclude:
   - "@distilled.cloud/core@0.22.2"
   - "@distilled.cloud/neon@0.22.2"
   - "@distilled.cloud/planetscale@0.22.2"
-  - alchemy@2.0.0-beta.46
+  - alchemy

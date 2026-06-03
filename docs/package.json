@@ -4,9 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "portless liminal.actor --app-port 7774 -- vocs dev",
-    "build": "vocs build",
-    "preview": "vocs preview"
+    "dev": "portless liminal.actor --app-port 7774 -- vocs dev"
   },
   "dependencies": {
     "@types/react": "catalog:",

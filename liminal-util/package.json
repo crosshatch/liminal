@@ -14,12 +14,12 @@
   "sideEffects": false,
   "exports": {
     "./*": "./*.ts",
-    "./alchemy/*": "./alchemy/*.ts"
+    "./alchemicals/*": "./alchemicals/*.ts"
   },
   "publishConfig": {
     "exports": {
       "./*": "./dist/*.js",
-      "./alchemy/*": "./dist/alchemy/*.js"
+      "./alchemicals/*": "./dist/alchemicals/*.js"
     }
   },
   "peerDependencies": {

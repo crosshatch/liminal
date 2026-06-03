@@ -5,7 +5,7 @@ import { Effect, Config, Redacted } from "effect"
 
 const owner = "crosshatch"
 
-export const github = Effect.fn(function* ({
+export const bootstrap = Effect.fn(function* ({
   repository,
   variables,
   secrets,

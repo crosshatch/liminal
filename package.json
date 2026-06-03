@@ -7,7 +7,7 @@
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "dev": "alchemy dev",
-    "sync-gh": "alchemy deploy stacks/github.ts --stage prod --yes --env-file .env --profile liminal-env",
+    "bootstrap": "alchemy deploy bootstrap.ts --stage prod --yes --profile liminal-env",
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
