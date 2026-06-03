@@ -2,7 +2,7 @@ import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
-import { Effect, Layer, String } from "effect"
+import { Effect, Layer, Option, String } from "effect"
 import { GithubEnv, WorkerConfig } from "liminal-util/alchemicals/config"
 
 export default Alchemy.Stack(
@@ -12,10 +12,14 @@ export default Alchemy.Stack(
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
   },
   Effect.gen(function* () {
-    const { GITHUB_SHA, PULL_REQUEST } = yield* GithubEnv
+    const { GITHUB_SHA, PULL_REQUEST, STAGE } = yield* GithubEnv
+    const stage = Option.getOrUndefined(STAGE)
+    const stagePr = stage?.match(/^pr-(\d+)$/)?.[1]
+    const pr = Option.getOrUndefined(PULL_REQUEST) ?? (stagePr === undefined ? undefined : Number.parseInt(stagePr, 10))
     const { url } = yield* Cloudflare.StaticSite("Docs", {
       ...WorkerConfig({
         domain: "liminal.actor",
+        pr,
       }),
       command: "vocs build",
       outdir: "dist",
@@ -25,11 +29,11 @@ export default Alchemy.Stack(
       | };
       `),
     })
-    if (PULL_REQUEST) {
+    if (pr !== undefined) {
       yield* GitHub.Comment("PreviewComment", {
         owner: "crosshatch",
         repository: "liminal",
-        issueNumber: PULL_REQUEST,
+        issueNumber: pr,
         body: Output.interpolate`
           ## Docs Preview
 
