@@ -1,9 +1,8 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
-import * as Output from "alchemy/Output"
-import { Effect, Layer, Option, String } from "effect"
-import { GithubEnv } from "liminal-util/alchemicals/GithubEnv"
+import { Effect, Layer, String } from "effect"
+import { GithubEnv, commentPr } from "liminal-util/alchemicals/GithubEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
@@ -14,9 +13,10 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const { GITHUB_SHA, PULL_REQUEST } = yield* GithubEnv
-    const pr = Option.getOrUndefined(PULL_REQUEST)
     const { url } = yield* Cloudflare.StaticSite("Docs", {
-      ...WorkerConfig({ domain: "liminal.actor" }),
+      ...WorkerConfig({
+        domain: "liminal.actor",
+      }),
       command: "vocs build",
       outdir: "dist",
       script: String.stripMargin(`
@@ -25,19 +25,14 @@ export default Alchemy.Stack(
       | };
       `),
     })
-    if (pr !== undefined) {
-      yield* GitHub.Comment("PreviewComment", {
-        owner: "crosshatch",
-        repository: "liminal",
-        issueNumber: pr,
-        body: Output.interpolate`
-          ## Docs Preview
-
-          URL: ${url}
-
-          Commit: ${GITHUB_SHA.slice(0, 7)!}
-        `,
-      })
+    if (PULL_REQUEST._tag === "Some") {
+      yield* commentPr("PreviewComment")`
+      | ## Docs Preview
+      |
+      | URL: ${url}
+      |
+      | Commit: ${GITHUB_SHA.slice(0, 7)!}
+      `
     }
   }).pipe(Effect.provide(GithubEnv.layer)),
 )
