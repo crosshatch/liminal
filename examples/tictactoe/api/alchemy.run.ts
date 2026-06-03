@@ -1,10 +1,13 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
-import { remote, WorkerConfig } from "liminal-util/alchemicals/config"
+import { WorkerConfig } from "liminal-util/alchemicals/config"
 
 export default Alchemy.Stack(
   "liminal-tictactoe-example",
-  remote,
+  {
+    state: Cloudflare.state(),
+    providers: Cloudflare.providers(),
+  },
   Cloudflare.Vite("Entry", {
     ...WorkerConfig({
       domain: "tictactoe.liminal.actor",

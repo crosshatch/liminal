@@ -1,10 +1,4 @@
-import * as Alchemy from "alchemy"
 import type { WorkerProps } from "alchemy/Cloudflare"
-import * as Cloudflare from "alchemy/Cloudflare"
-import * as Drizzle from "alchemy/Drizzle"
-import * as GitHub from "alchemy/GitHub"
-import * as Planetscale from "alchemy/Planetscale"
-import type { StackProps } from "alchemy/Stack"
 import { Layer, Context, Config } from "effect"
 
 export const WorkerConfig = ({ domain, assets }: { readonly domain: string; readonly assets?: string | undefined }) =>
@@ -26,21 +20,4 @@ export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchem
   }),
 }) {
   static readonly layer = Layer.effect(this, this.make)
-}
-
-const providers = Layer.mergeAll(
-  Cloudflare.providers(),
-  Planetscale.providers(),
-  Drizzle.providers(),
-  GitHub.providers(),
-  GithubEnv.layer.pipe(Layer.orDie),
-)
-
-export const remote: StackProps<any> = {
-  providers,
-  state: Cloudflare.state(),
-}
-export const local: StackProps<any> = {
-  providers,
-  state: Alchemy.localState(),
 }
