@@ -7,10 +7,12 @@ const owner = "crosshatch"
 
 export const bootstrap = Effect.fn(function* ({
   repository,
+  environment,
   variables,
   secrets,
 }: {
   readonly repository: string
+  readonly environment?: string | undefined
   readonly variables?: Record<string, Input<string>> | undefined
   readonly secrets?: Record<string, Input<string | Redacted.Redacted<string>>> | undefined
 }) {
@@ -52,6 +54,7 @@ export const bootstrap = Effect.fn(function* ({
   yield* GitHub.Secret("CloudflareApiToken", {
     owner,
     repository,
+    ...(environment ? { environment } : {}),
     name: "CLOUDFLARE_API_TOKEN",
     value: apiToken,
   })
@@ -59,6 +62,6 @@ export const bootstrap = Effect.fn(function* ({
     yield* GitHub.Variables({ owner, repository, variables })
   }
   if (secrets) {
-    yield* GitHub.Secrets({ owner, repository, secrets })
+    yield* GitHub.Secrets({ owner, repository, ...(environment ? { environment } : {}), secrets })
   }
 })

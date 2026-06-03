@@ -10,5 +10,8 @@ export default Alchemy.Stack(
     state: Cloudflare.state(),
     providers: Layer.mergeAll(Github.providers(), Cloudflare.providers()),
   },
-  bootstrap({ repository: "liminal" }),
+  bootstrap({
+    repository: "liminal",
+    environment: "deploy",
+  }),
 )
