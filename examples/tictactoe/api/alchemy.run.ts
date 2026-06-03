@@ -8,7 +8,7 @@ export default Alchemy.Stack(
   Cloudflare.Vite("Entry", {
     ...WorkerConfig({
       domain: "tictactoe.liminal.actor",
-      assets: import.meta.resolve("../app"),
+      assets: "../app",
     }),
     env: {
       BUCKET: Cloudflare.R2Bucket("Bucket"),

@@ -1,10 +1,10 @@
 import * as Alchemy from "alchemy"
-import type { StackProps } from "alchemy/Stack"
 import type { WorkerProps } from "alchemy/Cloudflare"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Drizzle from "alchemy/Drizzle"
 import * as GitHub from "alchemy/GitHub"
 import * as Planetscale from "alchemy/Planetscale"
+import type { StackProps } from "alchemy/Stack"
 import { Layer, Context, Config } from "effect"
 
 export const WorkerConfig = ({ domain, assets }: { readonly domain: string; readonly assets?: string | undefined }) =>
@@ -12,15 +12,11 @@ export const WorkerConfig = ({ domain, assets }: { readonly domain: string; read
     observability: { enabled: true },
     placement: { mode: "smart" },
     domain: [domain, `www.${domain}`],
-    ...(assets
-      ? {
-          rootDir: assets,
-          compatibility: {
-            date: "2026-02-05",
-            flags: ["nodejs_compat", "global_fetch_strictly_public"],
-          },
-        }
-      : {}),
+    compatibility: {
+      date: "2026-02-05",
+      flags: ["nodejs_compat", "global_fetch_strictly_public"],
+    },
+    ...(assets ? { rootDir: assets } : {}),
   }) satisfies Partial<WorkerProps>
 
 export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchemy_util/GithubEnv", {
@@ -39,6 +35,7 @@ const providers = Layer.mergeAll(
   GitHub.providers(),
   GithubEnv.layer.pipe(Layer.orDie),
 )
+
 export const remote: StackProps<any> = {
   providers,
   state: Cloudflare.state(),

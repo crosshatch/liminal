@@ -3,11 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "portless tictactoe.liminal.actor --app-port 7780 -- vite dev --force",
-    "build": "vite build",
-    "serve": "vite preview"
-  },
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@effect/platform-browser": "catalog:",

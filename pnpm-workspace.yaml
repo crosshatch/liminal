@@ -70,6 +70,7 @@ overrides:
   alchemy: 2.0.0-beta.51
   react: ^19.2.4
   react-dom: ^19.2.4
+  workerd: 1.20260415.1
 
 patchedDependencies:
   miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
