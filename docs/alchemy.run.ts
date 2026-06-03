@@ -3,7 +3,8 @@ import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
 import { Effect, Layer, Option, String } from "effect"
-import { GithubEnv, WorkerConfig } from "liminal-util/alchemicals/config"
+import { GithubEnv } from "liminal-util/alchemicals/GithubEnv"
+import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
   "liminal-docs",
@@ -12,15 +13,10 @@ export default Alchemy.Stack(
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
   },
   Effect.gen(function* () {
-    const { GITHUB_SHA, PULL_REQUEST, STAGE } = yield* GithubEnv
-    const stage = Option.getOrUndefined(STAGE)
-    const stagePr = stage?.match(/^pr-(\d+)$/)?.[1]
-    const pr = Option.getOrUndefined(PULL_REQUEST) ?? (stagePr === undefined ? undefined : Number.parseInt(stagePr, 10))
+    const { GITHUB_SHA, PULL_REQUEST } = yield* GithubEnv
+    const pr = Option.getOrUndefined(PULL_REQUEST)
     const { url } = yield* Cloudflare.StaticSite("Docs", {
-      ...WorkerConfig({
-        domain: "liminal.actor",
-        pr,
-      }),
+      ...WorkerConfig({ domain: "liminal.actor" }),
       command: "vocs build",
       outdir: "dist",
       script: String.stripMargin(`

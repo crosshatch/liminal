@@ -1,6 +1,6 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
-import { WorkerConfig } from "liminal-util/alchemicals/config"
+import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
   "liminal-tictactoe-example",
