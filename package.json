@@ -19,6 +19,7 @@
     "@changesets/cli": "catalog:",
     "@effect/language-service": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@effect/sql-pg": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
