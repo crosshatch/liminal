@@ -6,7 +6,7 @@
     "changeset": "changeset",
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
-    "dev": "alchemy dev",
+    "dev": "turbo run dev",
     "bootstrap": "alchemy deploy bootstrap.ts --stage prod --yes --profile liminal-env",
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "destroy": "alchemy destroy",

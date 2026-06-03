@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "alchemy dev alchemy.ts --env-file ../../../.env"
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",

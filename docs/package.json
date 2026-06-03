@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "portless liminal.actor --app-port 7774 -- vocs dev"
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@types/react": "catalog:",

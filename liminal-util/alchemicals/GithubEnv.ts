@@ -10,7 +10,11 @@ export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchem
     GITHUB_REPOSITORY_NAME: Config.string("GITHUB_REPOSITORY").pipe(
       Config.map((repository) => repository.split("/")[1]!),
     ),
-  }),
+  }).pipe(
+    Effect.catchTags({
+      ConfigError: () => Effect.undefined,
+    }),
+  ),
 }) {
   static readonly layer = Layer.effect(this, this.make)
 }
@@ -27,18 +31,21 @@ export const commentPr =
       Output.interpolate(template, ...args),
       Output.map(String.stripMargin),
       Output.mapEffect(
-        Effect.fn(function* (body) {
-          const { GITHUB_REPOSITORY_OWNER, GITHUB_REPOSITORY_NAME, PULL_REQUEST } = yield* GithubEnv
-          yield* GitHub.Comment(resourceId, {
-            owner: GITHUB_REPOSITORY_OWNER,
-            repository: GITHUB_REPOSITORY_NAME,
-            issueNumber: yield* Effect.fromOption(PULL_REQUEST).pipe(
-              Effect.catchTags({
-                NoSuchElementError: Effect.die,
-              }),
-            ),
-            body,
-          })
-        }),
+        Effect.fn(
+          function* (body) {
+            const { GITHUB_REPOSITORY_OWNER, GITHUB_REPOSITORY_NAME, PULL_REQUEST } = yield* GithubEnv.pipe(
+              Effect.flatMap(Effect.fromNullishOr),
+            )
+            yield* GitHub.Comment(resourceId, {
+              owner: GITHUB_REPOSITORY_OWNER,
+              repository: GITHUB_REPOSITORY_NAME,
+              issueNumber: yield* Effect.fromOption(PULL_REQUEST),
+              body,
+            })
+          },
+          Effect.catchTags({
+            NoSuchElementError: Effect.die,
+          }),
+        ),
       ),
     ) as never

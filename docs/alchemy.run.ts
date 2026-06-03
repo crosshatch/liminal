@@ -12,27 +12,32 @@ export default Alchemy.Stack(
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
   },
   Effect.gen(function* () {
-    const { GITHUB_SHA, PULL_REQUEST } = yield* GithubEnv
     const { url } = yield* Cloudflare.StaticSite("Docs", {
       ...WorkerConfig({
         domain: "liminal.actor",
       }),
       command: "vocs build",
       outdir: "dist",
+      dev: { command: "vocs dev" },
       script: String.stripMargin(`
       | export default {
       |   fetch: (request, env) => env.ASSETS.fetch(request),
       | };
       `),
     })
-    if (PULL_REQUEST._tag === "Some") {
-      yield* commentPr("PreviewComment")`
-      | ## Docs Preview
-      |
-      | URL: ${url}
-      |
-      | Commit: ${GITHUB_SHA.slice(0, 7)!}
-      `
+    const githubEnv = yield* GithubEnv
+    if (githubEnv) {
+      const { GITHUB_SHA, PULL_REQUEST } = githubEnv
+      if (PULL_REQUEST._tag === "Some") {
+        yield* commentPr("PreviewComment")`
+        | ## Docs Preview
+        |
+        | URL: ${url}
+        |
+        | Commit: ${GITHUB_SHA.slice(0, 7)!}
+        `
+      }
     }
+    return { url }
   }).pipe(Effect.provide(GithubEnv.layer)),
 )
