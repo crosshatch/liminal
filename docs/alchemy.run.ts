@@ -2,7 +2,7 @@ import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
-import { Effect, Layer } from "effect"
+import { Effect, Layer, String } from "effect"
 import { GithubEnv, WorkerConfig } from "liminal-util/alchemicals/config"
 
 export default Alchemy.Stack(
@@ -19,6 +19,11 @@ export default Alchemy.Stack(
       }),
       command: "vocs build",
       outdir: "dist",
+      script: String.stripMargin(`
+      | export default {
+      |   fetch: (request, env) => env.ASSETS.fetch(request),
+      | };
+      `),
     })
     if (PULL_REQUEST) {
       yield* GitHub.Comment("PreviewComment", {
