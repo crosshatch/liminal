@@ -75,6 +75,7 @@ overrides:
   workerd: 1.20260415.1
 
 patchedDependencies:
+  alchemy@2.0.0-beta.51: konfik/patches/alchemy@2.0.0-beta.51.patch
   miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
   vocs@1.4.1: konfik/patches/vocs@1.4.1.patch
 
