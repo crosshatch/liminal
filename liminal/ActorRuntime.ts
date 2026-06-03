@@ -272,8 +272,9 @@ export const make = <
       const runtime = ManagedRuntime.make(
         HydrateClientsLive.pipe(Layer.provideMerge(Live), Boundary.layer("actor", import.meta.url)),
       )
-
-      this.run = flow(Effect.onError(Boundary.log), runtime.runPromise)
+      this.run = <A, E, R extends ManagedRuntime.ManagedRuntime.Services<typeof runtime>>(
+        effect: Effect.Effect<A, E, R>,
+      ) => Effect.onError(effect, Boundary.log).pipe(runtime.runPromise)
     }
 
     override fetch(request: Request): Promise<Response> {
