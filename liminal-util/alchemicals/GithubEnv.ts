@@ -11,7 +11,7 @@ export class GithubEnv extends Context.Service<GithubEnv>()("liminal-util/alchem
       Config.mapOrFail(
         flow(
           String.split("/"),
-          Array.head,
+          Array.get(1),
           Effect.fromOption,
           Effect.catchTags({
             NoSuchElementError: Effect.die,
