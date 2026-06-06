@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "alchemy dev"
+    "build": "vocs build",
+    "dev": "alchemy dev",
+    "vocs:dev": "vocs dev"
   },
   "dependencies": {
     "@types/react": "catalog:",

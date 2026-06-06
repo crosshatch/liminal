@@ -4,7 +4,7 @@ import { Effect } from "effect"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
-  "liminal-tictactoe-example",
+  "liminal-example-tictactoe",
   {
     state: Cloudflare.state(),
     providers: Cloudflare.providers(),
