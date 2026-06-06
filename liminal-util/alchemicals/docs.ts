@@ -9,9 +9,9 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
   const base = yield* WorkerConfig({ domain })
   const { url } = yield* Cloudflare.StaticSite("Docs", {
     ...base,
-    command: "vocs build",
+    command: "pnpm exec vocs build",
     outdir: "dist",
-    dev: { command: "vocs dev" },
+    dev: { command: "pnpm exec vocs dev" },
     script: String.stripMargin(`
     | export default {
     |   fetch: (request, env) => env.ASSETS.fetch(request),
