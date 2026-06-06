@@ -15,38 +15,18 @@ permissions:
 concurrency:
   group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref }}
 
-env:
-  STAGE: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'prod' }}
-
 jobs:
-  deploy:
-    if: github.event.action != 'closed'
+  alchemize:
     runs-on: ubuntu-latest
     environment: deploy
     steps:
       - uses: actions/checkout@v6
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: ./konfik/.github/actions/configure_environment
-      - run: pnpm build
-      - run: pnpm exec alchemy deploy --stage ${{ env.STAGE }} --yes
-        working-directory: docs
+      - uses: ./konfik/.github/actions/alchemize
+        with:
+          working-directory: docs
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST: ${{ github.event.number }}
-          GITHUB_SHA: ${{ github.sha }}
-
-  cleanup:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    environment: deploy
-    steps:
-      - uses: actions/checkout@v6
-      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
-      - uses: ./konfik/.github/actions/configure_environment
-      - run: pnpm exec alchemy destroy --stage ${{ env.STAGE }} --yes
-        working-directory: docs
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

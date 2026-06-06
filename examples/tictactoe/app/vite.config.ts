@@ -24,11 +24,11 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "effect"],
     tsconfigPaths: true,
   },
-  server: {
-    allowedHosts: [".localhost"],
-    fs: { strict: false },
-    host: "127.0.0.1",
-    port: 7780,
-    strictPort: true,
+  environments: {
+    ssr: {
+      build: {
+        rolldownOptions: { input: "../api/main.ts" },
+      },
+    },
   },
 })

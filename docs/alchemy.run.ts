@@ -2,8 +2,8 @@ import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
 import { Effect, Layer } from "effect"
+import * as AlchemicalEnv from "liminal-util/alchemicals/AlchemicalEnv"
 import { docs } from "liminal-util/alchemicals/docs"
-import { GithubEnv } from "liminal-util/alchemicals/GithubEnv"
 
 export default Alchemy.Stack(
   "liminal-docs",
@@ -13,5 +13,5 @@ export default Alchemy.Stack(
   },
   docs({
     domain: "actor.liminal",
-  }).pipe(Effect.provide(GithubEnv.layer)),
+  }).pipe(Effect.provide(AlchemicalEnv.layer)),
 )

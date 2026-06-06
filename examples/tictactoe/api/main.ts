@@ -9,7 +9,7 @@ import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 export * from "./TicTacToeRuntime.ts"
 
 const ApiLive = Layer.mergeAll(
-  HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
+  HttpRouter.add("GET", "/health", Effect.succeed(HttpServerResponse.text("ok"))),
   HttpRouter.add(
     "GET",
     "/play",

@@ -20,15 +20,15 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.14.7
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^4.20260414.1
-  "@effect/ai-openai-compat": 4.0.0-beta.74
-  "@effect/atom-react": 4.0.0-beta.74
+  "@effect/ai-openai-compat": 4.0.0-beta.78
+  "@effect/atom-react": 4.0.0-beta.78
   "@effect/language-service": 0.86.2
-  "@effect/openapi-generator": 4.0.0-beta.74
-  "@effect/platform-browser": 4.0.0-beta.74
-  "@effect/platform-node": 4.0.0-beta.74
-  "@effect/sql-d1": 4.0.0-beta.74
-  "@effect/sql-pg": 4.0.0-beta.74
-  "@effect/vitest": 4.0.0-beta.74
+  "@effect/openapi-generator": 4.0.0-beta.78
+  "@effect/platform-browser": 4.0.0-beta.78
+  "@effect/platform-node": 4.0.0-beta.78
+  "@effect/sql-d1": 4.0.0-beta.78
+  "@effect/sql-pg": 4.0.0-beta.78
+  "@effect/vitest": 4.0.0-beta.78
   "@playwright/test": ^1.58.2
   "@tailwindcss/vite": ^4.1.18
   "@tanstack/react-router": ^1.159.4
@@ -41,16 +41,15 @@ catalog:
   "@vitest/coverage-v8": ^4.1.4
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
-  alchemy: 2.0.0-beta.51
+  alchemy: 2.0.0-beta.52
   babel-plugin-react-compiler: ^1.0.0
   drizzle-kit: 1.0.0-rc.3
   drizzle-orm: 1.0.0-rc.3
-  effect: 4.0.0-beta.74
+  effect: 4.0.0-beta.78
   happy-dom: ^20.9.0
   oxfmt: ^0.48.0
   oxlint: ^1.62.0
   playwright: ^1.59.1
-  portless: ^0.9.5
   react: ^19.2.5
   react-dom: ^19.2.5
   tailwind-merge: ^3.4.0
@@ -66,38 +65,27 @@ catalog:
   yaml: ^2.8.3
 
 overrides:
-  "@effect/sql-pg": 4.0.0-beta.74
+  "@effect/sql-pg": 4.0.0-beta.78
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
-  alchemy: 2.0.0-beta.51
   react: ^19.2.4
   react-dom: ^19.2.4
   workerd: 1.20260415.1
 
 patchedDependencies:
-  miniflare@4.20260415.0: konfik/patches/miniflare@4.20260415.0.patch
   vocs@1.4.1: konfik/patches/vocs@1.4.1.patch
 
 minimumReleaseAgeExclude:
-  - "@aws-sdk/client-cognito-identity"
-  - "@aws-sdk/core"
-  - "@aws-sdk/credential-provider-cognito-identity"
-  - "@aws-sdk/credential-provider-env"
-  - "@aws-sdk/credential-provider-http"
-  - "@aws-sdk/credential-provider-ini"
-  - "@aws-sdk/credential-provider-login"
-  - "@aws-sdk/credential-provider-node"
-  - "@aws-sdk/credential-provider-process"
-  - "@aws-sdk/credential-provider-sso"
-  - "@aws-sdk/credential-provider-web-identity"
-  - "@aws-sdk/credential-providers"
-  - "@aws-sdk/nested-clients"
-  - "@aws-sdk/signature-v4-multi-region"
-  - "@aws-sdk/token-providers"
-  - "@distilled.cloud/aws@0.22.2"
-  - "@distilled.cloud/axiom@0.22.2"
-  - "@distilled.cloud/cloudflare@0.22.2"
-  - "@distilled.cloud/core@0.22.2"
-  - "@distilled.cloud/neon@0.22.2"
-  - "@distilled.cloud/planetscale@0.22.2"
+  - "@aws-sdk/*"
+  - "@distilled.cloud/*"
   - alchemy
+  - "@effect/vitest@4.0.0-beta.78"
+  - "@effect/ai-openai-compat@4.0.0-beta.78"
+  - "@effect/atom-react@4.0.0-beta.78"
+  - "@effect/openapi-generator@4.0.0-beta.78"
+  - "@effect/platform-browser@4.0.0-beta.78"
+  - "@effect/platform-node-shared@4.0.0-beta.78"
+  - "@effect/platform-node@4.0.0-beta.78"
+  - "@effect/sql-d1@4.0.0-beta.78"
+  - "@effect/sql-pg@4.0.0-beta.78"
+  - effect@4.0.0-beta.78

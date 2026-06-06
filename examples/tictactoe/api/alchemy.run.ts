@@ -10,11 +10,12 @@ export default Alchemy.Stack(
     providers: Cloudflare.providers(),
   },
   Effect.gen(function* () {
+    const base = yield* WorkerConfig({
+      domain: "tictactoe.liminal.actor",
+      assets: "../app",
+    })
     const { url } = yield* Cloudflare.Vite("Entry", {
-      ...(yield* WorkerConfig({
-        domain: "tictactoe.liminal.actor",
-        assets: "../app",
-      })),
+      ...base,
       env: {
         BUCKET: Cloudflare.R2Bucket("Bucket"),
         TICTACTOE: Cloudflare.DurableObjectNamespace("TicTacToeRuntime", {

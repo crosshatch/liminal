@@ -7,8 +7,8 @@
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "dev": "turbo run dev //#watch",
-    "bootstrap": "alchemy deploy bootstrap.ts --stage prod --yes --profile liminal-env",
-    "sync-repos": "node ./konfik/main.ts sync-repos",
+    "konfik": "node ./konfik/main.ts",
+    "sync-repos": "pnpm konfik sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
     "prepare": "ts-patch install -s",
@@ -42,5 +42,5 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@11.5.1"
+  "packageManager": "pnpm@11.5.2"
 }
