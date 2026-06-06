@@ -26,16 +26,14 @@ import {
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
+import * as Boundary from "liminal-util/Boundary"
 import { decodeJsonString, encodeJsonString } from "liminal-util/schema"
-import * as Spanner from "liminal-util/Spanner"
 
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
 import type { Fn, FnError } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
 import * as Reducer from "./Reducer.ts"
 import * as Tracing from "./Tracing.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export const TypeId = "~liminal/Client" as const
 
@@ -279,7 +277,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 }).pipe(reduceTask)
                 const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
                 yield* publishTake([event], true).pipe(
-                  span("enqueue-event", {
+                  Boundary.span("enqueue-event", import.meta.url, {
                     attributes: { _tag },
                     kind: "consumer",
                     parent,
@@ -448,7 +446,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
               ),
             )
           }).pipe(
-            span("fn", {
+            Boundary.span("fn", import.meta.url, {
               kind: "client",
               attributes: { _tag },
             }),
@@ -456,7 +454,12 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
           )
 
         return { state, events, fnRaw, end }
-      }).pipe(span("acquire", { attributes: { client: client.key } }), Effect.annotateLogs("client", client.key)),
+      }).pipe(
+        Boundary.span("acquire", import.meta.url, {
+          attributes: { client: client.key },
+        }),
+        Effect.annotateLogs("client", client.key),
+      ),
     })
 
     return rcr
@@ -518,29 +521,32 @@ export const layerSocket = <
         ],
       })
       return {
-        listen: Effect.fnUntraced(function* (publish) {
-          yield* socket
-            .runRaw((raw) =>
-              pipe(
-                raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                decodeActor,
-                Effect.andThen(publish),
-              ),
-            )
-            .pipe(
-              Effect.catchIf(
-                Socket.isSocketError,
-                Effect.fnUntraced(function* (cause) {
-                  const { reason } = cause
-                  if (reason._tag === "SocketCloseError" && reason.code === 1000) {
-                    return yield* publish({ _tag: "Disconnect" })
-                  }
-                  yield* Effect.annotateLogs(Effect.logDebug(`SocketErrored.${reason._tag}`), { cause })
-                  return yield* new ConnectionError({ cause })
-                }),
-              ),
-            )
-        }, span("listen")),
+        listen: Effect.fnUntraced(
+          function* (publish) {
+            yield* socket
+              .runRaw((raw) =>
+                pipe(
+                  raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
+                  decodeActor,
+                  Effect.andThen(publish),
+                ),
+              )
+              .pipe(
+                Effect.catchIf(
+                  Socket.isSocketError,
+                  Effect.fnUntraced(function* (cause) {
+                    const { reason } = cause
+                    if (reason._tag === "SocketCloseError" && reason.code === 1000) {
+                      return yield* publish({ _tag: "Disconnect" })
+                    }
+                    yield* Effect.annotateLogs(Effect.logDebug(`SocketErrored.${reason._tag}`), { cause })
+                    return yield* new ConnectionError({ cause })
+                  }),
+                ),
+              )
+          },
+          Boundary.span("listen", import.meta.url),
+        ),
         send: Effect.fnUntraced(
           function* (v) {
             const write = yield* socket.writer
@@ -551,7 +557,7 @@ export const layerSocket = <
               }),
             )
           },
-          span("send"),
+          Boundary.span("send", import.meta.url),
           Effect.scoped,
         ),
       }
@@ -608,36 +614,39 @@ export const layerWorker = <
           Effect.catchTags({
             WorkerError: (cause) => new ConnectionError({ cause }),
           }),
-          span("send"),
+          Boundary.span("send", import.meta.url),
         )
 
       return {
-        listen: Effect.fnUntraced(function* (publish) {
-          const stop = yield* Deferred.make<void>()
-          const audition = yield* encodeClient({
-            _tag: "Audition.Payload",
-            client: client.key,
-          })
-          yield* backing
-            .run(
-              Effect.fnUntraced(function* (raw) {
-                const message = yield* decodeActor(raw)
-                yield* publish(message)
-                if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
-                  yield* Deferred.succeed(stop, void 0)
-                }
-              }),
-              {
-                onSpawn: backing.send(audition).pipe(Effect.orDie),
-              },
-            )
-            .pipe(
-              Effect.raceFirst(Deferred.await(stop)),
-              Effect.catchTags({
-                WorkerError: (cause) => new ConnectionError({ cause }),
-              }),
-            )
-        }, span("listen")),
+        listen: Effect.fnUntraced(
+          function* (publish) {
+            const stop = yield* Deferred.make<void>()
+            const audition = yield* encodeClient({
+              _tag: "Audition.Payload",
+              client: client.key,
+            })
+            yield* backing
+              .run(
+                Effect.fnUntraced(function* (raw) {
+                  const message = yield* decodeActor(raw)
+                  yield* publish(message)
+                  if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
+                    yield* Deferred.succeed(stop, void 0)
+                  }
+                }),
+                {
+                  onSpawn: backing.send(audition).pipe(Effect.orDie),
+                },
+              )
+              .pipe(
+                Effect.raceFirst(Deferred.await(stop)),
+                Effect.catchTags({
+                  WorkerError: (cause) => new ConnectionError({ cause }),
+                }),
+              )
+          },
+          Boundary.span("listen", import.meta.url),
+        ),
         send,
       }
     }),

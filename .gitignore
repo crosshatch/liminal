@@ -6,7 +6,6 @@
 .env*
 .tanstack
 .turbo/
-.wrangler/
 dist/
 node_modules/
 repomix-output.xml

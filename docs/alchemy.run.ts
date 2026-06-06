@@ -1,13 +1,17 @@
+import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
+import * as GitHub from "alchemy/GitHub"
+import { Effect, Layer } from "effect"
+import * as AlchemicalEnv from "liminal-util/alchemicals/AlchemicalEnv"
+import { docs } from "liminal-util/alchemicals/docs"
 
-export const LiminalDocs = Cloudflare.StaticSite("LiminalDocs", {
-  name: "liminal-docs",
-  cwd: "docs",
-  command: "pnpm build",
-  outdir: "dist",
-  main: "docs/main.ts",
-  compatibility: { date: "2026-04-08" },
-  observability: { enabled: true },
-  assetsConfig: { notFoundHandling: "single-page-application" },
-  domain: ["liminal.actor", "www.liminal.actor"],
-})
+export default Alchemy.Stack(
+  "liminal-docs",
+  {
+    state: Cloudflare.state(),
+    providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
+  },
+  docs({
+    domain: "actor.liminal",
+  }).pipe(Effect.provide(AlchemicalEnv.layer)),
+)

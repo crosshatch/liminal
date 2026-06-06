@@ -3,18 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    "./*": "./*.ts"
+  "scripts": {
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/sql-d1": "catalog:",
+    "alchemy": "catalog:",
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
     "liminal-util": "workspace:*",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "vitest": "catalog:"
   }
 }

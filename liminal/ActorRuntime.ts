@@ -19,10 +19,8 @@ import { Env } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"
-import { boundLayer } from "liminal-util/boundLayer"
-import { logCause } from "liminal-util/logCause"
+import * as Boundary from "liminal-util/Boundary"
 import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal-util/schema"
-import * as Spanner from "liminal-util/Spanner"
 
 import type { ActorNamespace } from "./ActorNamespace.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
@@ -32,8 +30,6 @@ import type { Handlers, Methods } from "./Method.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
 import * as Tracing from "./Tracing.ts"
 import { sessionAttributes, SessionId, sessionLink } from "./Tracing.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export interface ActorRuntimeDefinition<
   NamespaceSelf,
@@ -196,7 +192,7 @@ export const make = <
           // oxlint-disable-next-line no-unused-vars
         } catch (_e) {}
       }).pipe(
-        span("send", {
+        Boundary.span("send", import.meta.url, {
           attributes: { _tag, ...sessionAttributes(session) },
           kind: "producer",
           links: [sessionLink(session)],
@@ -271,11 +267,14 @@ export const make = <
             .register({ socket, session }, attachments)
             .pipe(Effect.linkSpans(Tracer.externalSpan(session.trace), sessionLink(session).attributes))
         }
-      }).pipe(span("hydrate"), Layer.effectDiscard)
+      }).pipe(Boundary.span("hydrate", import.meta.url), Layer.effectDiscard)
 
-      const runtime = ManagedRuntime.make(HydrateClientsLive.pipe(Layer.provideMerge(Live), boundLayer("actor")))
-
-      this.run = flow(Effect.tapCause(logCause), runtime.runPromise)
+      const runtime = ManagedRuntime.make(
+        HydrateClientsLive.pipe(Layer.provideMerge(Live), Boundary.layer("actor", import.meta.url)),
+      )
+      this.run = <A, E, R extends ManagedRuntime.ManagedRuntime.Services<typeof runtime>>(
+        effect: Effect.Effect<A, E, R>,
+      ) => Effect.onError(effect, Boundary.log).pipe(runtime.runPromise)
     }
 
     override fetch(request: Request): Promise<Response> {
@@ -293,7 +292,7 @@ export const make = <
         state.acceptWebSocket(server)
         const initial = yield* hydrate.pipe(
           this.provideActor(currentClient),
-          span("hydrate", {
+          Boundary.span("hydrate", import.meta.url, {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
           }),
@@ -305,7 +304,7 @@ export const make = <
           headers: { [SecWebSocketProtocol]: "liminal" },
         })
       }).pipe(
-        span("fetch", {
+        Boundary.span("fetch", import.meta.url, {
           kind: "server",
           parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
         }),
@@ -326,7 +325,7 @@ export const make = <
           yield* currentClient.disconnect
           return yield* onDisconnect.pipe(
             this.provideActor(currentClient),
-            span("disconnect", {
+            Boundary.span("disconnect", import.meta.url, {
               attributes: sessionAttributes(session),
               links: [sessionLink(session)],
             }),
@@ -372,14 +371,14 @@ export const make = <
             }),
           ),
           this.provideActor(currentClient),
-          span("handler", {
+          Boundary.span("handler", import.meta.url, {
             attributes: { _tag, ...sessionAttributes(session) },
             kind: "server",
             parent,
             links,
           }),
         )
-      }).pipe(span("socket-message"), this.run)
+      }).pipe(Boundary.span("socket-message", import.meta.url), this.run)
     }
 
     override webSocketClose(socket: WebSocket, _code: number, _reason: string, _wasClean: boolean) {
@@ -400,12 +399,12 @@ export const make = <
         yield* this.directory.unregister(socket)
         yield* onDisconnect.pipe(
           this.provideActor(currentClient),
-          span("disconnect", {
+          Boundary.span("disconnect", import.meta.url, {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
           }),
         )
-      }).pipe(span("socket-close"), this.run)
+      }).pipe(Boundary.span("socket-close", import.meta.url), this.run)
     }
 
     override webSocketError(socket: WebSocket, cause: unknown) {
@@ -418,13 +417,13 @@ export const make = <
         yield* this.directory.unregister(socket)
         yield* onDisconnect.pipe(
           this.provideActor(currentClient),
-          span("disconnect", {
+          Boundary.span("disconnect", import.meta.url, {
             attributes: sessionAttributes(session),
             links: [sessionLink(session)],
           }),
         )
         yield* Effect.annotateLogs(Effect.logDebug("SocketErrored"), { cause })
-      }).pipe(span("socket-error"), this.run)
+      }).pipe(Boundary.span("socket-error", import.meta.url), this.run)
     }
 
     async rpc<K extends keyof Internal>(
@@ -432,14 +431,19 @@ export const make = <
       payload: Internal[K]["payload"]["Type"],
     ): Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>> {
       const handler = internal[method]
-      return await handler(payload).pipe(this.provideActor(null!), span("fn-internal"), Effect.exit, this.run)
+      return await handler(payload).pipe(
+        this.provideActor(null!),
+        Boundary.span("fn-internal", import.meta.url),
+        Effect.exit,
+        this.run,
+      )
     }
 
     async proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]) {
       await Effect.gen(function* () {
         const { clients } = yield* actor
         yield* Effect.forEach(clients, ({ send }) => send(event, payload), { concurrency: "unbounded" })
-      }).pipe(this.provideActor(null!), span("fn-internal"), this.run)
+      }).pipe(this.provideActor(null!), Boundary.span("fn-internal", import.meta.url), this.run)
     }
   }
 }

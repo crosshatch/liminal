@@ -2,15 +2,13 @@ import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exi
 import { Binding, Env, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
+import * as Boundary from "liminal-util/Boundary"
 import { type TopFromString, encodeJsonString } from "liminal-util/schema"
-import * as Spanner from "liminal-util/Spanner"
 
 import type { Actor } from "./Actor.ts"
 import type { ActorHandle } from "./ActorHandle.ts"
 import type { Methods } from "./Method.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export interface ActorNamespaceDefinition<
   Internal extends Methods,
@@ -158,25 +156,28 @@ export const Service =
           }
           const stub = yield* getStub
           return yield* Effect.promise(() => stub.fetch(actorRequest)).pipe(Effect.map(HttpServerResponse.raw))
-        }).pipe(span("upgrade", { kind: "client" }))
+        }).pipe(Boundary.span("upgrade", import.meta.url, { kind: "client" }))
 
-      const call = Effect.fnUntraced(function* <K extends keyof Internal, M extends Internal[K]>(
-        method: K,
-        payload: M["payload"]["Type"],
-      ): Effect.fn.Return<M["success"]["Type"], M["failure"]["Type"], NamespaceSelf> {
-        const stub = yield* getStub
-        const exit = yield* Effect.promise(() => stub.rpc(method as never, payload as never))
-        return yield* exit as any
-      })
+      const call = Effect.fnUntraced(
+        function* <K extends keyof Internal, M extends Internal[K]>(
+          method: K,
+          payload: M["payload"]["Type"],
+        ): Effect.fn.Return<M["success"]["Type"], M["failure"]["Type"], NamespaceSelf> {
+          const stub = yield* getStub
+          const exit = yield* Effect.promise(() => stub.rpc(method as never, payload as never))
+          return yield* exit as any
+        },
+        Boundary.span("call", import.meta.url),
+      )
 
       // TODO:
-      const proxySendAll = Effect.fnUntraced(function* <K extends keyof D["events"]>(
-        event: K,
-        payload: S.Struct<D["events"][K]>["Type"],
-      ) {
-        const stub = yield* getStub
-        yield* Effect.promise(() => stub.proxySendAll(event as never, payload as never))
-      }) as never
+      const proxySendAll = Effect.fnUntraced(
+        function* <K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]) {
+          const stub = yield* getStub
+          yield* Effect.promise(() => stub.proxySendAll(event as never, payload as never))
+        },
+        Boundary.span("proxySendAll", import.meta.url),
+      ) as never
 
       return { upgrade, call, proxySendAll }
     }

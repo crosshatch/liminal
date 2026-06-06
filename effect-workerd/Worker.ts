@@ -8,15 +8,12 @@ import {
   HttpServerResponse,
   HttpTraceContext,
 } from "effect/unstable/http"
-import { logCause } from "liminal-util/logCause"
-import * as Spanner from "liminal-util/Spanner"
+import * as Boundary from "liminal-util/Boundary"
 
 import { Env } from "./Env.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"
 import { NativeRequest } from "./NativeRequest.ts"
 import * as Clock from "./platform/Clock.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export interface WorkerDefinition<PreludeROut, PreludeE, E> {
   readonly prelude: Layer.Layer<PreludeROut, PreludeE, HttpClient.HttpClient | Env>
@@ -54,10 +51,10 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
           ),
         ),
         Layer.provideMerge(Clock.layer),
+        Boundary.layer("prelude", import.meta.url),
       ),
     )
     return handler.pipe(
-      Effect.tapCause(logCause),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
       Effect.provide([
@@ -66,10 +63,11 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         Layer.succeed(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(request)),
       ]),
       Effect.scoped,
-      span("fetch", {
+      Boundary.span("fetch", import.meta.url, {
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
+      Effect.onError(Boundary.log),
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
       (v) => v.finally(() => runtime.dispose()),

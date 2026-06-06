@@ -4,23 +4,29 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref }}
 
 jobs:
-  deploy:
+  alchemize:
     runs-on: ubuntu-latest
     environment: deploy
     steps:
       - uses: actions/checkout@v6
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: ./konfik/.github/actions/configure_environment
-      - run: pnpm build
-      - run: pnpm exec alchemy deploy --stage prod --yes
+      - uses: ./konfik/.github/actions/alchemize
+        with:
+          working-directory: docs
         env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

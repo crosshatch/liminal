@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "portless liminal.actor --app-port 7774 -- vocs dev",
     "build": "vocs build",
-    "preview": "vocs preview"
+    "dev": "alchemy dev",
+    "vocs:dev": "vocs dev"
   },
   "dependencies": {
     "@types/react": "catalog:",
@@ -14,7 +14,6 @@
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
-    "portless": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

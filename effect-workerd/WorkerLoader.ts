@@ -1,10 +1,8 @@
 import { absurd, Effect, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
-import * as Spanner from "liminal-util/Spanner"
+import * as Boundary from "liminal-util/Boundary"
 
 import * as Binding from "./Binding.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export class WorkerLoader extends Context.Service<WorkerLoader, globalThis.WorkerLoader>()(
   "effect-workerd/WorkerLoader",
@@ -22,7 +20,7 @@ export const load = (id: string, code: string) =>
       allowExperimental: true,
       globalOutbound: null,
     }))
-  }).pipe(span("load", { attributes: { id } }))
+  }).pipe(Boundary.span("load", import.meta.url, { attributes: { id } }))
 
 export const run = (id: string, request: Request) =>
   Effect.gen({ self: this }, function* () {
@@ -31,4 +29,4 @@ export const run = (id: string, request: Request) =>
     return yield* Effect.promise(() => worker.getEntrypoint().fetch(request)).pipe(
       Effect.map(HttpServerResponse.fromWeb),
     )
-  }).pipe(span("run", { attributes: { id } }))
+  }).pipe(Boundary.span("run", import.meta.url, { attributes: { id } }))

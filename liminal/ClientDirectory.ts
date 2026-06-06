@@ -1,14 +1,12 @@
 import { Schema as S, Effect, Cause, Ref } from "effect"
+import * as Boundary from "liminal-util/Boundary"
 import type { TopFromString } from "liminal-util/schema"
-import * as Spanner from "liminal-util/Spanner"
 
 import { phantom } from "./_util/phantom.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientHandle from "./ClientHandle.ts"
 import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
-
-const span = Spanner.make(import.meta.url)
 
 export interface ClientEntry<Client, Handle> {
   readonly client: Client
@@ -86,33 +84,43 @@ export const make = <
         entries.delete(key)
         handles.delete(current.handle)
       }
-    }).pipe(span("unregister"))
+    }).pipe(Boundary.span("unregister", import.meta.url))
 
-  const register = Effect.fnUntraced(function* (client: Client, attachments: S.Struct<AttachmentFields>["Type"]) {
-    const clientKey = key(client)
-    yield* snapshot(client, attachments)
-    const attachmentsRef = yield* Ref.make(attachments)
-    const handle: Handle = {
-      attachments: Ref.get(attachmentsRef),
-      save: Effect.fnUntraced(function* (attachments) {
-        yield* Ref.set(attachmentsRef, attachments)
-        yield* snapshot(client, attachments)
-      }),
-      send: (_tag, payload) =>
-        send(client, {
-          _tag: "Event",
-          event: { _tag, ...payload } as never,
+  const register = Effect.fnUntraced(
+    function* (client: Client, attachments: S.Struct<AttachmentFields>["Type"]) {
+      const clientKey = key(client)
+      yield* snapshot(client, attachments)
+      const attachmentsRef = yield* Ref.make(attachments)
+      const handle: Handle = {
+        attachments: Ref.get(attachmentsRef),
+        save: Effect.fnUntraced(function* (attachments) {
+          yield* Ref.set(attachmentsRef, attachments)
+          yield* snapshot(client, attachments)
         }),
-      disconnect: close(client).pipe(Effect.andThen(unregister(clientKey)), Effect.asVoid),
-    }
-    const previous = entries.get(clientKey)
-    if (previous) {
-      handles.delete(previous.handle)
-    }
-    entries.set(clientKey, { client, handle })
-    handles.add(handle)
-    return handle
-  }, span("register"))
+        send: (_tag, payload) =>
+          send(client, {
+            _tag: "Event",
+            event: { _tag, ...payload } as never,
+          }),
+        disconnect: close(client).pipe(Effect.andThen(unregister(clientKey)), Effect.asVoid),
+      }
+      const previous = entries.get(clientKey)
+      if (previous) {
+        handles.delete(previous.handle)
+      }
+      entries.set(clientKey, { client, handle })
+      handles.add(handle)
+      return handle
+    },
+    Boundary.span("register", import.meta.url),
+  )
 
-  return { ...phantom, handles, register, get, entry, unregister }
+  return {
+    ...phantom,
+    handles,
+    register,
+    get,
+    entry,
+    unregister,
+  }
 }

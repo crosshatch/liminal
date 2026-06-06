@@ -13,14 +13,17 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./*": "./*.ts"
+    "./*": "./*.ts",
+    "./alchemicals/*": "./alchemicals/*.ts"
   },
   "publishConfig": {
     "exports": {
-      "./*": "./dist/*.js"
+      "./*": "./dist/*.js",
+      "./alchemicals/*": "./dist/alchemicals/*.js"
     }
   },
   "peerDependencies": {
+    "alchemy": "catalog:",
     "effect": "catalog:"
   }
 }

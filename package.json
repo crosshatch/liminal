@@ -6,9 +6,9 @@
     "changeset": "changeset",
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
-    "dev": "alchemy dev",
-    "deploy:github": "alchemy deploy stacks/github.ts --stage prod --yes --env-file .env --profile liminal-env",
-    "sync-repos": "node ./konfik/main.ts sync-repos",
+    "dev": "turbo run dev //#watch",
+    "konfik": "node ./konfik/main.ts",
+    "sync-repos": "pnpm konfik sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
     "prepare": "ts-patch install -s",
@@ -19,6 +19,7 @@
     "@changesets/cli": "catalog:",
     "@effect/language-service": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@effect/sql-pg": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
@@ -28,16 +29,18 @@
     "@vitest/expect": "catalog:",
     "@vitest/web-worker": "catalog:",
     "alchemy": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
+    "liminal-util": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "playwright": "catalog:",
     "ts-patch": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "vitest": "catalog:"
   },
-  "packageManager": "pnpm@11.5.0"
+  "packageManager": "pnpm@11.5.2"
 }
