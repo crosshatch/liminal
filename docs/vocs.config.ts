@@ -11,7 +11,6 @@ export default defineConfig({
   },
   title: "Liminal",
   aiCta: false,
-  baseUrl: "https://liminal.actor",
   description: PackageJson.description,
   editLink: {
     pattern: "https://github.com/liminal/docs/edit/main/docs/pages/:path",
