@@ -12,6 +12,6 @@ export default Alchemy.Stack(
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
   },
   docs({
-    domain: "actor.liminal",
+    domain: "liminal.actor",
   }).pipe(Effect.provide(AlchemicalEnv.layer)),
 )
