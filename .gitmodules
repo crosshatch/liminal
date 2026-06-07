@@ -28,3 +28,6 @@
 [submodule "repos/alchemy-effect"]
 	path = repos/alchemy-effect
 	url = git@github.com:alchemy-run/alchemy-effect.git
+[submodule "repos/vocs"]
+	path = repos/vocs
+	url = git@github.com:wevm/vocs.git

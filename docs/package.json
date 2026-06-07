@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "alchemy": "catalog:",
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
@@ -17,6 +18,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vocs": "catalog:"
+    "vocs": "catalog:",
+    "waku": "catalog:"
   }
 }
