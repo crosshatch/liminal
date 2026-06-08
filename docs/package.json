@@ -4,9 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vocs build",
-    "dev": "alchemy dev",
-    "vocs:dev": "vocs dev"
+    "build": "vite build",
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@types/react": "catalog:",
@@ -18,6 +17,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vocs": "catalog:",
     "waku": "catalog:"
   }
