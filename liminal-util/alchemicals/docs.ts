@@ -1,5 +1,5 @@
 import * as Cloudflare from "alchemy/Cloudflare"
-import { Effect, Predicate } from "effect"
+import { Effect, Predicate, String } from "effect"
 import { AlchemicalEnv } from "liminal-util/alchemicals/AlchemicalEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
@@ -12,6 +12,11 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
     command: "pnpm exec vocs build",
     outdir: "dist",
     dev: { command: "pnpm exec vocs dev" },
+    script: String.stripMargin(`
+    | export default {
+    |   fetch: (request: Request, env: { ASSETS: Fetcher }) => env.ASSETS.fetch(request),
+    | }
+    `),
   })
   const env = yield* AlchemicalEnv
   if (env._tag === "Pr") {
