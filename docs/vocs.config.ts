@@ -1,22 +1,21 @@
 import PackageJson from "liminal/package.json" with { type: "json" }
-import { defineConfig } from "vocs"
+import { Changelog, defineConfig } from "vocs/config"
 
 export default defineConfig({
-  vite: {
-    server: {
-      host: "127.0.0.1",
-      port: 7774,
-      strictPort: true,
-    },
-  },
+  changelog: Changelog.github({
+    repo: "crosshatch/liminal",
+  }),
   title: "Liminal",
-  aiCta: false,
   description: PackageJson.description,
   editLink: {
-    pattern: "https://github.com/liminal/docs/edit/main/docs/pages/:path",
+    link: (p) => `https://github.com/liminal/docs/edit/main/docs/pages/${p}`,
     text: "Edit on GitHub",
   },
-  rootDir: ".",
+  banner: {
+    content: "Crosshatch is in preview. Join the Crosshatch discord for updates.",
+    dismissable: false,
+    href: "https://discord.gg/CSXCRUKjh9",
+  },
   sidebar: {
     "/": [
       {
@@ -162,6 +161,17 @@ export default defineConfig({
     {
       icon: "x",
       link: "https://x.com/CrosshatchDev",
+    },
+  ],
+  topNav: [
+    {
+      text: `v${PackageJson.version}`,
+      items: [
+        {
+          text: "Changelog",
+          link: "/changelog",
+        },
+      ],
     },
   ],
 })

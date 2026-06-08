@@ -1,5 +1,5 @@
 import * as Cloudflare from "alchemy/Cloudflare"
-import { Effect, Predicate } from "effect"
+import { Effect, Predicate, String } from "effect"
 import { AlchemicalEnv } from "liminal-util/alchemicals/AlchemicalEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
@@ -9,9 +9,14 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
   const base = yield* WorkerConfig({ domain })
   const { url } = yield* Cloudflare.StaticSite("Docs", {
     ...base,
-    command: "pnpm run build",
+    command: "CLOUDFLARE=1 pnpm exec vocs build",
     outdir: "dist",
-    dev: { command: "pnpm run vocs:dev" },
+    dev: { command: "pnpm exec vocs dev" },
+    script: String.stripMargin(`
+    | export default {
+    |   fetch: (request, env) => env.ASSETS.fetch(request),
+    | }
+    `),
   })
   const env = yield* AlchemicalEnv
   if (env._tag === "Pr") {

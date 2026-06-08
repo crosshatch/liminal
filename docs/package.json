@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vocs build",
-    "dev": "alchemy dev",
-    "vocs:dev": "vocs dev"
+    "build": "vite build",
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "@types/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "alchemy": "catalog:",
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
@@ -17,6 +17,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vocs": "catalog:"
+    "vite": "catalog:",
+    "vocs": "catalog:",
+    "waku": "catalog:"
   }
 }
