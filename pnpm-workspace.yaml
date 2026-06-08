@@ -16,6 +16,9 @@ allowBuilds:
 
 allowUnusedPatches: true
 
+patchedDependencies:
+  alchemy@2.0.0-beta.52: konfik/patches/alchemy@2.0.0-beta.52.patch
+
 catalog:
   "@changesets/cli": ^2.30.0
   "@cloudflare/vitest-pool-workers": ^0.14.7
