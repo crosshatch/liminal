@@ -14,7 +14,7 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
     dev: { command: "pnpm exec vocs dev" },
     script: String.stripMargin(`
     | export default {
-    |   fetch: (request: Request, env: { ASSETS: Fetcher }) => env.ASSETS.fetch(request),
+    |   fetch: (request, env) => env.ASSETS.fetch(request),
     | }
     `),
   })
