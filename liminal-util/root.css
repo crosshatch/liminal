@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap");
+
+@font-face {
+  font-family: "Pilat";
+  src: url("/fonts/Pilat/Pilat-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pilat";
+  src: url("/fonts/Pilat/Pilat-Book.otf") format("opentype");
+  font-weight: 450;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pilat";
+  src: url("/fonts/Pilat/Pilat-Demi.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-LightItalic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-Regular2.woff2") format("woff2");
+  font-weight: 450;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-Regular2Italic.woff2") format("woff2");
+  font-weight: 450;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HB Set";
+  src: url("/fonts/HB_Set/HBSet-MediumItalic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --vocs-font-family: "Pilat", ui-sans-serif, system-ui, sans-serif;
+  --vocs-font-family-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --vocs-text-xs: 0.84375rem;
+  --vocs-text-sm: 0.96875rem;
+  --vocs-text-base: 1.09375rem;
+  --vocs-text-callout: 0.96875rem;
+  --vocs-text-code-block: 0.96875em;
+  --vocs-text-h1: 2.5rem;
+  --vocs-text-h2: 1.75rem;
+  --vocs-text-h3: 1.4375rem;
+  --vocs-text-h4: 1.25rem;
+  --vocs-text-h5: 1.09375rem;
+  --vocs-text-h6: 1.09375rem;
+  --vocs-text-inline-code: 0.96875em;
+  --vocs-text-subtitle: 1.25rem;
+  --vocs-text-td: 0.96875rem;
+  --vocs-text-th: 0.90625rem;
+}
+
+:where([data-vocs], [data-vocs] *, [data-vocs] *::before, [data-vocs] *::after) {
+  border-radius: 0 !important;
+}
+
+:where([data-vocs], [data-vocs] *, [data-vocs] *::before, [data-vocs] *::after) {
+  border-style: dashed !important;
+}
+
+:where(h1, h2, h3) {
+  font-family: "Pilat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 450;
+  letter-spacing: -0.03em;
+}
+
+h1 {
+  text-transform: uppercase;
+}
+
+article[data-v-content] > :is(p, ol, ul, blockquote),
+article[data-v-content] > :is(ol, ul) li,
+article[data-v-content] > table :is(th, td) {
+  font-size: 1.1875rem;
+}
+
+[data-v-banner] {
+  border-bottom: 1px solid var(--vocs-border-color-primary);
+}
+
+[data-v-gutter-top] > nav {
+  padding-left: 2rem;
+}
+
+[data-v-logo-text] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}

@@ -13,17 +13,20 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./root.css": "./root.css",
     "./*": "./*.ts",
     "./alchemicals/*": "./alchemicals/*.ts"
   },
   "publishConfig": {
     "exports": {
+      "./root.css": "./root.css",
       "./*": "./dist/*.js",
       "./alchemicals/*": "./dist/alchemicals/*.js"
     }
   },
   "peerDependencies": {
     "alchemy": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "vocs": "catalog:"
   }
 }
