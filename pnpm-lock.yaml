@@ -24,9 +24,6 @@ catalogs:
     '@effect/language-service':
       specifier: 0.86.2
       version: 0.86.2
-    '@effect/openapi-generator':
-      specifier: 4.0.0-beta.78
-      version: 4.0.0-beta.78
     '@effect/platform-browser':
       specifier: 4.0.0-beta.78
       version: 4.0.0-beta.78
@@ -114,9 +111,6 @@ catalogs:
     waku:
       specifier: 1.0.0-beta.0
       version: 1.0.0-beta.0
-    yaml:
-      specifier: ^2.8.3
-      version: 2.8.3
 
 overrides:
   '@effect/sql-pg': 4.0.0-beta.78
@@ -373,21 +367,6 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.78
-
-  scripts:
-    dependencies:
-      '@effect/openapi-generator':
-        specifier: 'catalog:'
-        version: 4.0.0-beta.78(@effect/platform-node@4.0.0-beta.78(effect@4.0.0-beta.78)(ioredis@5.10.1))(effect@4.0.0-beta.78)
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-beta.78(effect@4.0.0-beta.78)(ioredis@5.10.1)
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-beta.78
-      yaml:
-        specifier: 'catalog:'
-        version: 2.8.3
 
 packages:
 
@@ -877,13 +856,6 @@ packages:
   '@effect/language-service@0.86.2':
     resolution: {integrity: sha512-SaPln+8srOqDJDUwNTDmP5e+IYpEDr9+1epGznnsLqu8xvo6VnxyWARdeLpqvZJlb0Pgy9ca7ppqvvdWbHPXAg==}
     hasBin: true
-
-  '@effect/openapi-generator@4.0.0-beta.78':
-    resolution: {integrity: sha512-qhKRcZCNQ5b0Klrct+AC/tPQgIDBxVsD0MkQLIzqvLU3qRHaNd5yHo7kxFf/DuhCyyL++xZfbHsPdq3VdLIByg==}
-    hasBin: true
-    peerDependencies:
-      '@effect/platform-node': ^4.0.0-beta.78
-      effect: ^4.0.0-beta.78
 
   '@effect/platform-browser@4.0.0-beta.78':
     resolution: {integrity: sha512-8r9MVuZ8xJRyVyi+C8SKSYLbMsHr7qOiUgLV6lKMECuAWyMhlbK/7Ka9SQGr0ZPqOe5ShLEvV7DevnGkG+owAQ==}
@@ -6648,11 +6620,6 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
-  yaml@2.8.3:
-    resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
-    engines: {node: '>= 14.6'}
-    hasBin: true
-
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
@@ -7467,11 +7434,6 @@ snapshots:
       scheduler: 0.27.0
 
   '@effect/language-service@0.86.2': {}
-
-  '@effect/openapi-generator@4.0.0-beta.78(@effect/platform-node@4.0.0-beta.78(effect@4.0.0-beta.78)(ioredis@5.10.1))(effect@4.0.0-beta.78)':
-    dependencies:
-      '@effect/platform-node': 4.0.0-beta.78(effect@4.0.0-beta.78)(ioredis@5.10.1)
-      effect: 4.0.0-beta.78
 
   '@effect/platform-browser@4.0.0-beta.78(effect@4.0.0-beta.78)':
     dependencies:
@@ -13487,8 +13449,6 @@ snapshots:
   xtend@4.0.2: {}
 
   yallist@3.1.1: {}
-
-  yaml@2.8.3: {}
 
   yaml@2.9.0: {}
 

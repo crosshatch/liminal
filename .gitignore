@@ -8,5 +8,4 @@
 .turbo/
 dist/
 node_modules/
-repomix-output.xml
 repos
