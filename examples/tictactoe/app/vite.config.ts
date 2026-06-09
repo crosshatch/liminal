@@ -1,5 +1,3 @@
-import { fileURLToPath, URL } from "node:url"
-
 import tailwind from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
@@ -17,13 +15,7 @@ export default defineConfig({
     react(),
     tailwind(),
   ],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL(".", import.meta.url)),
-    },
-    dedupe: ["react", "react-dom", "effect"],
-    tsconfigPaths: true,
-  },
+  resolve: { tsconfigPaths: true },
   environments: {
     ssr: {
       build: {
