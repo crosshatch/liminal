@@ -11,7 +11,7 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
     ...base,
     dev: { command: "pnpm exec vocs dev" },
     command: "pnpm exec vocs build",
-    outdir: "dist",
+    outdir: "dist/public",
   })
   const env = yield* AlchemicalEnv
   if (env._tag === "Pr") {
