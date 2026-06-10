@@ -7,6 +7,7 @@ export default defineConfig({
     title: "Liminal",
   }),
   description: PackageJson.description,
+  renderStrategy: "full-static",
   banner: {
     content: "Join the Crosshatch discord.",
     dismissable: false,

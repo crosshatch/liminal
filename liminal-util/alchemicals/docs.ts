@@ -7,7 +7,12 @@ import { PrComment } from "./PrComment.ts"
 
 export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: string }) {
   const base = yield* WorkerConfig({ domain })
-  const { url } = yield* Cloudflare.Vite("Docs", base)
+  const { url } = yield* Cloudflare.StaticSite("Docs", {
+    ...base,
+    dev: { command: "pnpm exec vocs dev" },
+    command: "pnpm exec vocs build",
+    outdir: "dist",
+  })
   const env = yield* AlchemicalEnv
   if (env._tag === "Pr") {
     const { pr, sha } = env
