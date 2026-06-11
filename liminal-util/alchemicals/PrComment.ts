@@ -27,3 +27,24 @@ export const PrComment =
         body: Output.interpolate(template, ...args).pipe(Output.map(String.stripMargin)),
       })
     })
+
+export const PrPreviewComment = Effect.fn(function* <R = never>({
+  name,
+  url,
+}: {
+  readonly name: string
+  readonly url: string | undefined | Output.Output<string | undefined, R>
+}) {
+  const env = yield* AlchemicalEnv
+  if (env._tag === "Pr") {
+    yield* PrComment("PreviewComment")`
+    | ### ${name} Preview (${env.sha})
+    |
+    | ${url}
+    `.pipe(
+      Effect.catchTags({
+        NotInPrError: Effect.die,
+      }),
+    )
+  }
+})

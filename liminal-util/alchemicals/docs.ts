@@ -1,10 +1,9 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
-import { Effect, Predicate } from "effect"
-import { AlchemicalEnv } from "liminal-util/alchemicals/AlchemicalEnv"
+import { Effect } from "effect"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
-import { PrComment } from "./PrComment.ts"
+import { PrPreviewComment } from "./PrComment.ts"
 
 export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: string }) {
   const base = yield* WorkerConfig({ domain })
@@ -16,22 +15,6 @@ export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: 
     outdir: "dist/public",
     env: { DEV },
   })
-  const env = yield* AlchemicalEnv
-  if (env._tag === "Pr") {
-    const { pr, sha } = env
-    if (Predicate.isNumber(pr)) {
-      yield* PrComment("PreviewComment")`
-      | ## Docs Preview
-      |
-      | URL: ${url}
-      |
-      | Commit: ${sha}
-      `.pipe(
-        Effect.catchTags({
-          NotInPrError: Effect.die,
-        }),
-      )
-    }
-  }
+  yield* PrPreviewComment({ name: "Docs", url })
   return { url }
 })
