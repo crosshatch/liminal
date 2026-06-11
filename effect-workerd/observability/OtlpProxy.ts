@@ -1,7 +1,10 @@
 import { Config, Effect, Layer, Redacted, Stream } from "effect"
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 
-export const layer = ({ endpoint, headers: configuredHeaders }: {
+export const layer = ({
+  endpoint,
+  headers: configuredHeaders,
+}: {
   readonly endpoint: string
   readonly headers?: HeadersInit | undefined
 }) =>
@@ -59,7 +62,7 @@ export const layerFromConfig = () =>
       layer({
         endpoint,
         headers: parseHeaders(Redacted.value(headers)),
-      })
+      }),
     ),
     Layer.unwrap,
   )
