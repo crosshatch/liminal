@@ -6,12 +6,11 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   changesets:
     runs-on: ubuntu-latest
-    environment: changesets
+    timeout-minutes: 10
     permissions:
       contents: write
       id-token: write
       pull-requests: write
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"

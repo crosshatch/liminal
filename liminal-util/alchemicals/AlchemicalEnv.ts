@@ -30,8 +30,9 @@ export const layer = Effect.gen(function* () {
       PlatformError: Effect.die,
     }),
   )
+  const devLike = yield* Config.boolean("ALCHEMICAL_DEV").pipe(Config.withDefault(false))
   const { dev } = yield* Alchemy.AlchemyContext
-  if (dev) {
+  if (devLike || dev) {
     return make.Local({ branch })
   }
   const github = yield* Config.all({

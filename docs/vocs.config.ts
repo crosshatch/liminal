@@ -1,20 +1,19 @@
+import { VocsConfig } from "liminal-util/vocs"
 import PackageJson from "liminal/package.json" with { type: "json" }
-import { Changelog, defineConfig } from "vocs/config"
+import { defineConfig } from "vocs/config"
 
 export default defineConfig({
-  changelog: Changelog.github({
-    repo: "crosshatch/liminal",
+  ...VocsConfig({
+    title: "Liminal",
+    repo: "liminal",
   }),
-  title: "Liminal",
   description: PackageJson.description,
-  editLink: {
-    link: (p) => `https://github.com/liminal/docs/edit/main/docs/pages/${p}`,
-    text: "Edit on GitHub",
-  },
+  renderStrategy: "full-static",
   banner: {
-    content: "Crosshatch is in preview. Join the Crosshatch discord for updates.",
+    content: "Join the Crosshatch discord.",
     dismissable: false,
     href: "https://discord.gg/CSXCRUKjh9",
+    variant: "tip",
   },
   sidebar: {
     "/": [
