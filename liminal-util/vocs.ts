@@ -17,7 +17,7 @@ export const VocsConfig = ({ title, repo }: { readonly title: string; readonly r
       repo: `crosshatch/${repo}`,
     }),
     editLink: {
-      link: (p: string) => `https://github.com/crosshatch/${repo}/edit/main/docs/src/pages/${p}`,
+      link: `https://github.com/crosshatch/${repo}/edit/main/docs/src/pages/:path`,
       text: "Edit on GitHub",
     },
   }) satisfies Partial<Config>
