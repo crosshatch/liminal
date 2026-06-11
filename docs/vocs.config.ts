@@ -5,6 +5,7 @@ import { defineConfig } from "vocs/config"
 export default defineConfig({
   ...VocsConfig({
     title: "Liminal",
+    repo: "liminal",
   }),
   description: PackageJson.description,
   renderStrategy: "full-static",

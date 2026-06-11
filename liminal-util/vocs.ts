@@ -1,6 +1,6 @@
 import { Changelog, type Config } from "vocs/config"
 
-export const VocsConfig = ({ title }: { readonly title: string }) =>
+export const VocsConfig = ({ title, repo }: { readonly title: string; readonly repo: string }) =>
   ({
     title,
     titleTemplate: `%s ⋅ ${title}`,
@@ -14,10 +14,10 @@ export const VocsConfig = ({ title }: { readonly title: string }) =>
     checkDeadlinks: true,
     changelog: Changelog.github({
       prereleases: true,
-      repo: "crosshatch/crosshatch",
+      repo: `crosshatch/${repo}`,
     }),
     editLink: {
-      link: (p: string) => `https://github.com/crosshatch/crosshatch/edit/main/docs/src/pages/${p}`,
+      link: (p: string) => `https://github.com/crosshatch/${repo}/edit/main/docs/src/pages/${p}`,
       text: "Edit on GitHub",
     },
   }) satisfies Partial<Config>
