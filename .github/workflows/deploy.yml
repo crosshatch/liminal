@@ -22,10 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
-      - uses: crosshatch/konfik/.github/actions/configure_environment
+      - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm exec vocs build
         working-directory: docs
-      - uses: crosshatch/konfik/.github/actions/alchemize
+      - uses: crosshatch/konfik/.github/actions/alchemize@main
         with:
           working-directory: docs
         env:
