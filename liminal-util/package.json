@@ -13,13 +13,13 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./root.css": "./root.css",
+    "./vocs.css": "./vocs.css",
     "./*": "./*.ts",
     "./alchemicals/*": "./alchemicals/*.ts"
   },
   "publishConfig": {
     "exports": {
-      "./root.css": "./root.css",
+      "./vocs.css": "./vocs.css",
       "./*": "./dist/*.js",
       "./alchemicals/*": "./dist/alchemicals/*.js"
     }
