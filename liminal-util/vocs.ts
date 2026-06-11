@@ -20,4 +20,5 @@ export const VocsConfig = ({ title, repo }: { readonly title: string; readonly r
       link: `https://github.com/crosshatch/${repo}/edit/main/docs/src/pages/:path`,
       text: "Edit on GitHub",
     },
+    renderStrategy: "full-static",
   }) satisfies Partial<Config>
