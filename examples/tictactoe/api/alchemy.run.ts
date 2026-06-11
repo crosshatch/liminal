@@ -14,9 +14,11 @@ export default Alchemy.Stack(
       domain: "tictactoe.liminal.actor",
       assets: "../app",
     })
+    const { dev: DEV } = yield* Alchemy.AlchemyContext
     const { url } = yield* Cloudflare.Vite("Entry", {
       ...base,
       env: {
+        DEV,
         BUCKET: Cloudflare.R2Bucket("Bucket"),
         TICTACTOE: Cloudflare.DurableObjectNamespace("TicTacToeRuntime", {
           className: "TicTacToeRuntime",
