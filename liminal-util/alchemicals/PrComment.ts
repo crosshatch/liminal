@@ -38,7 +38,7 @@ export const PrPreviewComment = Effect.fn(function* <R = never>({
   const env = yield* AlchemicalEnv
   if (env._tag === "Pr") {
     yield* PrComment("PreviewComment")`
-    | ### ${name} Preview (${env.sha})
+    | ### ${name} Preview for ${env.sha}
     |
     | ${url}
     `.pipe(
