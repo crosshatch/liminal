@@ -20,8 +20,4 @@ export const VocsConfig = ({ title }: { readonly title: string }) =>
       link: (p: string) => `https://github.com/crosshatch/crosshatch/edit/main/docs/src/pages/${p}`,
       text: "Edit on GitHub",
     },
-    // mcp: {
-    //   enabled: true,
-    //   sources: [McpSource.github({ repo: "crosshatch/crosshatch" })],
-    // },
   }) satisfies Partial<Config>
