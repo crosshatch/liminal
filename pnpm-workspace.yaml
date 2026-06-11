@@ -88,10 +88,10 @@ minimumReleaseAgeExclude:
   - "@effect/sql-d1@4.0.0-beta.79"
   - "@effect/sql-pg@4.0.0-beta.79"
   - effect@4.0.0-beta.79
-  - '@turbo/darwin-64@2.9.18'
-  - '@turbo/darwin-arm64@2.9.18'
-  - '@turbo/linux-64@2.9.18'
-  - '@turbo/linux-arm64@2.9.18'
-  - '@turbo/windows-64@2.9.18'
-  - '@turbo/windows-arm64@2.9.18'
+  - "@turbo/darwin-64@2.9.18"
+  - "@turbo/darwin-arm64@2.9.18"
+  - "@turbo/linux-64@2.9.18"
+  - "@turbo/linux-arm64@2.9.18"
+  - "@turbo/windows-64@2.9.18"
+  - "@turbo/windows-arm64@2.9.18"
   - turbo@2.9.18
