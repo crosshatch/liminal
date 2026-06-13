@@ -2,18 +2,17 @@ import * as Alchemy from "alchemy"
 import { Option, Array, flow, Config, Context, Effect, Layer, String, Data } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 
-type GithubEnv = {
-  readonly sha: string
-  readonly owner: string
-  readonly repository: string
-}
-
 export class AlchemicalEnv extends Context.Service<
   AlchemicalEnv,
   Data.TaggedEnum<{
     Local: {}
-    Pr: { pr: number } & GithubEnv
-    Main: {} & GithubEnv
+    Pr: {
+      readonly pr: number
+      readonly sha: string
+      readonly owner: string
+      readonly repository: string
+    }
+    Main: {}
   }> & {
     readonly branch: string
   }
@@ -30,10 +29,13 @@ export const layer = Effect.gen(function* () {
       PlatformError: Effect.die,
     }),
   )
-  const devLike = yield* Config.boolean("ALCHEMICAL_DEV").pipe(Config.withDefault(false))
   const { dev } = yield* Alchemy.AlchemyContext
-  if (devLike || dev) {
+  if (dev) {
     return make.Local({ branch })
+  }
+  const pr = yield* Config.number("PULL_REQUEST").pipe(Config.option, Config.map(Option.getOrUndefined))
+  if (!pr) {
+    return make.Main({ branch })
   }
   const github = yield* Config.all({
     sha: Config.string("GITHUB_SHA"),
@@ -50,8 +52,6 @@ export const layer = Effect.gen(function* () {
         ),
       ),
     ),
-    pr: Config.number("PULL_REQUEST").pipe(Config.option, Config.map(Option.getOrUndefined)),
   })
-  const { pr, ...rest } = github
-  return pr ? make.Pr({ branch, pr, ...rest }) : make.Main({ branch, ...rest })
+  return make.Pr({ branch, pr, ...github })
 }).pipe(Layer.effect(AlchemicalEnv))
