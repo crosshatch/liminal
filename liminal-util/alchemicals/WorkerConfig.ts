@@ -1,5 +1,5 @@
-import { Stage } from "alchemy"
 import type { WorkerProps } from "alchemy/Cloudflare"
+import { Stage } from "alchemy/Stage"
 import { Effect } from "effect"
 
 export const WorkerConfig = Effect.fn(function* ({

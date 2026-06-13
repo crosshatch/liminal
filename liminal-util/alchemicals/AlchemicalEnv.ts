@@ -1,4 +1,4 @@
-import * as Alchemy from "alchemy"
+import { AlchemyContext } from "alchemy/AlchemyContext"
 import { Option, Array, flow, Config, Context, Effect, Layer, String, Data } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 
@@ -29,7 +29,7 @@ export const layer = Effect.gen(function* () {
       PlatformError: Effect.die,
     }),
   )
-  const { dev } = yield* Alchemy.AlchemyContext
+  const { dev } = yield* AlchemyContext
   if (dev) {
     return make.Local({ branch })
   }
