@@ -18,6 +18,14 @@ export const WorkerConfig = Effect.fn(function* ({
       date: "2026-02-05",
       flags: ["nodejs_compat", "global_fetch_strictly_public"],
     },
-    ...(assets ? { rootDir: assets } : {}),
+    ...(assets
+      ? {
+          rootDir: assets,
+          assets: {
+            notFoundHandling: "single-page-application",
+            directory: "dist",
+          },
+        }
+      : {}),
   } satisfies Partial<WorkerProps>
 })
