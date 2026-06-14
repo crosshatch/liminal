@@ -16,12 +16,12 @@ export const GithubDeployer = Effect.fn(function* ({
       {
         effect: "allow",
         // oxfmt-ignore
-        permissionGroups: ["Account Settings Write", "D1 Write", "Pages Write", "Queues Write", "Secrets Store Write", "Workers KV Storage Write", "Workers R2 Storage Write", "Workers Scripts Read", "Workers Scripts Write", "Workers Tail Read"],
+        permissionGroups: ["Account Settings Write", "AI Gateway Write", "D1 Write", "Hyperdrive Write", "Pages Write", "Queues Write", "Secrets Store Write", "Vectorize Write", "Workers KV Storage Write", "Workers R2 Storage Write", "Workers Scripts Read", "Workers Scripts Write", "Workers Tail Read"],
         resources: { [`com.cloudflare.api.account.${accountId}`]: "*" },
       },
       {
         effect: "allow",
-        permissionGroups: ["DNS Write", "Zone Read"],
+        permissionGroups: ["DNS Write", "Workers Routes Write", "Zone Read"],
         resources: {
           [`com.cloudflare.api.account.${accountId}`]: { "com.cloudflare.api.account.zone.*": "*" },
         },

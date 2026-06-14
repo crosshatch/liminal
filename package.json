@@ -6,7 +6,8 @@
     "changeset": "changeset",
     "check": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
-    "dev": "turbo run dev //#watch",
+    "dev": "turbo run dev //#watch //#aliases",
+    "aliases": "caddy run --config ./Caddyfile",
     "konfik": "node ./konfik/main.ts",
     "sync-repos": "pnpm konfik sync-repos",
     "destroy": "alchemy destroy",
@@ -42,5 +43,5 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@11.5.3"
+  "packageManager": "pnpm@11.6.0"
 }

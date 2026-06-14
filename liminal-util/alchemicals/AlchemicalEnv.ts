@@ -1,41 +1,44 @@
-import * as Alchemy from "alchemy"
-import { Option, Array, flow, Config, Context, Effect, Layer, String, Data } from "effect"
+import { AlchemyContext } from "alchemy/AlchemyContext"
+import { Stage } from "alchemy/Stage"
+import { Array, flow, Config, Context, Effect, Layer, String, Data } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
-
-type GithubEnv = {
-  readonly sha: string
-  readonly owner: string
-  readonly repository: string
-}
 
 export class AlchemicalEnv extends Context.Service<
   AlchemicalEnv,
   Data.TaggedEnum<{
-    Local: {}
-    Pr: { pr: number } & GithubEnv
-    Main: {} & GithubEnv
-  }> & {
-    readonly branch: string
-  }
+    Local: {
+      readonly branch: string
+    }
+    Staging: {
+      readonly pr: number
+      readonly sha: string
+      readonly owner: string
+      readonly repository: string
+    }
+    Main: {}
+  }>
 >()("liminal-util/alchemicals/AlchemicalEnv") {}
 
-const make = Data.taggedEnum<AlchemicalEnv["Service"]>()
-
 export const layer = Effect.gen(function* () {
-  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
-  const branch = yield* ChildProcess.make("git", ["branch", "--show-current"]).pipe(
-    spawner.string,
-    Effect.map(String.trim),
-    Effect.catchTags({
-      PlatformError: Effect.die,
-    }),
-  )
-  const devLike = yield* Config.boolean("ALCHEMICAL_DEV").pipe(Config.withDefault(false))
-  const { dev } = yield* Alchemy.AlchemyContext
-  if (devLike || dev) {
-    return make.Local({ branch })
+  const stage = yield* Stage
+  const { Main, Local, Staging } = Data.taggedEnum<AlchemicalEnv["Service"]>()
+  if (stage === "prod") {
+    return Main()
   }
-  const github = yield* Config.all({
+  const { dev } = yield* AlchemyContext
+  if (dev) {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
+    const branch = yield* ChildProcess.make("git", ["branch", "--show-current"]).pipe(
+      spawner.string,
+      Effect.map(String.trim),
+      Effect.catchTags({
+        PlatformError: Effect.die,
+      }),
+    )
+    return Local({ branch })
+  }
+  return yield* Config.all({
+    pr: Config.number("PULL_REQUEST"),
     sha: Config.string("GITHUB_SHA"),
     owner: Config.string("GITHUB_REPOSITORY_OWNER"),
     repository: Config.string("GITHUB_REPOSITORY").pipe(
@@ -50,8 +53,5 @@ export const layer = Effect.gen(function* () {
         ),
       ),
     ),
-    pr: Config.number("PULL_REQUEST").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  })
-  const { pr, ...rest } = github
-  return pr ? make.Pr({ branch, pr, ...rest }) : make.Main({ branch, ...rest })
+  }).pipe(Effect.map(Staging))
 }).pipe(Layer.effect(AlchemicalEnv))

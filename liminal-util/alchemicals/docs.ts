@@ -1,34 +1,26 @@
+import { AlchemyContext } from "alchemy/AlchemyContext"
 import * as Cloudflare from "alchemy/Cloudflare"
-import { Effect, Predicate } from "effect"
-import { AlchemicalEnv } from "liminal-util/alchemicals/AlchemicalEnv"
+import { Effect } from "effect"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
-import { PrComment } from "./PrComment.ts"
+import { PrPreviewComment } from "./PrComment.ts"
 
-export const docs = Effect.fnUntraced(function* ({ domain }: { readonly domain: string }) {
+export const docs = Effect.fnUntraced(function* ({
+  domain,
+  devPort,
+}: {
+  readonly domain: string
+  readonly devPort: number
+}) {
   const base = yield* WorkerConfig({ domain })
+  const { dev: DEV } = yield* AlchemyContext
   const { url } = yield* Cloudflare.StaticSite("Docs", {
     ...base,
-    dev: { command: "pnpm exec vocs dev" },
+    dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
     outdir: "dist/public",
+    env: { DEV },
   })
-  const env = yield* AlchemicalEnv
-  if (env._tag === "Pr") {
-    const { pr, sha } = env
-    if (Predicate.isNumber(pr)) {
-      yield* PrComment("PreviewComment")`
-      | ## Docs Preview
-      |
-      | URL: ${url}
-      |
-      | Commit: ${sha}
-      `.pipe(
-        Effect.catchTags({
-          NotInPrError: Effect.die,
-        }),
-      )
-    }
-  }
+  yield* PrPreviewComment({ name: "Docs", url })
   return { url }
 })
