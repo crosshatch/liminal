@@ -1,6 +1,7 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"
+import * as AlchemicalEnv from "liminal-util/alchemicals/AlchemicalEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
@@ -31,5 +32,5 @@ export default Alchemy.Stack(
       },
     })
     return { url }
-  }),
+  }).pipe(Effect.provide(AlchemicalEnv.layer)),
 )

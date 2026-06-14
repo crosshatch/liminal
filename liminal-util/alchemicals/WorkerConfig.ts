@@ -1,6 +1,7 @@
 import type { WorkerProps } from "alchemy/Cloudflare"
-import { Stage } from "alchemy/Stage"
 import { Effect } from "effect"
+
+import { AlchemicalEnv } from "./AlchemicalEnv.ts"
 
 export const WorkerConfig = Effect.fn(function* ({
   domain,
@@ -9,11 +10,15 @@ export const WorkerConfig = Effect.fn(function* ({
   readonly domain: string
   readonly assets?: string | undefined
 }) {
-  const stage = yield* Stage
+  const env = yield* AlchemicalEnv
   return {
     observability: { enabled: true },
     placement: { mode: "smart" },
-    ...(stage === "prod" ? { domain: [domain, `www.${domain}`] } : {}),
+    ...(env._tag === "Main"
+      ? { domain: prepends(domain) }
+      : env._tag === "Staging"
+        ? { domain: prepends(`staging-${env.pr}.${domain}`) }
+        : {}),
     compatibility: {
       date: "2026-02-05",
       flags: ["nodejs_compat", "global_fetch_strictly_public"],
@@ -29,3 +34,5 @@ export const WorkerConfig = Effect.fn(function* ({
       : {}),
   } satisfies Partial<WorkerProps>
 })
+
+const prepends = (v: string) => [v, `www.${v}`]

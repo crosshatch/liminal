@@ -16,7 +16,7 @@ export const PrComment =
         pr: issueNumber,
       } = yield* AlchemicalEnv.pipe(
         Effect.filterOrFail(
-          (v) => v._tag === "Pr",
+          (v) => v._tag === "Staging",
           () => new NotInPrError(),
         ),
       )
@@ -36,11 +36,13 @@ export const PrPreviewComment = Effect.fn(function* <R = never>({
   readonly url: string | undefined | Output.Output<string | undefined, R>
 }) {
   const env = yield* AlchemicalEnv
-  if (env._tag === "Pr") {
+  if (env._tag === "Staging") {
     yield* PrComment("PreviewComment")`
-    | ### ${name} Preview for ${env.sha}
+    | ### ${name} Preview
     |
-    | ${url}
+    | commit: ${env.sha}
+    |
+    | url: ${url}
     `.pipe(
       Effect.catchTags({
         NotInPrError: Effect.die,
