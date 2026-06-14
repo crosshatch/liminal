@@ -17,6 +17,11 @@ export default Alchemy.Stack(
     const { dev: DEV } = yield* Alchemy.AlchemyContext
     const { url } = yield* Cloudflare.Vite("Entry", {
       ...base,
+      dev: {
+        host: "127.0.0.1",
+        port: 4384,
+        strictPort: true,
+      },
       env: {
         DEV,
         BUCKET: Cloudflare.R2Bucket("Bucket"),

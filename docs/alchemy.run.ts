@@ -13,5 +13,6 @@ export default Alchemy.Stack(
   },
   docs({
     domain: "liminal.actor",
+    devPort: 4383,
   }).pipe(Effect.provide(AlchemicalEnv.layer)),
 )
