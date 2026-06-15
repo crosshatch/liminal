@@ -55,6 +55,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
       ),
     )
     return handler.pipe(
+      Effect.onError(Effect.logError),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
       Effect.provide([
@@ -67,7 +68,6 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
         kind: "server",
         parent: pipe(request.headers, Headers.fromInput, HttpTraceContext.fromHeaders, Option.getOrUndefined),
       }),
-      Effect.onError(Boundary.log),
       Effect.provideService(Layer.CurrentMemoMap, runtime.memoMap),
       runtime.runPromise,
       (v) => v.finally(() => runtime.dispose()),

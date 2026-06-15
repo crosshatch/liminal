@@ -120,6 +120,9 @@ overrides:
   react-dom: ^19.2.4
   workerd: 1.20260415.1
 
+patchedDependencies:
+  alchemy@2.0.0-beta.55: 81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f
+
 importers:
 
   .:
@@ -162,7 +165,7 @@ importers:
         version: 4.1.4(vitest@4.1.4)
       alchemy:
         specifier: 'catalog:'
-        version: https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@3.25.76))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
+        version: https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@3.25.76))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
       drizzle-kit:
         specifier: 'catalog:'
         version: 1.0.0-rc.3
@@ -210,7 +213,7 @@ importers:
         version: 6.0.1(babel-plugin-react-compiler@1.0.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
       alchemy:
         specifier: 'catalog:'
-        version: https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
+        version: https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.79
@@ -273,7 +276,7 @@ importers:
         version: 4.0.0-beta.79(effect@4.0.0-beta.79)
       alchemy:
         specifier: 'catalog:'
-        version: https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260416.2)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
+        version: https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260416.2)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.79
@@ -366,7 +369,7 @@ importers:
     dependencies:
       alchemy:
         specifier: 'catalog:'
-        version: https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
+        version: https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.79
@@ -9544,7 +9547,7 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alchemy@https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260416.2)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
+  alchemy@https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260416.2)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
     dependencies:
       '@alchemy.run/node-utils': 0.0.5
       '@aws-sdk/credential-providers': 3.1055.0
@@ -9599,7 +9602,7 @@ snapshots:
       - vitest
       - workerd
 
-  alchemy@https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@3.25.76))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
+  alchemy@https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@3.25.76))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
     dependencies:
       '@alchemy.run/node-utils': 0.0.5
       '@aws-sdk/credential-providers': 3.1055.0
@@ -9654,7 +9657,7 @@ snapshots:
       - vitest
       - workerd
 
-  alchemy@https://pkg.ing/alchemy/957a63c(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
+  alchemy@https://pkg.ing/alchemy/957a63c(patch_hash=81f6ef4a08c9b20bb50f4077a98fa6265eeb4fe4c474b8faa23ee0bf0ef4b26f)(@effect/platform-node@4.0.0-beta.79(effect@4.0.0-beta.79)(ioredis@5.10.1))(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@types/node@25.6.0)(@types/react@19.2.14)(drizzle-kit@1.0.0-rc.3)(drizzle-orm@1.0.0-rc.3(@cloudflare/workers-types@4.20260531.1)(@effect/sql-pg@4.0.0-beta.79(effect@4.0.0-beta.79))(@libsql/client@0.17.3)(effect@4.0.0-beta.79)(mysql2@3.22.4(@types/node@25.6.0))(pg@8.21.0)(zod@4.4.3))(effect@4.0.0-beta.79)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(vitest@4.1.4)(workerd@1.20260415.1)(ws@8.20.0):
     dependencies:
       '@alchemy.run/node-utils': 0.0.5
       '@aws-sdk/credential-providers': 3.1055.0

@@ -1,7 +1,6 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"
-import * as AlchemicalEnv from "liminal-util/alchemicals/AlchemicalEnv"
 import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
@@ -15,7 +14,7 @@ export default Alchemy.Stack(
       domain: "tictactoe.liminal.actor",
       assets: "../app",
     })
-    const { dev: DEV } = yield* Alchemy.AlchemyContext
+    const STAGE = yield* Alchemy.Stage
     const { url } = yield* Cloudflare.Vite("Entry", {
       ...base,
       dev: {
@@ -24,7 +23,8 @@ export default Alchemy.Stack(
         strictPort: true,
       },
       env: {
-        DEV,
+        STAGE,
+        VITE_PUBLIC_STAGE: STAGE,
         BUCKET: Cloudflare.R2Bucket("Bucket"),
         TICTACTOE: Cloudflare.DurableObjectNamespace("TicTacToeRuntime", {
           className: "TicTacToeRuntime",
@@ -32,5 +32,5 @@ export default Alchemy.Stack(
       },
     })
     return { url }
-  }).pipe(Effect.provide(AlchemicalEnv.layer)),
+  }),
 )

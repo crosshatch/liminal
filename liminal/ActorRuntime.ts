@@ -274,7 +274,7 @@ export const make = <
       )
       this.run = <A, E, R extends ManagedRuntime.ManagedRuntime.Services<typeof runtime>>(
         effect: Effect.Effect<A, E, R>,
-      ) => Effect.onError(effect, Boundary.log).pipe(runtime.runPromise)
+      ) => Effect.onError(effect, Effect.logError).pipe(runtime.runPromise)
     }
 
     override fetch(request: Request): Promise<Response> {
