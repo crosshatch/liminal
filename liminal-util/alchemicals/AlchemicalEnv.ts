@@ -6,14 +6,14 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process"
 export class AlchemicalEnv extends Context.Service<
   AlchemicalEnv,
   Data.TaggedEnum<{
-    Local: {
+    Dev: {
       readonly branch: string
     }
     Staging: {
-      readonly pr: number
       readonly sha: string
       readonly owner: string
       readonly repository: string
+      readonly pr: number
     }
     Main: {}
   }>
@@ -21,12 +21,13 @@ export class AlchemicalEnv extends Context.Service<
 
 export const layer = Effect.gen(function* () {
   const stage = yield* Stage
-  const { Main, Local, Staging } = Data.taggedEnum<AlchemicalEnv["Service"]>()
+  const { Dev, Main, Staging } = Data.taggedEnum<AlchemicalEnv["Service"]>()
   if (stage === "prod") {
     return Main()
   }
-  const { dev } = yield* AlchemyContext
-  if (dev) {
+  const { dev: alchemyDev } = yield* AlchemyContext
+  const dev = yield* Config.boolean("MANUALCHEMICAL").pipe(Config.withDefault(false))
+  if (alchemyDev || dev) {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
     const branch = yield* ChildProcess.make("git", ["branch", "--show-current"]).pipe(
       spawner.string,
@@ -35,7 +36,7 @@ export const layer = Effect.gen(function* () {
         PlatformError: Effect.die,
       }),
     )
-    return Local({ branch })
+    return Dev({ branch })
   }
   return yield* Config.all({
     pr: Config.number("PULL_REQUEST"),

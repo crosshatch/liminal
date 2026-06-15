@@ -17,7 +17,7 @@ export const WorkerConfig = Effect.fn(function* ({
     ...(env._tag === "Main"
       ? { domain: prepends(domain) }
       : env._tag === "Staging"
-        ? { domain: prepends(`staging-${env.pr}.${domain}`) }
+        ? { domain: prepends(`staging_${env.pr}.${domain}`) }
         : {}),
     compatibility: {
       date: "2026-02-05",
