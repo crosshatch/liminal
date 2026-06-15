@@ -13,10 +13,10 @@ export const WorkerConfig = Effect.fn(function* ({
   return {
     observability: { enabled: true },
     placement: { mode: "smart" },
-    ...(stage === "main"
+    ...(stage === "prod"
       ? { domain: prepends(domain) }
-      : stage.startsWith("staging_")
-        ? { domain: prepends(`${stage.replaceAll("_", "-")}.${domain}`) }
+      : stage.startsWith("staging-")
+        ? { domain: prepends(`${stage}.${domain}`) }
         : {}),
     compatibility: {
       date: "2026-02-05",
