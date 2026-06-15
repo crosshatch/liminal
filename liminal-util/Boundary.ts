@@ -1,11 +1,4 @@
-import { Cause, Effect, Layer, References, Struct, Tracer } from "effect"
-
-export const log = <E>(cause: Cause.Cause<E>) =>
-  Effect.annotateLogs(Effect.logError(cause), {
-    hasDefects: Cause.hasDies(cause),
-    hasFailures: Cause.hasFails(cause),
-    interruptsOnly: Cause.hasInterruptsOnly(cause),
-  })
+import { Effect, Layer, References, Struct, Tracer } from "effect"
 
 export const layer =
   (boundary: string, source: string) =>
@@ -17,7 +10,7 @@ export const layer =
 
     return Layer.fromBuild((memoMap, scope) =>
       Layer.buildWithMemoMap(self.pipe(Layer.provideMerge(annotations)), memoMap, scope).pipe(
-        Effect.onError((cause) => Effect.annotateLogs(log(cause), { __source: source })),
+        Effect.onError((cause) => Effect.annotateLogs(Effect.logError(cause), { __source: source })),
       ),
     )
   }

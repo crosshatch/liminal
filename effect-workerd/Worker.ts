@@ -55,7 +55,7 @@ export const make = <PreludeROut, PreludeE, E>({ handler, prelude }: WorkerDefin
       ),
     )
     return handler.pipe(
-      Effect.onError(Boundary.log),
+      Effect.onError(Effect.logError),
       Effect.catchCause(() => Effect.succeed(HttpServerResponse.empty({ status: 500 }))),
       Effect.map(HttpServerResponse.toWeb),
       Effect.provide([
