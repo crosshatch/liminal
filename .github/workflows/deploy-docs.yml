@@ -24,15 +24,6 @@ jobs:
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm build
-      - run: pnpm exec vocs build
-        working-directory: docs
-      - name: Assert VITE_PUBLIC_STAGE is embedded in docs output
-        run: |
-          test -n "$VITE_PUBLIC_STAGE"
-          grep -R "\[liminal-docs\] VITE_PUBLIC_STAGE" dist/public
-          grep -R "$VITE_PUBLIC_STAGE" dist/public
-          printf 'VITE_PUBLIC_STAGE embedded in docs output: %s\n' "$VITE_PUBLIC_STAGE"
-        working-directory: docs
       - uses: crosshatch/konfik/.github/actions/alchemize@main
         with:
           working-directory: docs

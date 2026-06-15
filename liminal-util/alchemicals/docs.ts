@@ -17,7 +17,8 @@ export const docs = Effect.fnUntraced(function* ({
   const { url } = yield* Cloudflare.StaticSite("Docs", {
     ...base,
     dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
-    command: "pnpm exec vocs build",
+    command:
+      "pnpm exec vocs build && test -n \"$VITE_PUBLIC_STAGE\" && grep -R \"\\[liminal-docs\\] VITE_PUBLIC_STAGE\" dist/public && grep -R \"$VITE_PUBLIC_STAGE\" dist/public && printf 'VITE_PUBLIC_STAGE embedded in docs output: %s\\n' \"$VITE_PUBLIC_STAGE\"",
     outdir: "dist/public",
     env: {
       STAGE,
