@@ -21,7 +21,7 @@ export class AlchemicalEnv extends Context.Service<
 
 export const layer = Effect.gen(function* () {
   const stage = yield* Stage
-  const { Dev, Main, Staging } = Data.taggedEnum<AlchemicalEnv["Service"]>()
+  const { Dev, Staging, Main } = Data.taggedEnum<AlchemicalEnv["Service"]>()
   if (stage === "prod") {
     return Main()
   }
