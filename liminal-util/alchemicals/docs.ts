@@ -24,6 +24,10 @@ export const docs = Effect.fnUntraced(function* ({
       VITE_PUBLIC_STAGE: STAGE,
     },
   })
-  yield* PrPreviewComment({ name: "Docs", url })
+  yield* PrPreviewComment({ name: "Docs", url }).pipe(
+    Effect.catchTags({
+      NotInPrError: Effect.die,
+    }),
+  )
   return { url }
 })
