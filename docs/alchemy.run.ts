@@ -13,6 +13,5 @@ export default Alchemy.Stack(
   docs({
     domain: "liminal.actor",
     devPort: 4383,
-    alwaysRun: true,
   }),
 )
