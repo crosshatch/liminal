@@ -13,15 +13,14 @@ export const PrComment =
       const env = yield* GithubEnv
       if (env) {
         const { owner, repository, pr } = env
-        if (!pr) {
-          return yield* new NotInPrError()
+        if (pr) {
+          return yield* GitHub.Comment(resourceId, {
+            owner,
+            repository,
+            issueNumber: pr,
+            body: Output.interpolate(template, ...args).pipe(Output.map(String.stripMargin)),
+          })
         }
-        return yield* GitHub.Comment(resourceId, {
-          owner,
-          repository,
-          issueNumber: pr,
-          body: Output.interpolate(template, ...args).pipe(Output.map(String.stripMargin)),
-        })
       }
       return
     })
