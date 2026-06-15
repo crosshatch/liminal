@@ -1,9 +1,9 @@
-dev.liminal.actor {
+liminal.actor.localhost {
 	tls internal
 	reverse_proxy 127.0.0.1:4383
 }
 
-dev.tictactoe.liminal.actor {
+tictactoe.liminal.actor.localhost {
 	tls internal
 	reverse_proxy 127.0.0.1:4384
 }
