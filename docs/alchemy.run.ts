@@ -1,7 +1,7 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
-import { Layer } from "effect"
+import { Effect, Layer } from "effect"
 import { docs } from "liminal-util/alchemicals/docs"
 
 export default Alchemy.Stack(
@@ -13,5 +13,5 @@ export default Alchemy.Stack(
   docs({
     domain: "liminal.actor",
     devPort: 4383,
-  }),
+  }).pipe(Effect.asVoid),
 )
