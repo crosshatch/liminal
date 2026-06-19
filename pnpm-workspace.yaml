@@ -17,7 +17,7 @@ allowBuilds:
 allowUnusedPatches: true
 
 patchedDependencies:
-  alchemy@2.0.0-beta.56: konfik/patches/alchemy@2.0.0-beta.56.patch
+  alchemy@2.0.0-beta.57: konfik/patches/alchemy@2.0.0-beta.57.patch
 
 catalog:
   "@changesets/cli": ^2.30.0
