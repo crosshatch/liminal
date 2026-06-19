@@ -17,22 +17,22 @@ allowBuilds:
 allowUnusedPatches: true
 
 patchedDependencies:
-  alchemy@2.0.0-beta.55: konfik/patches/alchemy@2.0.0-beta.55.patch
+  alchemy@2.0.0-beta.57: konfik/patches/alchemy@2.0.0-beta.57.patch
 
 catalog:
   "@changesets/cli": ^2.30.0
   "@cloudflare/vitest-pool-workers": ^0.14.7
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^4.20260414.1
-  "@effect/ai-openai-compat": 4.0.0-beta.79
-  "@effect/atom-react": 4.0.0-beta.79
+  "@effect/ai-openai-compat": 4.0.0-beta.83
+  "@effect/atom-react": 4.0.0-beta.83
   "@effect/language-service": 0.86.2
-  "@effect/openapi-generator": 4.0.0-beta.79
-  "@effect/platform-browser": 4.0.0-beta.79
-  "@effect/platform-node": 4.0.0-beta.79
-  "@effect/sql-d1": 4.0.0-beta.79
-  "@effect/sql-pg": 4.0.0-beta.79
-  "@effect/vitest": 4.0.0-beta.79
+  "@effect/openapi-generator": 4.0.0-beta.83
+  "@effect/platform-browser": 4.0.0-beta.83
+  "@effect/platform-node": 4.0.0-beta.83
+  "@effect/sql-d1": 4.0.0-beta.83
+  "@effect/sql-pg": 4.0.0-beta.83
+  "@effect/vitest": 4.0.0-beta.83
   "@playwright/test": ^1.58.2
   "@tailwindcss/vite": ^4.1.18
   "@tanstack/react-router": ^1.159.4
@@ -45,11 +45,11 @@ catalog:
   "@vitest/coverage-v8": ^4.1.4
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
-  alchemy: https://pkg.ing/alchemy/957a63c
+  alchemy: 2.0.0-beta.57
   babel-plugin-react-compiler: ^1.0.0
   drizzle-kit: 1.0.0-rc.3
   drizzle-orm: 1.0.0-rc.3
-  effect: 4.0.0-beta.79
+  effect: 4.0.0-beta.83
   happy-dom: ^20.9.0
   oxfmt: ^0.48.0
   oxlint: ^1.62.0
@@ -70,7 +70,7 @@ catalog:
   yaml: ^2.8.3
 
 overrides:
-  "@effect/sql-pg": 4.0.0-beta.79
+  "@effect/sql-pg": 4.0.0-beta.83
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
   react: ^19.2.4
@@ -81,16 +81,16 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
   - alchemy
-  - "@effect/vitest@4.0.0-beta.79"
-  - "@effect/ai-openai-compat@4.0.0-beta.79"
-  - "@effect/atom-react@4.0.0-beta.79"
-  - "@effect/openapi-generator@4.0.0-beta.79"
-  - "@effect/platform-browser@4.0.0-beta.79"
-  - "@effect/platform-node-shared@4.0.0-beta.79"
-  - "@effect/platform-node@4.0.0-beta.79"
-  - "@effect/sql-d1@4.0.0-beta.79"
-  - "@effect/sql-pg@4.0.0-beta.79"
-  - effect@4.0.0-beta.79
+  - "@effect/vitest@4.0.0-beta.83"
+  - "@effect/ai-openai-compat@4.0.0-beta.83"
+  - "@effect/atom-react@4.0.0-beta.83"
+  - "@effect/openapi-generator@4.0.0-beta.83"
+  - "@effect/platform-browser@4.0.0-beta.83"
+  - "@effect/platform-node-shared@4.0.0-beta.83"
+  - "@effect/platform-node@4.0.0-beta.83"
+  - "@effect/sql-d1@4.0.0-beta.83"
+  - "@effect/sql-pg@4.0.0-beta.83"
+  - effect@4.0.0-beta.83
   - "@turbo/darwin-64@2.9.18"
   - "@turbo/darwin-arm64@2.9.18"
   - "@turbo/linux-64@2.9.18"

@@ -15,7 +15,7 @@ export default Alchemy.Stack(
       assets: "../app",
     })
     const STAGE = yield* Alchemy.Stage
-    const { url } = yield* Cloudflare.Vite("Entry", {
+    yield* Cloudflare.Vite("Entry", {
       ...base,
       dev: {
         host: "127.0.0.1",
@@ -31,6 +31,5 @@ export default Alchemy.Stack(
         }),
       },
     })
-    return { url }
   }),
 )
