@@ -53,3 +53,42 @@ export interface Fn<Self, Internal extends Methods> {
     e: (value: D, payload: FnPayload<Internal, K>) => E,
   ): (payload: FnPayload<Internal, K>) => E
 }
+
+export interface FnNoSelf<Internal extends Methods> {
+  <K extends keyof Internal>(tag: K): (payload: FnPayload<Internal, K>) => FnEffect<never, Internal, K>
+
+  <K extends keyof Internal, A>(
+    tag: K,
+    a: (effect: FnEffect<never, Internal, K>, payload: FnPayload<Internal, K>) => A,
+  ): (payload: FnPayload<Internal, K>) => A
+
+  <K extends keyof Internal, A, B>(
+    tag: K,
+    a: (effect: FnEffect<never, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+  ): (payload: FnPayload<Internal, K>) => B
+
+  <K extends keyof Internal, A, B, C>(
+    tag: K,
+    a: (effect: FnEffect<never, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+  ): (payload: FnPayload<Internal, K>) => C
+
+  <K extends keyof Internal, A, B, C, D>(
+    tag: K,
+    a: (effect: FnEffect<never, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+    d: (value: C, payload: FnPayload<Internal, K>) => D,
+  ): (payload: FnPayload<Internal, K>) => D
+
+  <K extends keyof Internal, A, B, C, D, E>(
+    tag: K,
+    a: (effect: FnEffect<never, Internal, K>, payload: FnPayload<Internal, K>) => A,
+    b: (value: A, payload: FnPayload<Internal, K>) => B,
+    c: (value: B, payload: FnPayload<Internal, K>) => C,
+    d: (value: C, payload: FnPayload<Internal, K>) => D,
+    e: (value: D, payload: FnPayload<Internal, K>) => E,
+  ): (payload: FnPayload<Internal, K>) => E
+}

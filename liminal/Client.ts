@@ -30,7 +30,7 @@ import * as Boundary from "liminal-util/Boundary"
 import { decodeJsonString, encodeJsonString } from "liminal-util/schema"
 
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
-import type { Fn, FnError } from "./Fn.ts"
+import type { Fn, FnError, FnNoSelf } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
 import * as Reducer from "./Reducer.ts"
 import * as Tracing from "./Tracing.ts"
@@ -97,6 +97,17 @@ export interface Client<Self, Id extends string, D extends ProtocolDefinition> e
 
   readonly reducer: <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_tag: K, f: R) => R
 }
+
+export const fn = <ClientSelf, D extends ProtocolDefinition>(service: Service<ClientSelf, D>) =>
+  ((_tag: keyof D["external"], ...f: Array<any>) =>
+    Effect.fnUntraced(
+      function* (payload: any) {
+        const { fnRaw: fn } = yield* RcRef.get(service)
+        return yield* fn(_tag, payload)
+      },
+      Effect.scoped,
+      ...(f as [any]),
+    )) as FnNoSelf<D["external"]>
 
 export const Service =
   <Self>() =>
