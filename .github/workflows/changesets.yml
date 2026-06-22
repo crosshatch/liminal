@@ -13,6 +13,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.MADHATCHER_PAT }}
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm run build
