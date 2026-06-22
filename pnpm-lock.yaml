@@ -106,11 +106,11 @@ catalogs:
       specifier: 4.1.4
       version: 4.1.4
     vocs:
-      specifier: 2.0.12
-      version: 2.0.12
+      specifier: 2.0.15
+      version: 2.0.15
     waku:
-      specifier: 1.0.0-beta.0
-      version: 1.0.0-beta.0
+      specifier: 1.0.0-beta.3
+      version: 1.0.0-beta.3
 
 overrides:
   '@effect/sql-pg': 4.0.0-beta.83
@@ -240,10 +240,10 @@ importers:
         version: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
       vocs:
         specifier: 'catalog:'
-        version: 2.0.12(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 2.0.15(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
       waku:
         specifier: 'catalog:'
-        version: 1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
+        version: 1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
 
   effect-workerd:
     dependencies:
@@ -375,7 +375,7 @@ importers:
         version: 4.0.0-beta.83
       vocs:
         specifier: 'catalog:'
-        version: 2.0.12(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
+        version: 2.0.15(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
 
 packages:
 
@@ -6473,8 +6473,8 @@ packages:
       jsdom:
         optional: true
 
-  vocs@2.0.12:
-    resolution: {integrity: sha512-yUNiXxem4aXUsfqnV/lqvl/+wO3fSgfv9mWAmBhK4NbWe7v4DWT+7d8oLHR1E7puJKhDRV+KQSfHPDxXfGhDYA==}
+  vocs@2.0.15:
+    resolution: {integrity: sha512-Q7PrHD2z22qc3g2Ly6D/wZfp7oxnzMINE9a4O0aXjoYCHih0pfKGuHwzM7mRDSr/kCe1k3bXxUfZMaW6aoDYxQ==}
     hasBin: true
     peerDependencies:
       '@vocs/twoslash-rust': ^0.1.0
@@ -6482,7 +6482,7 @@ packages:
       react: ^19.2.4
       react-dom: ^19.2.4
       vite: ^8
-      waku: ^1.0.0-beta.0
+      waku: ^1.0.0-beta.3
     peerDependenciesMeta:
       '@vocs/twoslash-rust':
         optional: true
@@ -6516,9 +6516,9 @@ packages:
   w3c-keyname@2.2.8:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
 
-  waku@1.0.0-beta.0:
-    resolution: {integrity: sha512-6UhIsxrN70g1nsACoEAmCriT15pnyH3CunhrckFZuARBkaFXUvN22dIQWdCTiA8JVeNXAnhFV85Tuko8uEqZKQ==}
-    engines: {node: ^26.0.0 || ^24.0.0 || ^22.12.0}
+  waku@1.0.0-beta.3:
+    resolution: {integrity: sha512-j8la6SzYX/pqqnjT/FTsr8de+jCwP4rthyV7IbRm/qEwECbUS0kXcG2VLs5TDGCumLnzq9uRl4iwocxG3+U8rQ==}
+    engines: {node: ^26.0.0 || ^24.0.0 || ^22.13.0}
     hasBin: true
     peerDependencies:
       react: ^19.2.4
@@ -13181,7 +13181,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vocs@2.0.12(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)):
+  vocs@2.0.15(@tanstack/react-router@1.168.22(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(mermaid@11.14.0)(react-dom@19.2.5(react@19.2.5))(react-router@7.14.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(rollup@4.60.1)(typescript@6.0.2)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))(waku@1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)):
     dependencies:
       '@base-ui/react': 1.5.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@codesandbox/sandpack-react': 2.20.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -13260,7 +13260,7 @@ snapshots:
     optionalDependencies:
       mermaid: 11.14.0
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
-      waku: 1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
+      waku: 1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - '@date-fns/tz'
@@ -13308,7 +13308,7 @@ snapshots:
 
   w3c-keyname@2.2.8: {}
 
-  waku@1.0.0-beta.0(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0):
+  waku@1.0.0-beta.3(@types/node@25.6.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.6.1)(react-dom@19.2.5(react@19.2.5))(react-server-dom-webpack@19.2.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(webpack@5.107.2(esbuild@0.28.0)))(react@19.2.5)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       '@hono/node-server': 2.0.4(hono@4.12.14)
       '@vitejs/plugin-react': 6.0.2(babel-plugin-react-compiler@1.0.0)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.28.0)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
