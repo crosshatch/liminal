@@ -1,5 +1,14 @@
 # liminal
 
+## 0.17.16
+
+### Patch Changes
+
+- b08b6d9: Begin trusted publishing configuration.
+- Updated dependencies [b08b6d9]
+  - effect-workerd@0.0.6
+  - liminal-util@0.0.10
+
 ## 0.17.15
 
 ### Patch Changes
