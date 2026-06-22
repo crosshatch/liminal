@@ -1,5 +1,11 @@
 # liminal-util
 
+## 0.0.10
+
+### Patch Changes
+
+- b08b6d9: Begin trusted publishing configuration.
+
 ## 0.0.9
 
 ### Patch Changes
