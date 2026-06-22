@@ -15,11 +15,15 @@ jobs:
       - uses: actions/checkout@v6
         with:
           token: ${{ secrets.MADHATCHER_PAT }}
+      - run: |
+          git config user.name "madhatcher"
+          git config user.email "<USER_ID>+madhatcher@users.noreply.github.com"
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm run build
       - uses: changesets/action@v1
         with:
+          setupGitUser: false
           publish: pnpm changeset publish
           commit: version packages
           title: version packages
