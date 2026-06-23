@@ -20,7 +20,7 @@ jobs:
           git config user.email "<USER_ID>+madhatcher@users.noreply.github.com"
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
-      - run: pnpm run build
+      - run: pnpm build
       - uses: changesets/action@v1
         with:
           setupGitUser: false

@@ -31,3 +31,6 @@
 [submodule "repos/vocs"]
 	path = repos/vocs
 	url = git@github.com:wevm/vocs.git
+[submodule "repos/changesets"]
+	path = repos/changesets
+	url = git@github.com:changesets/changesets.git
