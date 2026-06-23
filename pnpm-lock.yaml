@@ -124,6 +124,9 @@ overrides:
   workerd: 1.20260415.1
 
 patchedDependencies:
+  '@changesets/apply-release-plan@7.1.1': 157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065
+  '@changesets/assemble-release-plan@6.0.10': 29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e
+  '@changesets/get-github-info@0.8.0': 314478eeae7ab2776d847d3b2b7ea1cd4231c65907e85597dacd0bea56355bc9
   alchemy@2.0.0-beta.57: 6c62ad526405edf6211963c4c0ba1ae1491b4b19714bd7f88c3f6f0abc8175b2
 
 importers:
@@ -7063,7 +7066,7 @@ snapshots:
   '@braintree/sanitize-url@7.1.2':
     optional: true
 
-  '@changesets/apply-release-plan@7.1.1':
+  '@changesets/apply-release-plan@7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)':
     dependencies:
       '@changesets/config': 3.1.4
       '@changesets/get-version-range-type': 0.4.0
@@ -7079,7 +7082,7 @@ snapshots:
       resolve-from: 5.0.0
       semver: 7.7.4
 
-  '@changesets/assemble-release-plan@6.0.10':
+  '@changesets/assemble-release-plan@6.0.10(patch_hash=29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e)':
     dependencies:
       '@changesets/errors': 0.2.0
       '@changesets/get-dependents-graph': 2.1.4
@@ -7094,7 +7097,7 @@ snapshots:
 
   '@changesets/changelog-github@0.7.0':
     dependencies:
-      '@changesets/get-github-info': 0.8.0
+      '@changesets/get-github-info': 0.8.0(patch_hash=314478eeae7ab2776d847d3b2b7ea1cd4231c65907e85597dacd0bea56355bc9)
       '@changesets/types': 6.1.0
       dotenv: 8.6.0
     transitivePeerDependencies:
@@ -7102,8 +7105,8 @@ snapshots:
 
   '@changesets/cli@2.31.0(@types/node@25.6.0)':
     dependencies:
-      '@changesets/apply-release-plan': 7.1.1
-      '@changesets/assemble-release-plan': 6.0.10
+      '@changesets/apply-release-plan': 7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)
+      '@changesets/assemble-release-plan': 6.0.10(patch_hash=29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e)
       '@changesets/changelog-git': 0.2.1
       '@changesets/config': 3.1.4
       '@changesets/errors': 0.2.0
@@ -7153,7 +7156,7 @@ snapshots:
       picocolors: 1.1.1
       semver: 7.7.4
 
-  '@changesets/get-github-info@0.8.0':
+  '@changesets/get-github-info@0.8.0(patch_hash=314478eeae7ab2776d847d3b2b7ea1cd4231c65907e85597dacd0bea56355bc9)':
     dependencies:
       dataloader: 1.4.0
       node-fetch: 2.7.0
@@ -7162,7 +7165,7 @@ snapshots:
 
   '@changesets/get-release-plan@4.0.16':
     dependencies:
-      '@changesets/assemble-release-plan': 6.0.10
+      '@changesets/assemble-release-plan': 6.0.10(patch_hash=29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e)
       '@changesets/config': 3.1.4
       '@changesets/pre': 2.0.2
       '@changesets/read': 0.6.7
