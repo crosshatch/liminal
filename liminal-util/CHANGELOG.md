@@ -1,5 +1,13 @@
 # liminal-util
 
+## 0.0.12
+
+### Patch Changes
+
+- [#471](https://github.com/crosshatch/liminal/pull/471)
+  [`2ecb27b`](https://github.com/crosshatch/liminal/commit/2ecb27b1cef66930a747b0532dfa07b21356b2e1) Thanks
+  @harrysolovay! - Continue debugging changesets.
+
 ## 0.0.11
 
 ### Patch Changes
