@@ -124,7 +124,7 @@ overrides:
   workerd: 1.20260415.1
 
 patchedDependencies:
-  '@changesets/apply-release-plan@7.1.1': 157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065
+  '@changesets/apply-release-plan@7.1.1': 34b3de77ad090d6128fdef3265fdf0ba42ef8d7bf2865864b3cb6be3bba62e54
   '@changesets/assemble-release-plan@6.0.10': 29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e
   '@changesets/get-github-info@0.8.0': 314478eeae7ab2776d847d3b2b7ea1cd4231c65907e85597dacd0bea56355bc9
   alchemy@2.0.0-beta.57: 6c62ad526405edf6211963c4c0ba1ae1491b4b19714bd7f88c3f6f0abc8175b2
@@ -7066,7 +7066,7 @@ snapshots:
   '@braintree/sanitize-url@7.1.2':
     optional: true
 
-  '@changesets/apply-release-plan@7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)':
+  '@changesets/apply-release-plan@7.1.1(patch_hash=34b3de77ad090d6128fdef3265fdf0ba42ef8d7bf2865864b3cb6be3bba62e54)':
     dependencies:
       '@changesets/config': 3.1.4
       '@changesets/get-version-range-type': 0.4.0
@@ -7105,7 +7105,7 @@ snapshots:
 
   '@changesets/cli@2.31.0(@types/node@25.6.0)':
     dependencies:
-      '@changesets/apply-release-plan': 7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)
+      '@changesets/apply-release-plan': 7.1.1(patch_hash=34b3de77ad090d6128fdef3265fdf0ba42ef8d7bf2865864b3cb6be3bba62e54)
       '@changesets/assemble-release-plan': 6.0.10(patch_hash=29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e)
       '@changesets/changelog-git': 0.2.1
       '@changesets/config': 3.1.4
