@@ -124,6 +124,7 @@ overrides:
   workerd: 1.20260415.1
 
 patchedDependencies:
+  '@changesets/apply-release-plan@7.1.1': 157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065
   alchemy@2.0.0-beta.57: 6c62ad526405edf6211963c4c0ba1ae1491b4b19714bd7f88c3f6f0abc8175b2
 
 importers:
@@ -7063,7 +7064,7 @@ snapshots:
   '@braintree/sanitize-url@7.1.2':
     optional: true
 
-  '@changesets/apply-release-plan@7.1.1':
+  '@changesets/apply-release-plan@7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)':
     dependencies:
       '@changesets/config': 3.1.4
       '@changesets/get-version-range-type': 0.4.0
@@ -7102,7 +7103,7 @@ snapshots:
 
   '@changesets/cli@2.31.0(@types/node@25.6.0)':
     dependencies:
-      '@changesets/apply-release-plan': 7.1.1
+      '@changesets/apply-release-plan': 7.1.1(patch_hash=157975209352295c91cd25dd7b33e8623ca5e8a046bda721a25f7780b9acf065)
       '@changesets/assemble-release-plan': 6.0.10
       '@changesets/changelog-git': 0.2.1
       '@changesets/config': 3.1.4

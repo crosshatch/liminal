@@ -17,6 +17,7 @@ allowBuilds:
 allowUnusedPatches: true
 
 patchedDependencies:
+  "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
   alchemy@2.0.0-beta.57: konfik/patches/alchemy@2.0.0-beta.57.patch
 
 catalog:
