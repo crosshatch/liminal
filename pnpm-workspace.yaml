@@ -18,6 +18,8 @@ allowUnusedPatches: true
 
 patchedDependencies:
   "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
+  "@changesets/assemble-release-plan@6.0.10": konfik/patches/@changesets__assemble-release-plan@6.0.10.patch
+  "@changesets/get-github-info@0.8.0": konfik/patches/@changesets__get-github-info@0.8.0.patch
   alchemy@2.0.0-beta.57: konfik/patches/alchemy@2.0.0-beta.57.patch
 
 catalog:
