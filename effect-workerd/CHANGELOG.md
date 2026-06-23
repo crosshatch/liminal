@@ -1,5 +1,23 @@
 # effect-workerd
 
+## 0.0.7
+
+### Patch Changes
+
+- [#465](https://github.com/crosshatch/liminal/pull/465)
+  [`6920795`](https://github.com/crosshatch/liminal/commit/692079548446a9d4274d5a9a4ae4039b3ab3dc91) Thanks
+  @harrysolovay! - Continue debugging trusted / CI publishing.
+
+- [#465](https://github.com/crosshatch/liminal/pull/465)
+  [`6920795`](https://github.com/crosshatch/liminal/commit/692079548446a9d4274d5a9a4ae4039b3ab3dc91) Thanks
+  @harrysolovay! - Continue testing changesets configuration tweaks.
+
+- Updated dependencies
+  [[`b64dcce`](https://github.com/crosshatch/liminal/commit/b64dcce3009984771205d5c31f7f7e14508b2757),
+  [`6920795`](https://github.com/crosshatch/liminal/commit/692079548446a9d4274d5a9a4ae4039b3ab3dc91),
+  [`6920795`](https://github.com/crosshatch/liminal/commit/692079548446a9d4274d5a9a4ae4039b3ab3dc91)]:
+  - liminal-util@0.0.11
+
 ## 0.0.6
 
 ### Patch Changes
