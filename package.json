@@ -11,6 +11,7 @@
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
     "prepare": "ts-patch install -s",
+    "test": "vitest run",
     "watch": "tsc -b -w"
   },
   "devDependencies": {
