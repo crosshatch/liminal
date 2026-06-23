@@ -1,5 +1,14 @@
 # liminal
 
+## 0.17.18
+
+### Patch Changes
+
+- Updated dependencies
+  [[`2ecb27b`](https://github.com/crosshatch/liminal/commit/2ecb27b1cef66930a747b0532dfa07b21356b2e1)]:
+  - liminal-util@0.0.12
+  - effect-workerd@0.0.8
+
 ## 0.17.17
 
 ### Patch Changes
