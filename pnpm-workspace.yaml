@@ -20,7 +20,6 @@ patchedDependencies:
   "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
   "@changesets/assemble-release-plan@6.0.10": konfik/patches/@changesets__assemble-release-plan@6.0.10.patch
   "@changesets/get-github-info@0.8.0": konfik/patches/@changesets__get-github-info@0.8.0.patch
-  alchemy@2.0.0-beta.57: konfik/patches/alchemy@2.0.0-beta.57.patch
 
 catalog:
   "@changesets/changelog-github": ^0.7.0
@@ -49,7 +48,7 @@ catalog:
   "@vitest/coverage-v8": ^4.1.4
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
-  alchemy: 2.0.0-beta.57
+  alchemy: 2.0.0-beta.58
   babel-plugin-react-compiler: ^1.0.0
   drizzle-kit: 1.0.0-rc.3
   drizzle-orm: 1.0.0-rc.3

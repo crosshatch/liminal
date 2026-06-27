@@ -19,7 +19,6 @@ export const docs = Effect.fnUntraced(function* ({
     dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
     outdir: "dist/public",
-    alwaysRun: true,
     env: {
       STAGE,
       VITE_PUBLIC_STAGE: STAGE,
