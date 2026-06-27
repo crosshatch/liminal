@@ -14,6 +14,20 @@ export const layerR2 = ({ root }: { readonly root?: string | undefined } = {}) =
       : prefix
         ? { limit: 1000, prefix }
         : { limit: 1000 }
+  const clearPage = async (r2: R2Bucket, cursor: string | undefined): Promise<void> => {
+    const listed = await r2.list(lsOptions(cursor))
+    if (listed.objects.length > 0) {
+      await r2.delete(listed.objects.map((o) => o.key))
+    }
+    if (listed.truncated) {
+      await clearPage(r2, listed.cursor)
+    }
+  }
+  const countPage = async (r2: R2Bucket, cursor: string | undefined, total: number): Promise<number> => {
+    const listed = await r2.list(lsOptions(cursor))
+    const nextTotal = total + listed.objects.length
+    return listed.truncated ? countPage(r2, listed.cursor, nextTotal) : nextTotal
+  }
 
   return Layer.effect(
     KeyValueStore.KeyValueStore,
@@ -32,26 +46,8 @@ export const layerR2 = ({ root }: { readonly root?: string | undefined } = {}) =
           }),
         set: (key, value) => Effect.promise(() => r2.put(toKey(key), value)).pipe(Effect.asVoid),
         remove: (key) => Effect.promise(() => r2.delete(toKey(key))),
-        clear: Effect.promise(async () => {
-          let cursor: string | undefined
-          do {
-            const listed = await r2.list(lsOptions(cursor))
-            if (listed.objects.length > 0) {
-              await r2.delete(listed.objects.map((o) => o.key))
-            }
-            cursor = listed.truncated ? listed.cursor : undefined
-          } while (cursor)
-        }),
-        size: Effect.promise(async () => {
-          let total = 0
-          let cursor: string | undefined
-          do {
-            const listed = await r2.list(lsOptions(cursor))
-            total += listed.objects.length
-            cursor = listed.truncated ? listed.cursor : undefined
-          } while (cursor)
-          return total
-        }),
+        clear: Effect.promise(() => clearPage(r2, undefined)),
+        size: Effect.promise(() => countPage(r2, undefined, 0)),
       })
     }),
   )
