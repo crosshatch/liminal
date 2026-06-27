@@ -1,5 +1,4 @@
-import { Path, FileSystem } from "effect"
-import { Option, Layer, Effect, Data, Context } from "effect"
+import { Path, FileSystem, Option, Layer, Effect, Data, Context } from "effect"
 
 export class LoaderError extends Data.TaggedError("LoaderError")<{
   readonly url: string

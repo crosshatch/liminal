@@ -14,27 +14,23 @@ export const layer =
       const env = yield* Env
       const resolved = env[binding]
       if (!resolved || typeof resolved !== "object" || resolved === null) {
-        return yield* Effect.fail(
-          new S.SchemaError(
-            new SchemaIssue.Pointer(
-              [binding],
-              new SchemaIssue.MissingKey({
-                messageMissingKey: `Missing binding \`${binding}\` on env.`,
-              }),
-            ),
+        return yield* new S.SchemaError(
+          new SchemaIssue.Pointer(
+            [binding],
+            new SchemaIssue.MissingKey({
+              messageMissingKey: `Missing binding \`${binding}\` on env.`,
+            }),
           ),
         )
       }
       for (const key of keys) {
         if (!(key in resolved)) {
-          return yield* Effect.fail(
-            new S.SchemaError(
-              new SchemaIssue.Pointer(
-                [key],
-                new SchemaIssue.MissingKey({
-                  messageMissingKey: `Expected key \`${key}\` on binding \`${binding}\`.`,
-                }),
-              ),
+          return yield* new S.SchemaError(
+            new SchemaIssue.Pointer(
+              [key],
+              new SchemaIssue.MissingKey({
+                messageMissingKey: `Expected key \`${key}\` on binding \`${binding}\`.`,
+              }),
             ),
           )
         }

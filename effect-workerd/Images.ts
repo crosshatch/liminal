@@ -81,8 +81,7 @@ export const process: {
   Effect.fnUntraced(function* ({ steps }: Steps, { stream, inputOptions, outputOptions }: ProcessConfig) {
     const images = yield* Images
     let transformer = images.input(stream, inputOptions)
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i]!
+    for (const step of steps) {
       switch (step._tag) {
         case "Draw": {
           const { image, options } = step

@@ -14,8 +14,7 @@ import {
   pipe,
   Exit,
 } from "effect"
-import { DoState } from "effect-workerd"
-import { Env } from "effect-workerd"
+import { DoState, Env } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"

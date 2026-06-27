@@ -10,7 +10,7 @@ export const GithubDeployer = Effect.fn(function* ({
   readonly repository: string
 }) {
   const accountId = yield* Config.string("CLOUDFLARE_ACCOUNT_ID")
-  const { value: apiToken } = yield* Cloudflare.AccountApiToken("DeployApiToken", {
+  const { value: apiToken } = yield* Cloudflare.ApiToken.AccountApiToken("DeployApiToken", {
     accountId,
     policies: [
       {
