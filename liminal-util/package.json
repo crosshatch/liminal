@@ -27,6 +27,7 @@
   "peerDependencies": {
     "alchemy": "catalog:",
     "effect": "catalog:",
+    "tailwindcss": "catalog:",
     "vocs": "catalog:"
   }
 }
