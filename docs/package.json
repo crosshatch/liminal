@@ -10,6 +10,7 @@
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "alchemy": "catalog:",
+    "asciify-engine": "catalog:",
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
