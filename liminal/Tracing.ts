@@ -12,7 +12,7 @@ export const toTraceEnvelope = ({ traceId, spanId, sampled }: typeof TraceEnvelo
   sampled,
 })
 
-export const SessionId = S.String.check(S.isUUID()).pipe(S.brand("SessionId"))
+export const SessionId = S.String.check(S.isUUID()).pipe(S.brand("liminal/SessionId"))
 
 export const Session = S.Struct({
   id: SessionId,

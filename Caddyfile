@@ -5,5 +5,5 @@ liminal.actor.localhost {
 
 tictactoe.liminal.actor.localhost {
 	tls internal
-	reverse_proxy 127.0.0.1:4384
+	reverse_proxy 127.0.0.1:4387
 }
