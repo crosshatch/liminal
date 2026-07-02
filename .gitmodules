@@ -34,3 +34,6 @@
 [submodule "repos/changesets"]
 	path = repos/changesets
 	url = git@github.com:changesets/changesets.git
+[submodule "repos/waku"]
+	path = repos/waku
+	url = git@github.com:wakujs/waku.git

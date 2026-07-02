@@ -18,16 +18,13 @@ export const docs = Effect.fnUntraced(function* ({
     ...base,
     dev: { command: `CLOUDFLARE=1 pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
-    outdir: "dist",
+    outdir: "dist/public",
     env: {
       STAGE,
       VITE_PUBLIC_STAGE: STAGE,
     },
-    vite: {
-      viteEnvironments: {
-        entry: "rsc",
-        children: ["ssr"],
-      },
+    assets: {
+      notFoundHandling: "404-page",
     },
   })
   yield* PrPreviewComment({ name: "Docs", url })
