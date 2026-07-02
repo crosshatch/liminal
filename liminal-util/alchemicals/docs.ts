@@ -18,10 +18,16 @@ export const docs = Effect.fnUntraced(function* ({
     ...base,
     dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
-    outdir: "dist/public",
+    outdir: "dist",
     env: {
       STAGE,
       VITE_PUBLIC_STAGE: STAGE,
+    },
+    vite: {
+      viteEnvironments: {
+        entry: "rsc",
+        children: ["ssr"],
+      },
     },
   })
   yield* PrPreviewComment({ name: "Docs", url })
