@@ -19,7 +19,7 @@ export default Alchemy.Stack(
       ...base,
       dev: {
         host: "127.0.0.1",
-        port: 4384,
+        port: 4387,
         strictPort: true,
       },
       env: {
