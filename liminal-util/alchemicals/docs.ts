@@ -16,7 +16,7 @@ export const docs = Effect.fnUntraced(function* ({
   const STAGE = yield* Alchemy.Stage
   const { url } = yield* Cloudflare.Website.StaticSite("Docs", {
     ...base,
-    dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
+    dev: { command: `CLOUDFLARE=1 pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
     outdir: "dist",
     env: {
