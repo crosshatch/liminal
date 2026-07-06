@@ -16,12 +16,13 @@ export const docs = Effect.fnUntraced(function* ({
   const STAGE = yield* Alchemy.Stage
   const { url } = yield* Cloudflare.Website.StaticSite("Docs", {
     ...base,
-    dev: { command: `CLOUDFLARE=1 pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
+    dev: { command: `pnpm exec vocs dev --host 127.0.0.1 --port ${devPort}` },
     command: "pnpm exec vocs build",
     outdir: "dist/public",
     env: {
       STAGE,
       VITE_PUBLIC_STAGE: STAGE,
+      CLOUDFLARE: 1,
     },
     assets: {
       notFoundHandling: "404-page",
