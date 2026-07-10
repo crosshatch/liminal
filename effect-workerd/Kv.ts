@@ -4,7 +4,7 @@ import * as Binding from "./Binding.ts"
 import type { Env } from "./Env.ts"
 
 export interface KvDefinition {
-  readonly key: S.Top & { Encoded: string }
+  readonly key: S.Top & { readonly Encoded: string }
 
   readonly value: S.Top
 

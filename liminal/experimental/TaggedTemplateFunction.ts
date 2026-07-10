@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 
 export type TemplateStringsArrayLike = {
-  raw: ReadonlyArray<string> | ArrayLike<string>
+  readonly raw: ReadonlyArray<string> | ArrayLike<string>
 }
 
 type ExtractE<T> = [Extract<T, Effect.Effect<any, any, any>>] extends [never]

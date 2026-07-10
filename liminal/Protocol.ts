@@ -22,8 +22,8 @@ export interface Protocol<D extends ProtocolDefinition> {
     readonly Failure: S.TaggedStruct<
       "Audition.Failure",
       {
-        expected: S.String
-        actual: S.String
+        readonly expected: S.String
+        readonly actual: S.String
       }
     >
   }

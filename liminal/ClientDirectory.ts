@@ -41,13 +41,13 @@ export interface ClientDirectory<
 }
 
 export interface HandleEncoders<T, AttachmentFields extends S.Struct.Fields, D extends ProtocolDefinition> {
-  attachments: (
+  readonly attachments: (
     value: S.Struct<AttachmentFields>["Type"],
   ) => Effect.Effect<T, S.SchemaError, S.Struct<AttachmentFields>["EncodingServices"]>
-  event: (
+  readonly event: (
     value: Protocol<D>["Event"]["Type"],
   ) => Effect.Effect<T, S.SchemaError, Protocol<D>["Event"]["EncodingServices"]>
-  disconnect: Effect.Effect<T, S.SchemaError, (typeof Disconnect)["EncodingServices"]>
+  readonly disconnect: Effect.Effect<T, S.SchemaError, (typeof Disconnect)["EncodingServices"]>
 }
 
 export const make = <
