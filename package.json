@@ -22,6 +22,7 @@
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
     "@effect/vitest": "catalog:",
+    "@oxlint/plugins": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
