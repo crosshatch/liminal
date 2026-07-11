@@ -19,6 +19,6 @@ jobs:
       - uses: actions/checkout@v6
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
-      - run: pnpm oxfmt --check
+      - run: pnpm format --check
       - run: pnpm build
       - run: pnpm test
