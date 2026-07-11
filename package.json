@@ -11,7 +11,7 @@
     "sync-repos": "pnpm konfik sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
-    "prepare": "ts-patch install -s",
+    "prepare": "effect-tsgo patch",
     "test": "vitest run",
     "watch": "tsc -b -w"
   },
@@ -21,6 +21,7 @@
     "@effect/language-service": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
+    "@effect/tsgo": "catalog:",
     "@effect/vitest": "catalog:",
     "@oxlint/plugins": "catalog:",
     "@types/node": "catalog:",
