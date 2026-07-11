@@ -53,19 +53,18 @@ export const layer = ({
     ),
   )
 
-export const layerFromConfig = () =>
-  Config.all({
-    endpoint: Config.string("OTEL_EXPORTER_OTLP_ENDPOINT"),
-    headers: Config.redacted("OTEL_EXPORTER_OTLP_HEADERS").pipe(Config.withDefault(Redacted.make(""))),
-  }).pipe(
-    Effect.map(({ endpoint, headers }) =>
-      layer({
-        endpoint,
-        headers: parseHeaders(Redacted.value(headers)),
-      }),
-    ),
-    Layer.unwrap,
-  )
+export const layerFromConfig = Config.all({
+  endpoint: Config.string("OTEL_EXPORTER_OTLP_ENDPOINT"),
+  headers: Config.redacted("OTEL_EXPORTER_OTLP_HEADERS").pipe(Config.withDefault(Redacted.make(""))),
+}).pipe(
+  Effect.map(({ endpoint, headers }) =>
+    layer({
+      endpoint,
+      headers: parseHeaders(Redacted.value(headers)),
+    }),
+  ),
+  Layer.unwrap,
+)
 
 const parseHeaders = (input: string): HeadersInit | undefined => {
   const headers = new globalThis.Headers()
