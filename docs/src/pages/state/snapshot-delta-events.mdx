@@ -6,7 +6,8 @@ Client state depends on a deliberate snapshot-and-delta pattern:
 2. Later handlers emit delta events such as `MoveMade` or `GameEnded`.
 3. Client reducers fold deltas into the hydrated state.
 
-Without hydration, a reconnecting UI usually needs a separate imperative fetch path.
+Without hydration, a reconnecting UI usually needs a separate imperative fetch
+path.
 
 ## Hydrate on connect
 
@@ -51,6 +52,8 @@ export const MessageAdded = RoomClient.reducer(
 )
 ```
 
-This keeps the client state model hydrated before the UI sees it and event-driven afterward.
+This keeps the client state model hydrated before the UI sees it and
+event-driven afterward.
 
-Read [Lifecycle](/core/lifecycle) for `hydrate` and [Client State](/state/client-state) for the reduction loop.
+Read [Lifecycle](/core/lifecycle) for `hydrate` and
+[Client State](/state/client-state) for the reduction loop.

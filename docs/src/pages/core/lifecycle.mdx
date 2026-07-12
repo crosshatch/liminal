@@ -2,7 +2,8 @@
 
 `hydrate` runs when a client socket is newly upgraded into an actor.
 
-Use it to return the connecting client's initial state and notify already-connected clients.
+Use it to return the connecting client's initial state and notify
+already-connected clients.
 
 ## Hydrate initial state
 
@@ -28,10 +29,13 @@ export const hydrate = Effect.gen(function* () {
 }).pipe(Effect.orDie)
 ```
 
-`hydrate` is the snapshot for a reconnectable client. Tic-tac-toe returns `awaitingPartner: true` to the first socket,
-then sends `GameStarted` to the existing player and returns ready state to the second player.
+`hydrate` is the snapshot for a reconnectable client. Tic-tac-toe returns
+`awaitingPartner: true` to the first socket, then sends `GameStarted` to the
+existing player and returns ready state to the second player.
 
-`onDisconnect` runs when a socket closes or disconnects and is supplied to `WorkerdActorRuntime.make(...)`.
+`onDisconnect` runs when a socket closes or disconnects and is supplied to
+`WorkerdActorRuntime.make(...)`.
 
-Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the state pattern and
-[Client State](/state/client-state) for the hydration and reduction loop.
+Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the state
+pattern and [Client State](/state/client-state) for the hydration and reduction
+loop.

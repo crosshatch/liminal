@@ -1,6 +1,7 @@
 # HTTP Upgrades
 
-`Namespace.bind(name).upgrade(attachments)` is the handoff from HTTP to the Durable Object.
+`Namespace.bind(name).upgrade(attachments)` is the handoff from HTTP to the
+Durable Object.
 
 An HTTP route decides:
 
@@ -38,16 +39,19 @@ export const ApiLive = Layer.mergeAll(
 )
 ```
 
-Every request that upgrades with the same actor name lands in the same Durable Object instance.
+Every request that upgrades with the same actor name lands in the same Durable
+Object instance.
 
 ## What upgrade does
 
 On the Cloudflare side, `upgrade(...)`:
 
 - resolves the Durable Object by actor name
-- validates that the connecting WebSocket is using the expected Liminal client id
+- validates that the connecting WebSocket is using the expected Liminal client
+  id
 - serializes attachments onto the WebSocket
 - returns the `101 Switching Protocols` response
 
-The validation step is why client and actor definitions must line up. If the wrong client tries to connect, the session
-fails with an audition error rather than silently misbehaving.
+The validation step is why client and actor definitions must line up. If the
+wrong client tries to connect, the session fails with an audition error rather
+than silently misbehaving.

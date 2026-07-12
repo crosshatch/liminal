@@ -1,11 +1,12 @@
 # Cloudflare Setup
 
-The Worker runtime and Durable Object actor runtime both need telemetry in their Effect layers. Both runtimes flush the
-OTLP exporter after Worker fetches and Durable Object fetch/message/close/error callbacks, so short-lived Worker
+The Worker runtime and Durable Object actor runtime both need telemetry in their
+Effect layers. Both runtimes flush the OTLP exporter after Worker fetches and
+Durable Object fetch/message/close/error callbacks, so short-lived Worker
 executions can export the spans they just produced.
 
-The actor runtime has its own runtime, including after hibernation wakeups, so the telemetry layer should be fully
-provided with `FetchHttpClient.layer`.
+The actor runtime has its own runtime, including after hibernation wakeups, so
+the telemetry layer should be fully provided with `FetchHttpClient.layer`.
 
 ## Define telemetry
 
@@ -37,7 +38,8 @@ export const telemetryLive = (serviceName: string) =>
   ).pipe(Layer.provide(FetchHttpClient.layer))
 ```
 
-If your collector does not require authentication, omit `OTEL_TOKEN` and `headers`.
+If your collector does not require authentication, omit `OTEL_TOKEN` and
+`headers`.
 
 ## Add telemetry to the Worker prelude
 
@@ -55,19 +57,24 @@ export default Worker.make({
 })
 ```
 
-Read [Worker Entrypoint](/actor-routing/worker-entrypoint) for the full Worker file.
+Read [Worker Entrypoint](/actor-routing/worker-entrypoint) for the full Worker
+file.
 
-Set `OTEL_EXPORTER_OTLP_ENDPOINT` as a Wrangler var and `OTEL_TOKEN` as a secret if your collector requires
-authentication. See [Collectors](/instrumentation/collectors) for endpoint, proxy, and credential guidance.
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` as a Wrangler var and `OTEL_TOKEN` as a secret
+if your collector requires authentication. See
+[Collectors](/instrumentation/collectors) for endpoint, proxy, and credential
+guidance.
 
 ## Add telemetry to the actor runtime
 
-The actor runtime does not need a separate tracing wrapper. It runs inside the `WorkerdActorRuntime` Effect runtime, and
-its `prelude` should include telemetry when actor spans and logs should be exported.
+The actor runtime does not need a separate tracing wrapper. It runs inside the
+`WorkerdActorRuntime` Effect runtime, and its `prelude` should include telemetry
+when actor spans and logs should be exported.
 
 ```ts
 prelude: Layer.mergeAll(KvLive, telemetryLive("tic-tac-toe-actor")),
 ```
 
-Read [Actor Namespace](/core/actor-namespace) for the namespace/runtime split and
-[Prelude vs Layer](/core/prelude-vs-layer) for the dependency lifetime split.
+Read [Actor Namespace](/core/actor-namespace) for the namespace/runtime split
+and [Prelude vs Layer](/core/prelude-vs-layer) for the dependency lifetime
+split.

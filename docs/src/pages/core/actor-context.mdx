@@ -1,6 +1,7 @@
 # Actor Context
 
-Handlers and lifecycle hooks read actor runtime context by yielding the actor tag.
+Handlers and lifecycle hooks read actor runtime context by yielding the actor
+tag.
 
 ```ts
 Effect.gen(function* () {
@@ -20,7 +21,8 @@ The context includes:
 
 Many handlers want convenient access to values derived from actor context.
 
-On Cloudflare, use the runtime `layer` to derive request-local services like `CurrentUserId` or `Authorization` from the
-actor name and current client attachments.
+On Cloudflare, use the runtime `layer` to derive request-local services like
+`CurrentUserId` or `Authorization` from the actor name and current client
+attachments.
 
 Read [Prelude vs Layer](/core/prelude-vs-layer) for the full Cloudflare pattern.

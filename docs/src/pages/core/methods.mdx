@@ -2,8 +2,8 @@
 
 Methods describe request-response calls in a protocol.
 
-External methods are callable by connected clients. Internal methods are callable between Durable Object instances
-through a namespace handle.
+External methods are callable by connected clients. Internal methods are
+callable between Durable Object instances through a namespace handle.
 
 ## Define a shared method
 
@@ -22,8 +22,9 @@ export const SendMessage = {
 }
 ```
 
-Shared methods such as `UpdateProfile` or `ReportUser` can live under a common `shared/methods` directory and be
-inserted into a client's `external` table or a namespace's `internal` table.
+Shared methods such as `UpdateProfile` or `ReportUser` can live under a common
+`shared/methods` directory and be inserted into a client's `external` table or a
+namespace's `internal` table.
 
 ## Implement a shared handler
 
@@ -44,5 +45,6 @@ export default handler(
 )
 ```
 
-If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is usually simpler for external methods.
-Internal handlers are supplied to `WorkerdActorRuntime.make({ internal: ... })`.
+If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is
+usually simpler for external methods. Internal handlers are supplied to
+`WorkerdActorRuntime.make({ internal: ... })`.

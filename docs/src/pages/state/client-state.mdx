@@ -1,10 +1,11 @@
 # Client State
 
-Client state is part of the `Client.Service(...)` definition. When a client connects, the actor runtime sends an initial
-state value during audition. After that, client-side reducers fold incoming events into the current state.
+Client state is part of the `Client.Service(...)` definition. When a client
+connects, the actor runtime sends an initial state value during audition. After
+that, client-side reducers fold incoming events into the current state.
 
-There is no separate state service. The client itself exposes the state stream, event stream, call surface, and typed
-reducer helper.
+There is no separate state service. The client itself exposes the state stream,
+event stream, call surface, and typed reducer helper.
 
 ## Define state on the client
 
@@ -16,37 +17,41 @@ export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])
 export const Coordinates = S.Tuple([Coordinate, Coordinate])
 
-export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
-  state: {
-    awaitingPartner: S.Boolean,
-    name: Player,
-  },
-  events: {
-    GameStarted: {},
-    MoveMade: {
-      player: Player,
-      position: Coordinates,
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "examples/TicTacToeClient",
+  {
+    state: {
+      awaitingPartner: S.Boolean,
+      name: Player,
     },
-    GameEnded: {
-      winner: S.optional(Player),
+    events: {
+      GameStarted: {},
+      MoveMade: {
+        player: Player,
+        position: Coordinates,
+      },
+      GameEnded: {
+        winner: S.optional(Player),
+      },
+    },
+    external: {
+      Move: {
+        payload: S.Struct({ position: Coordinates }),
+        success: S.Void,
+        failure: S.Never,
+      },
     },
   },
-  external: {
-    Move: {
-      payload: S.Struct({ position: Coordinates }),
-      success: S.Void,
-      failure: S.Never,
-    },
-  },
-}) {}
+) {}
 ```
 
-The `state` record is Effect Schema struct fields. The actor runtime must hydrate a value matching that shape for every
-new connection.
+The `state` record is Effect Schema struct fields. The actor runtime must
+hydrate a value matching that shape for every new connection.
 
 ## Hydrate on connect
 
-In a Workerd actor runtime, `hydrate` returns the initial state for the connecting client.
+In a Workerd actor runtime, `hydrate` returns the initial state for the
+connecting client.
 
 ```ts
 import { Effect } from "effect"
@@ -70,12 +75,13 @@ export default Effect.gen(function* () {
 }).pipe(Effect.orDie)
 ```
 
-Hydration is the snapshot. Events sent after hydration are deltas that reducers apply locally.
+Hydration is the snapshot. Events sent after hydration are deltas that reducers
+apply locally.
 
 ## Reduce events
 
-Reducers live next to the client runtime. `Client.reducer(...)` narrows the event tag and returns the reducer unchanged
-at runtime.
+Reducers live next to the client runtime. `Client.reducer(...)` narrows the
+event tag and returns the reducer unchanged at runtime.
 
 ```ts
 import { Effect } from "effect"
@@ -89,13 +95,20 @@ export const GameStarted = TicTacToeClient.reducer(
       Effect.succeed({ name, awaitingPartner: false }),
 )
 
-export const MoveMade = TicTacToeClient.reducer("MoveMade", () => (state) => Effect.succeed(state))
+export const MoveMade = TicTacToeClient.reducer(
+  "MoveMade",
+  () => (state) => Effect.succeed(state),
+)
 
-export const GameEnded = TicTacToeClient.reducer("GameEnded", () => (state) => Effect.succeed(state))
+export const GameEnded = TicTacToeClient.reducer(
+  "GameEnded",
+  () => (state) => Effect.succeed(state),
+)
 ```
 
-Each reducer receives the event first and the current state second. Return the next state to publish an update, or
-return `void` to leave the current state unchanged.
+Each reducer receives the event first and the current state second. Return the
+next state to publish an update, or return `void` to leave the current state
+unchanged.
 
 ## Provide reducers
 
@@ -131,4 +144,5 @@ import { TicTacToeClient } from "./TicTacToeClient.ts"
 export const stateAtom = runtime.atom(TicTacToeClient.state)
 ```
 
-Read [Snapshot and Delta Events](/state/snapshot-delta-events) for event design guidance.
+Read [Snapshot and Delta Events](/state/snapshot-delta-events) for event design
+guidance.

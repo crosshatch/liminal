@@ -1,7 +1,7 @@
 # Client Handles
 
-Attachments are per-client state. Client handles are the per-socket API actors use to communicate with connected
-clients.
+Attachments are per-client state. Client handles are the per-socket API actors
+use to communicate with connected clients.
 
 ## Client handle operations
 
@@ -23,8 +23,10 @@ Each exposes the same `send` and `disconnect` shape:
 
 - `yield* TicTacToeActor.all.send(...)`: broadcast to every connected client
 - `yield* TicTacToeActor.all.disconnect`: disconnect every connected client
-- `yield* TicTacToeActor.others.send(...)`: broadcast to everyone except the calling client
-- `yield* TicTacToeActor.others.disconnect`: disconnect everyone except the calling client
+- `yield* TicTacToeActor.others.send(...)`: broadcast to everyone except the
+  calling client
+- `yield* TicTacToeActor.others.disconnect`: disconnect everyone except the
+  calling client
 
 ## Broadcast
 
@@ -67,5 +69,5 @@ That is useful for values like:
 - the caller's role in a game
 - per-socket cursors or last-seen sequence numbers
 
-Do not use attachments as whole-actor storage. Persist shared state elsewhere, for example through Effect's
-`KeyValueStore` interface backed by an R2 bucket.
+Do not use attachments as whole-actor storage. Persist shared state elsewhere,
+for example through Effect's `KeyValueStore` interface backed by an R2 bucket.

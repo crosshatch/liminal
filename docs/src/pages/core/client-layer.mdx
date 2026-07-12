@@ -1,12 +1,15 @@
 # Client Layer
 
-`Client.layerSocket(...)` turns a `Client` protocol into a live Effect layer backed by a WebSocket.
+`Client.layerSocket(...)` turns a `Client` protocol into a live Effect layer
+backed by a WebSocket.
 
-Use it in browser runtimes that connect to a Liminal actor through an HTTP upgrade route.
+Use it in browser runtimes that connect to a Liminal actor through an HTTP
+upgrade route.
 
 ## Define the layer
 
-Provide the client definition, reducers, the socket endpoint, and the platform WebSocket constructor.
+Provide the client definition, reducers, the socket endpoint, and the platform
+WebSocket constructor.
 
 ```ts
 import { BrowserSocket } from "@effect/platform-browser"
@@ -31,16 +34,19 @@ const TicTacToeClientLive = Client.layerSocket({
 - `url`: the WebSocket endpoint path, defaulting to `"/"`
 - `protocols`: one or more extra WebSocket sub-protocols
 - `replay`: optional event replay configuration
-- `onConnect`: optional effect that runs with the hydrated state once audition succeeds
+- `onConnect`: optional effect that runs with the hydrated state once audition
+  succeeds
 
 Replay semantics are covered in [Events](/core/events).
 
-`layerSocket` requires a `Socket.WebSocketConstructor` in the environment. In browsers, that usually comes from
-`BrowserSocket.layerWebSocketConstructor` in `@effect/platform-browser`.
+`layerSocket` requires a `Socket.WebSocketConstructor` in the environment. In
+browsers, that usually comes from `BrowserSocket.layerWebSocketConstructor` in
+`@effect/platform-browser`.
 
 ## Use the live client
 
-After providing the layer, calls use `Client.fn(...)`, event streams use `Client.events`, and hydrated state uses
-`Client.state`.
+After providing the layer, calls use `Client.fn(...)`, event streams use
+`Client.events`, and hydrated state uses `Client.state`.
 
-Read [Client Calls](/core/client-calls) and [Events](/core/events) for those APIs.
+Read [Client Calls](/core/client-calls) and [Events](/core/events) for those
+APIs.
