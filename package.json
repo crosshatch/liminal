@@ -13,7 +13,8 @@
     "plan": "alchemy plan",
     "prepare": "effect-tsgo patch",
     "test": "vitest run",
-    "watch": "tsc -b -w"
+    "watch": "tsc -b -w",
+    "lint": "oxlint --disable-nested-config"
   },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
