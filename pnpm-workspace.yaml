@@ -48,7 +48,7 @@ catalog:
   "@vitest/expect": ^4.1.4
   "@vitest/web-worker": ^4.1.4
   asciify-engine: ^1.0.118
-  alchemy: https://pkg.ing/alchemy/546ca57
+  alchemy: https://pkg.ing/alchemy/bec01fd
   babel-plugin-react-compiler: ^1.0.0
   drizzle-kit: 1.0.0-rc.4
   drizzle-orm: 1.0.0-rc.4
