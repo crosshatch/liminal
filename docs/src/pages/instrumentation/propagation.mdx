@@ -2,13 +2,15 @@
 
 There are two propagation paths.
 
-HTTP boundaries use Effect's `HttpTraceContext` module, which reads and writes standard tracing headers:
+HTTP boundaries use Effect's `HttpTraceContext` module, which reads and writes
+standard tracing headers:
 
 - W3C `traceparent`
 - B3 single-header `b3`
 - B3 multi-header `x-b3-*`
 
-WebSocket messages and browser worker-runner messages use a small Liminal trace envelope:
+WebSocket messages and browser worker-runner messages use a small Liminal trace
+envelope:
 
 ```ts
 {
@@ -23,5 +25,6 @@ That envelope appears on protocol messages that need per-message causality:
 - `F.Payload.trace` for client-to-actor method calls
 - `Event.trace` for actor-to-client events
 
-This mirrors Effect RPC's socket propagation strategy: the sender includes the current span identity in the message
-envelope, and the receiver turns it back into an external parent span.
+This mirrors Effect RPC's socket propagation strategy: the sender includes the
+current span identity in the message envelope, and the receiver turns it back
+into an external parent span.

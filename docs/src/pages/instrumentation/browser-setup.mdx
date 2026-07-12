@@ -1,22 +1,24 @@
 # Browser Setup
 
-For Cloudflare and browsers, the simplest setup is Effect's lightweight OTLP exporter from
-`effect/unstable/observability`. It works with `FetchHttpClient` and does not require the Node OpenTelemetry SDK.
+For Cloudflare and browsers, the simplest setup is Effect's lightweight OTLP
+exporter from `effect/unstable/observability`. It works with `FetchHttpClient`
+and does not require the Node OpenTelemetry SDK.
 
 ```bash
 pnpm add effect
 ```
 
-If you want to use the official OpenTelemetry JavaScript SDK in a browser or Node process, add `@effect/opentelemetry`
-and the relevant OpenTelemetry packages instead. The rest of this guide uses Effect's built-in OTLP layer because it
-fits Workers and browser runtimes directly.
+If you want to use the official OpenTelemetry JavaScript SDK in a browser or
+Node process, add `@effect/opentelemetry` and the relevant OpenTelemetry
+packages instead. The rest of this guide uses Effect's built-in OTLP layer
+because it fits Workers and browser runtimes directly.
 
 ## Configure the client runtime
 
 Add an OTLP layer to the same runtime that provides your Liminal client.
 
-Browsers usually send OTLP through a same-origin proxy. See [Collectors](/instrumentation/collectors) for CORS and
-credential guidance.
+Browsers usually send OTLP through a same-origin proxy. See
+[Collectors](/instrumentation/collectors) for CORS and credential guidance.
 
 ```ts
 // app/runtime.ts
@@ -56,6 +58,7 @@ export const runtime = Atom.runtime(
 )
 ```
 
-That is enough for client acquire/listen/send/call spans, client logs, outbound method-call trace envelopes, and inbound
-event enqueue spans. Those enqueue spans cover Liminal receiving an event and publishing it into `Client.events`;
+That is enough for client acquire/listen/send/call spans, client logs, outbound
+method-call trace envelopes, and inbound event enqueue spans. Those enqueue
+spans cover Liminal receiving an event and publishing it into `Client.events`;
 downstream stream consumers should add their own application spans when needed.

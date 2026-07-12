@@ -21,37 +21,41 @@ export const Player = S.Literals(["X", "O"])
 export const Coordinate = S.Literals([0, 1, 2])
 export const Coordinates = S.Tuple([Coordinate, Coordinate])
 
-export class TicTacToeClient extends Client.Service<TicTacToeClient>()("examples/TicTacToeClient", {
-  events: {
-    GameStarted: {},
-    MoveMade: {
-      player: Player,
-      position: Coordinates,
-    },
-    GameEnded: {
-      winner: S.optional(Player),
-    },
-  },
-  external: {
-    Move: {
-      payload: S.Struct({
+export class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "examples/TicTacToeClient",
+  {
+    events: {
+      GameStarted: {},
+      MoveMade: {
+        player: Player,
         position: Coordinates,
-      }),
-      success: S.Void,
-      failure: S.Never,
+      },
+      GameEnded: {
+        winner: S.optional(Player),
+      },
+    },
+    external: {
+      Move: {
+        payload: S.Struct({
+          position: Coordinates,
+        }),
+        success: S.Void,
+        failure: S.Never,
+      },
+    },
+    state: {
+      awaitingPartner: S.Boolean,
+      name: Player,
     },
   },
-  state: {
-    awaitingPartner: S.Boolean,
-    name: Player,
-  },
-}) {}
+) {}
 ```
 
 ## Shape
 
 - `state` is the struct-fields record hydrated when the client connects.
-- `external` is a record of `{ payload, success, failure }` methods callable through `Client.fn(...)`.
+- `external` is a record of `{ payload, success, failure }` methods callable
+  through `Client.fn(...)`.
 - `events` is a record of plain struct fields.
 - Liminal tags events automatically with `_tag`.
 

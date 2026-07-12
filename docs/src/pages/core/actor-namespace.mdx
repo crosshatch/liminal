@@ -1,27 +1,33 @@
 # Actor Namespace
 
-`WorkerdActorNamespace` is the Worker-side handle for a Cloudflare Durable Object actor.
+`WorkerdActorNamespace` is the Worker-side handle for a Cloudflare Durable
+Object actor.
 
-The namespace is separate from the actor runtime. It binds a Cloudflare Durable Object namespace, validates upgrade
-requests, and exposes handles for upgrading clients or calling internal methods between Durable Object instances.
+The namespace is separate from the actor runtime. It binds a Cloudflare Durable
+Object namespace, validates upgrade requests, and exposes handles for upgrading
+clients or calling internal methods between Durable Object instances.
 
 ```ts
 import { WorkerdActorNamespace } from "liminal/workerd"
 
 import { TicTacToeActor } from "./TicTacToeActor.ts"
 
-export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()("TicTacToeNamespace", {
-  binding: "TICTACTOE",
-  actor: TicTacToeActor,
-  internal: {},
-}) {}
+export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()(
+  "TicTacToeNamespace",
+  {
+    binding: "TICTACTOE",
+    actor: TicTacToeActor,
+    internal: {},
+  },
+) {}
 ```
 
 ## Fields
 
 - `binding`: the Cloudflare Durable Object binding name
 - `actor`: the Liminal actor definition
-- `internal`: methods callable through namespace handles from other Durable Object instances or Worker code
+- `internal`: methods callable through namespace handles from other Durable
+  Object instances or Worker code
 
 ## Bind an actor instance
 
@@ -34,12 +40,14 @@ yield * game.upgrade({ player: "X" })
 yield * game.call("SomeInternalMethod", { value: 1 })
 ```
 
-`upgrade(...)` forwards the current request into the Durable Object as a WebSocket upgrade. `call(...)` invokes one of
-the namespace's internal methods through Durable Object RPC.
+`upgrade(...)` forwards the current request into the Durable Object as a
+WebSocket upgrade. `call(...)` invokes one of the namespace's internal methods
+through Durable Object RPC.
 
 ## Provide the namespace
 
-Use `TicTacToeNamespace.layer` in the Worker runtime. The binding name comes from the namespace definition.
+Use `TicTacToeNamespace.layer` in the Worker runtime. The binding name comes
+from the namespace definition.
 
 ```ts
 const WorkerLive = TicTacToeNamespace.layer
@@ -77,7 +85,8 @@ Runtime fields:
 - `hydrate`: returns initial client state during audition
 - `external`: handlers for client-callable methods from `Client.external`
 - `internal`: handlers for namespace-callable methods from `Namespace.internal`
-- `layer`: short-lived, invocation-scoped dependencies derived from actor context
+- `layer`: short-lived, invocation-scoped dependencies derived from actor
+  context
 - `onDisconnect`: cleanup or notifications for closed sockets
 - `hibernation`: optional hibernatable WebSocket timeout (`Duration.Input`)
 

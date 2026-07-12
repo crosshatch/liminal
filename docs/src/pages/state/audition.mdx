@@ -1,9 +1,10 @@
 # Audition
 
-`Audition` combines multiple clients into one state stream, call surface, and event stream.
+`Audition` combines multiple clients into one state stream, call surface, and
+event stream.
 
-For larger apps, this avoids forcing the UI to swap service references manually when flows shift between contexts, such
-as moving from a lobby into a chat room.
+For larger apps, this avoids forcing the UI to swap service references manually
+when flows shift between contexts, such as moving from a lobby into a chat room.
 
 ## Merge clients
 
@@ -13,7 +14,10 @@ import { Audition } from "liminal"
 import { ChatClient } from "./chat/ChatClient.ts"
 import { LobbyClient } from "./lobby/LobbyClient.ts"
 
-export const audition = Audition.empty.pipe(Audition.add(LobbyClient), Audition.add(ChatClient))
+export const audition = Audition.empty.pipe(
+  Audition.add(LobbyClient),
+  Audition.add(ChatClient),
+)
 ```
 
 After that, callers can use one method surface:
@@ -25,8 +29,9 @@ Effect.gen(function* () {
 })
 ```
 
-The `audition.fn(method)` signature mirrors `Client.fn(method)`. The effect's required services are the union of
-services for every underlying client in the audition.
+The `audition.fn(method)` signature mirrors `Client.fn(method)`. The effect's
+required services are the union of services for every underlying client in the
+audition.
 
 ## Merge events
 
@@ -34,7 +39,8 @@ services for every underlying client in the audition.
 const source = audition.events
 ```
 
-An app-wide view can listen to merged events, or subscribe to `audition.state` for the currently active hydrated state.
+An app-wide view can listen to merged events, or subscribe to `audition.state`
+for the currently active hydrated state.
 
 ```ts
 const source = audition.events.pipe(Stream.forever)
@@ -53,8 +59,10 @@ Audition.empty.pipe(Audition.add(LobbyClient), Audition.add(ChatClient))
 
 runtime lookup tries `LobbyClient` first, then falls back to `ChatClient`.
 
-Fallback only triggers when the prior client produces an `AuditionError`. Other errors such as `ConnectionError` or
-`UnresolvedError` propagate directly without trying the next client.
+Fallback only triggers when the prior client produces an `AuditionError`. Other
+errors such as `ConnectionError` or `UnresolvedError` propagate directly without
+trying the next client.
 
-If multiple clients expose the same method name, keep the method definitions identical. The type-level merge assumes
-matching shapes for overlapping method keys.
+If multiple clients expose the same method name, keep the method definitions
+identical. The type-level merge assumes matching shapes for overlapping method
+keys.

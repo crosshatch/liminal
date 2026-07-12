@@ -21,11 +21,13 @@ export const handleMove = TicTacToeActor.handler(
 )
 ```
 
-`Actor.handler("Method", ...)` is a typed pass-through. It returns the handler unchanged at runtime but narrows the
-handler's payload, success, and failure types to the named method.
+`Actor.handler("Method", ...)` is a typed pass-through. It returns the handler
+unchanged at runtime but narrows the handler's payload, success, and failure
+types to the named method.
 
 ## Related concepts
 
 - [Actor Context](/core/actor-context) covers `yield* ActorTag`.
-- [Client Handles](/core/client-handles) covers sends, broadcasts, saves, attachments, and disconnects.
+- [Client Handles](/core/client-handles) covers sends, broadcasts, saves,
+  attachments, and disconnects.
 - [Methods](/core/methods) covers shared `handler(...)` implementations.
