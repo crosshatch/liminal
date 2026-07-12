@@ -9,7 +9,7 @@ export class TemplateMisalignedError extends Data.TaggedError("TemplateMisaligne
   readonly keys: ReadonlyArray<string>
 }> {}
 
-export class NoSuchTemplateError extends Data.TaggedError("NoSuchTemplateError")<{ url: string }> {}
+export class NoSuchTemplateError extends Data.TaggedError("NoSuchTemplateError")<{ readonly url: string }> {}
 
 export interface TemplateClass<Self, Id extends string, A> extends Context.Service<Self, Template<A>> {
   new (_: never): Context.ServiceClass.Shape<Id, Template<A>>

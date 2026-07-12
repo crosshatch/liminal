@@ -64,12 +64,12 @@ export interface ActorNamespace<
 
 export declare namespace ActorNamespace {
   export type MakeRpc<Internal extends Methods, D extends ProtocolDefinition> = {
-    rpc: <K extends keyof Internal>(
+    readonly rpc: <K extends keyof Internal>(
       method: K,
       payload: Internal[K]["payload"]["Type"],
     ) => Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>>
 
-    proxySendAll<K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]): void
+    readonly proxySendAll: <K extends keyof D["events"]>(event: K, payload: S.Struct<D["events"][K]>["Type"]) => void
   }
 }
 

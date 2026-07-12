@@ -14,15 +14,15 @@ export interface Steps extends Pipeable.Pipeable {
 }
 
 export interface DrawOptions {
-  image: ReadableStream<Uint8Array> | ImageTransformer
-  options?: ImageDrawOptions | undefined
+  readonly image: ReadableStream<Uint8Array> | ImageTransformer
+  readonly options?: ImageDrawOptions | undefined
 }
 
 export type Step = Data.TaggedEnum<{
-  Transform: {
-    transform: ImageTransform
+  readonly Transform: {
+    readonly transform: ImageTransform
   }
-  Draw: DrawOptions
+  readonly Draw: DrawOptions
 }>
 
 export const empty: Steps = {

@@ -6,13 +6,15 @@
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
     "dev": "pnpm i && PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false turbo run dev //#watch //#aliases",
     "aliases": "caddy run --config ./Caddyfile",
+    "format": "oxfmt --config ./.oxfmtrc.jsonc",
     "konfik": "node ./konfik/main.ts",
     "sync-repos": "pnpm konfik sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
-    "prepare": "ts-patch install -s",
+    "prepare": "effect-tsgo patch",
     "test": "vitest run",
-    "watch": "tsc -b -w"
+    "watch": "tsc -b -w",
+    "lint": "oxlint --disable-nested-config"
   },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
@@ -20,7 +22,9 @@
     "@effect/language-service": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
+    "@effect/tsgo": "catalog:",
     "@effect/vitest": "catalog:",
+    "@oxlint/plugins": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -37,10 +41,9 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "playwright": "catalog:",
-    "ts-patch": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@11.10.0"
+  "packageManager": "pnpm@11.11.0"
 }

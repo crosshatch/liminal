@@ -17,17 +17,17 @@ export const layerFs = Layer.effect(
     const path = yield* Path.Path
     const fs = yield* FileSystem.FileSystem
 
-    const load = Effect.fnUntraced(function* (url: string) {
-      const { dir, name } = path.parse(new URL(url).pathname)
-      const templatePathname = path.join(dir, `${name}.md`)
-      if (yield* fs.exists(templatePathname).pipe(Effect.mapError(() => new LoaderError({ url })))) {
-        return yield* fs.readFileString(templatePathname).pipe(
-          Effect.map(Option.some),
-          Effect.mapError(() => new LoaderError({ url })),
-        )
-      }
-      return Option.none()
-    })
+    const load = Effect.fnUntraced(
+      function* (url: string) {
+        const { dir, name } = path.parse(new URL(url).pathname)
+        const templatePathname = path.join(dir, `${name}.md`)
+        if (yield* fs.exists(templatePathname)) {
+          return yield* fs.readFileString(templatePathname).pipe(Effect.map(Option.some))
+        }
+        return Option.none()
+      },
+      (effect, url) => Effect.mapError(effect, () => new LoaderError({ url })),
+    )
 
     return { load }
   }),

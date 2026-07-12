@@ -1,39 +1,39 @@
-[submodule "repos/effect"]
-	path = repos/effect
+[submodule "repos/Effect-TS/effect-smol"]
+	path = repos/Effect-TS/effect-smol
 	url = git@github.com:Effect-TS/effect-smol.git
-[submodule "repos/router"]
-	path = repos/router
+[submodule "repos/TanStack/router"]
+	path = repos/TanStack/router
 	url = git@github.com:TanStack/router.git
-[submodule "repos/workers-sdk"]
-	path = repos/workers-sdk
+[submodule "repos/cloudflare/workers-sdk"]
+	path = repos/cloudflare/workers-sdk
 	url = git@github.com:cloudflare/workers-sdk.git
-[submodule "repos/agents"]
-	path = repos/agents
+[submodule "repos/cloudflare/agents"]
+	path = repos/cloudflare/agents
 	url = git@github.com:cloudflare/agents.git
-[submodule "repos/oxc"]
-	path = repos/oxc
+[submodule "repos/oxc-project/oxc"]
+	path = repos/oxc-project/oxc
 	url = git@github.com:oxc-project/oxc.git
-[submodule "repos/vite"]
-	path = repos/vite
+[submodule "repos/vitejs/vite"]
+	path = repos/vitejs/vite
 	url = git@github.com:vitejs/vite.git
 [submodule "konfik"]
 	path = konfik
 	url = git@github.com:crosshatch/konfik.git
-[submodule "repos/workerd"]
-	path = repos/workerd
+[submodule "repos/cloudflare/workerd"]
+	path = repos/cloudflare/workerd
 	url = git@github.com:cloudflare/workerd.git
-[submodule "repos/vitest"]
-	path = repos/vitest
+[submodule "repos/vitest-dev/vitest"]
+	path = repos/vitest-dev/vitest
 	url = git@github.com:vitest-dev/vitest.git
-[submodule "repos/alchemy-effect"]
-	path = repos/alchemy-effect
+[submodule "repos/alchemy-run/alchemy-effect"]
+	path = repos/alchemy-run/alchemy-effect
 	url = git@github.com:alchemy-run/alchemy-effect.git
-[submodule "repos/vocs"]
-	path = repos/vocs
+[submodule "repos/wevm/vocs"]
+	path = repos/wevm/vocs
 	url = git@github.com:wevm/vocs.git
-[submodule "repos/changesets"]
-	path = repos/changesets
+[submodule "repos/changesets/changesets"]
+	path = repos/changesets/changesets
 	url = git@github.com:changesets/changesets.git
-[submodule "repos/waku"]
-	path = repos/waku
+[submodule "repos/wakujs/waku"]
+	path = repos/wakujs/waku
 	url = git@github.com:wakujs/waku.git

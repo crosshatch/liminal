@@ -4,6 +4,7 @@
     { "path": "./docs" },
     { "path": "./effect-workerd" },
     { "path": "./examples" },
+    { "path": "./konfik" },
     { "path": "./liminal" },
     { "path": "./liminal-util" }
   ]

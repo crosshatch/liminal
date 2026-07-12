@@ -9,7 +9,7 @@ export interface VectorizeDefinition {
 
   readonly id: TopFromString
 
-  readonly metadata: Record<string, S.Top & { Encoded: string | number | boolean | Array<string> }>
+  readonly metadata: Record<string, S.Top & { readonly Encoded: string | number | boolean | Array<string> }>
 }
 
 export interface Vectorize<Self, Id extends string, D extends VectorizeDefinition> extends Context.Service<

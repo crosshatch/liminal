@@ -21,7 +21,7 @@ export interface Audition<AuditionSelf, State extends S.Union<ReadonlyArray<S.To
 
 type MergeMethods<T extends Methods, U extends Methods> = [keyof T] extends [never]
   ? U
-  : { [K in keyof T & keyof U]: Types.Equals<T[K], U[K]> extends true ? T[K] : never }
+  : { readonly [K in keyof T & keyof U]: Types.Equals<T[K], U[K]> extends true ? T[K] : never }
 
 type MergeState<State, D extends ProtocolDefinition> = [State] extends [never]
   ? S.Union<[S.Struct<D["state"]>]>

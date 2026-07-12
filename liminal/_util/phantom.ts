@@ -1,1 +1,1 @@
-export const phantom = {} as { "": never }
+export const phantom = {} as { readonly "": never }
