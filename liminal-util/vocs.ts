@@ -7,7 +7,7 @@ export const VocsConfig = ({ title, repo }: { readonly title: string; readonly r
     accentColor: "light-dark(#6D5BD0, #A99BFF)",
     codeHighlight: {
       themes: {
-        light: "nord",
+        light: "github-light",
         dark: "tokyo-night",
       },
     },
