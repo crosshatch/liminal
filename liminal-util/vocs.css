@@ -1,33 +1,63 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap");
 @import "tailwindcss";
 
 @font-face {
-  font-family: "Pilat";
-  src: url("/fonts/Pilat/Pilat-Regular.otf") format("opentype");
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Pilat";
-  src: url("/fonts/Pilat/Pilat-Book.otf") format("opentype");
-  font-weight: 450;
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-Medium.ttf") format("truetype");
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Pilat";
-  src: url("/fonts/Pilat/Pilat-Demi.otf") format("opentype");
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-SemiBold.ttf") format("truetype");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/Manrope/Manrope-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --vocs-font-family: "Pilat", ui-sans-serif, system-ui, sans-serif;
-  --vocs-font-family-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --vocs-font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --vocs-text-xs: 0.84375rem;
   --vocs-text-sm: 0.96875rem;
   --vocs-text-base: 1.09375rem;
@@ -54,8 +84,8 @@
 }
 
 :where(h1, h2, h3) {
-  font-family: "Pilat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 450;
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
   letter-spacing: -0.03em;
 }
 
