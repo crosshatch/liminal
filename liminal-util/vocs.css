@@ -103,6 +103,12 @@ article[data-v-content] > table :is(th, td) {
   border-bottom: 1px solid var(--vocs-border-color-primary);
 }
 
+@media (max-width: 767px) {
+  [data-v-banner] {
+    font-size: 0.625rem;
+  }
+}
+
 [data-v-gutter-top] > nav {
   padding-left: 2rem;
 }

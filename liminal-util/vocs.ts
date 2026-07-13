@@ -29,5 +29,6 @@ export const VocsConfig = ({ title, repo }: { readonly title: string; readonly r
         }),
       ],
     },
+    ogImageUrl: (_path, { baseUrl }) => `${baseUrl ?? ""}/api/og?title=%title&description=%description`,
   } satisfies Partial<Config>
 }
