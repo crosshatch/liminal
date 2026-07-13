@@ -12,6 +12,6 @@ export default Alchemy.Stack(
   },
   docs({
     domain: "liminal.actor",
-    devPort: 4383,
+    devPort: 4389,
   }).pipe(Effect.asVoid),
 )
