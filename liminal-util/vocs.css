@@ -96,7 +96,7 @@ h1 {
 article[data-v-content] > :is(p, ol, ul, blockquote),
 article[data-v-content] > :is(ol, ul) li,
 article[data-v-content] > table :is(th, td) {
-  font-size: 1.1875rem;
+  font-size: 1rem;
 }
 
 [data-v-banner] {
