@@ -1,4 +1,4 @@
-import { Changelog, McpSource, type Config } from "vocs/config"
+import { Changelog, type Config } from "vocs/config"
 
 export const VocsConfig = ({ title, repo }: { readonly title: string; readonly repo: string }) => {
   return {
@@ -21,13 +21,14 @@ export const VocsConfig = ({ title, repo }: { readonly title: string; readonly r
       text: "Edit on GitHub",
     },
     renderStrategy: "full-static",
-    mcp: {
-      enabled: true,
-      sources: [
-        McpSource.github({
-          repo: `crosshatch/${repo}`,
-        }),
-      ],
-    },
+    mcp: { enabled: false },
+    // mcp: {
+    //   enabled: true,
+    //   sources: [
+    //     McpSource.github({
+    //       repo: `crosshatch/${repo}`,
+    //     }),
+    //   ],
+    // },
   } satisfies Partial<Config>
 }
