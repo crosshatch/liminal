@@ -1,5 +1,13 @@
 # liminal-util
 
+## 0.0.13
+
+### Patch Changes
+
+- [#480](https://github.com/crosshatch/liminal/pull/480)
+  [`33b9e28`](https://github.com/crosshatch/liminal/commit/33b9e280ba62f956899124465963fcf997ce2ebc)
+  Thanks @harrysolovay! - Update effect and other dependencies.
+
 ## 0.0.12
 
 ### Patch Changes
