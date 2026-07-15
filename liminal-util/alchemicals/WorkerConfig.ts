@@ -2,6 +2,13 @@ import type { WorkerProps } from "alchemy/Cloudflare"
 import { Stage } from "alchemy/Stage"
 import { Effect } from "effect"
 
+export const domain = (domain: string) =>
+  Stage.pipe(
+    Effect.map((stage) =>
+      stage === "prod" ? prepends(domain) : stage.startsWith("staging-") ? prepends(`${stage}.${domain}`) : undefined,
+    ),
+  )
+
 export const WorkerConfig = Effect.fn(function* ({
   domain,
   assets,
