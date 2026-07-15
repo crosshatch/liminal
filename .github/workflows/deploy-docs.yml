@@ -24,7 +24,7 @@ jobs:
       - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm build
-      - uses: crosshatch/konfik/.github/actions/alchemize@main
+      - uses: alchemy-run/alchemy-effect@v1
         with:
           working-directory: docs
         env:
