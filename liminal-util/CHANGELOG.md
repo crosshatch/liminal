@@ -1,5 +1,13 @@
 # liminal-util
 
+## 0.0.14
+
+### Patch Changes
+
+- [#482](https://github.com/crosshatch/liminal/pull/482)
+  [`8f09163`](https://github.com/crosshatch/liminal/commit/8f09163506d98dd7eeb1d55f2b780f540844232d)
+  Thanks @harrysolovay! - Add new alchemicals for platform worker usage.
+
 ## 0.0.13
 
 ### Patch Changes
