@@ -2,15 +2,13 @@ import * as GitHub from "alchemy/GitHub"
 import * as Output from "alchemy/Output"
 import { Data, Effect, String } from "effect"
 
-import { GithubEnv } from "./GithubEnv.ts"
-
 export class NotInPrError extends Data.TaggedError("NotInPrError")<{}> {}
 
 export const PrComment =
   (resourceId: string) =>
   <Args extends Array<any>>(template: TemplateStringsArray, ...args: Args) =>
     Effect.gen(function* () {
-      const env = yield* GithubEnv
+      const env = yield* GitHub.GitHubEnv
       if (env) {
         const { owner, repository, pr } = env
         if (pr) {
@@ -32,7 +30,7 @@ export const PrPreviewComment = Effect.fn(function* <R = never>({
   readonly name: string
   readonly url: string | undefined | Output.Output<string | undefined, R>
 }) {
-  const env = yield* GithubEnv
+  const env = yield* GitHub.GitHubEnv
   if (env) {
     const { sha } = env
     yield* PrComment("PreviewComment")`
