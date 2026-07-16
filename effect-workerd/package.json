@@ -1,6 +1,6 @@
 {
   "name": "effect-workerd",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Effect x Cloudflare",
   "bugs": {
     "url": "https://github.com/crosshatch/liminal/issues"
