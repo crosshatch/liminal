@@ -1,10 +1,10 @@
 import type { WorkerProps } from "alchemy/Cloudflare"
-import { Stage } from "alchemy/Stage"
+import { Stack } from "alchemy/Stack"
 import { Effect } from "effect"
 
 export const domain = (domain: string) =>
-  Stage.pipe(
-    Effect.map((stage) =>
+  Stack.pipe(
+    Effect.map(({ stage }) =>
       stage === "prod" ? prepends(domain) : stage.startsWith("staging-") ? prepends(`${stage}.${domain}`) : undefined,
     ),
   )
@@ -16,7 +16,7 @@ export const WorkerConfig = Effect.fn(function* ({
   readonly domain: string
   readonly assets?: string | undefined
 }) {
-  const stage = yield* Stage
+  const { stage } = yield* Stack
   return {
     observability: { enabled: true },
     placement: { mode: "smart" },
