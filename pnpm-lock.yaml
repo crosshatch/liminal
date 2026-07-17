@@ -96,6 +96,9 @@ catalogs:
     oxlint:
       specifier: ^1.73.0
       version: 1.73.0
+    pkg-pr-new:
+      specifier: ^0.0.78
+      version: 0.0.78
     playwright:
       specifier: ^1.61.1
       version: 1.61.1
@@ -203,6 +206,9 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.73.0
+      pkg-pr-new:
+        specifier: 'catalog:'
+        version: 0.0.78
       playwright:
         specifier: 'catalog:'
         version: 1.61.1
@@ -5369,6 +5375,10 @@ packages:
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
+
+  pkg-pr-new@0.0.78:
+    resolution: {integrity: sha512-sBfGGCiCLmJArx99Z/QmNN3jmkqRYhp1TV8Y1IOpSpXfOljqFcEjDyyc4HCVy+nbrmlkw9qXRq/9/L4ahF/d4w==}
+    hasBin: true
 
   pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
@@ -11762,6 +11772,8 @@ snapshots:
   pirates@4.0.7: {}
 
   pkce-challenge@5.0.1: {}
+
+  pkg-pr-new@0.0.78: {}
 
   pkg-types@1.3.1:
     dependencies:

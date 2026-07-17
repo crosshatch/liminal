@@ -1,9 +1,9 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"
-import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 import { PrPreviewComment } from "./PrComment.ts"
+import { WorkerConfig } from "./WorkerConfig.ts"
 
 export const docs = Effect.fnUntraced(function* ({
   domain,

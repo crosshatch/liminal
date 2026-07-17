@@ -38,6 +38,7 @@
     "liminal-util": "workspace:*",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "pkg-pr-new": "catalog:",
     "playwright": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
