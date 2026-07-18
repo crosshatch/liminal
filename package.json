@@ -7,6 +7,7 @@
     "dev": "pnpm i && PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false turbo run dev //#watch //#aliases",
     "aliases": "caddy run --config ./Caddyfile",
     "format": "oxfmt --config ./.oxfmtrc.jsonc",
+    "sync-repos": "node ./konfik/main.ts sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
     "prepare": "effect-tsgo patch",
