@@ -13,12 +13,14 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./fonts.css": "./fonts.css",
     "./vocs.css": "./vocs.css",
     "./*": "./*.ts",
     "./alchemicals/*": "./alchemicals/*.ts"
   },
   "publishConfig": {
     "exports": {
+      "./fonts.css": "./fonts.css",
       "./vocs.css": "./vocs.css",
       "./*": "./dist/*.js",
       "./alchemicals/*": "./dist/alchemicals/*.js"

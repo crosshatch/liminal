@@ -1,5 +1,5 @@
 {
-  "name": "@liminal/docs",
+  "name": "liminal.actor",
   "private": true,
   "type": "module",
   "scripts": {

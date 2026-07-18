@@ -1,8 +1,10 @@
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as GitHub from "alchemy/GitHub"
-import { Effect, Layer } from "effect"
+import { Layer } from "effect"
 import { docs } from "liminal-util/alchemicals/docs"
+
+import PackageJson from "./package.json" with { type: "json" }
 
 export default Alchemy.Stack(
   "liminal-docs",
@@ -11,7 +13,7 @@ export default Alchemy.Stack(
     providers: Layer.mergeAll(Cloudflare.providers(), GitHub.providers()),
   },
   docs({
-    domain: "liminal.actor",
+    domain: PackageJson.name,
     devPort: 4389,
-  }).pipe(Effect.asVoid),
+  }),
 )

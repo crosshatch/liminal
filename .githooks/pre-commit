@@ -3,3 +3,4 @@ set -eu
 
 pnpm install --lockfile-only --frozen-lockfile
 PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm format --check
+PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false pnpm lint
