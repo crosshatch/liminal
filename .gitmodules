@@ -37,3 +37,6 @@
 [submodule "repos/alchemy-run/alchemy"]
 	path = repos/alchemy-run/alchemy
 	url = git@github.com:alchemy-run/alchemy.git
+[submodule "repos/Effect-TS/tsgo"]
+	path = repos/Effect-TS/tsgo
+	url = git@github.com:Effect-TS/tsgo.git
