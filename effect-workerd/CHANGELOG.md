@@ -1,5 +1,13 @@
 # effect-workerd
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies
+  [[`b0155ae`](https://github.com/crosshatch/liminal/commit/b0155ae49ada7e0452747309ccf0a03869b8f701)]:
+  - liminal-util@0.0.15
+
 ## 0.0.10
 
 ### Patch Changes
