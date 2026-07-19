@@ -19,28 +19,28 @@ catalogs:
       specifier: ^5.20260713.1
       version: 5.20260713.1
     '@effect/atom-react':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@effect/language-service':
       specifier: ^0.86.6
       version: 0.86.6
     '@effect/platform-browser':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@effect/platform-node':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@effect/sql-d1':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@effect/sql-pg':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@effect/tsgo':
-      specifier: 0.16.0
+      specifier: ^0.16.0
       version: 0.16.0
     '@effect/vitest':
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     '@oxlint/plugins':
       specifier: ^1.73.0
@@ -73,19 +73,19 @@ catalogs:
       specifier: ^4.1.10
       version: 4.1.10
     alchemy:
-      specifier: 2.0.0-beta.63
+      specifier: ^2.0.0-beta.63
       version: 2.0.0-beta.63
     babel-plugin-react-compiler:
       specifier: ^1.0.0
       version: 1.0.0
     drizzle-kit:
-      specifier: 1.0.0-rc.4
+      specifier: ^1.0.0-rc.4
       version: 1.0.0-rc.4
     drizzle-orm:
-      specifier: 1.0.0-rc.4
+      specifier: ^1.0.0-rc.4
       version: 1.0.0-rc.4
     effect:
-      specifier: 4.0.0-beta.99
+      specifier: ^4.0.0-beta.99
       version: 4.0.0-beta.99
     happy-dom:
       specifier: ^20.10.6
@@ -112,13 +112,13 @@ catalogs:
       specifier: ^8.1.4
       version: 8.1.4
     vitest:
-      specifier: 4.1.10
+      specifier: ^4.1.10
       version: 4.1.10
     vocs:
-      specifier: 2.5.3
+      specifier: ^2.5.3
       version: 2.5.3
     waku:
-      specifier: 1.0.0-beta.6
+      specifier: ^1.0.0-beta.6
       version: 1.0.0-beta.6
 
 overrides:
@@ -7547,7 +7547,7 @@ snapshots:
   '@floating-ui/vue@1.1.9(vue@3.5.39(typescript@7.0.2))':
     dependencies:
       '@floating-ui/dom': 1.8.0
-      '@floating-ui/utils': 0.2.10
+      '@floating-ui/utils': 0.2.12
       vue-demi: 0.14.10(vue@3.5.39(typescript@7.0.2))
     transitivePeerDependencies:
       - '@vue/composition-api'

@@ -27,15 +27,15 @@ catalog:
   "@changesets/cli": ^2.31.0
   "@cloudflare/vitest-pool-workers": ^0.18.4
   "@cloudflare/workers-types": ^5.20260713.1
-  "@effect/ai-openai-compat": 4.0.0-beta.99
-  "@effect/atom-react": 4.0.0-beta.99
+  "@effect/ai-openai-compat": ^4.0.0-beta.99
+  "@effect/atom-react": ^4.0.0-beta.99
   "@effect/language-service": ^0.86.6
-  "@effect/platform-browser": 4.0.0-beta.99
-  "@effect/platform-node": 4.0.0-beta.99
-  "@effect/sql-d1": 4.0.0-beta.99
-  "@effect/sql-pg": 4.0.0-beta.99
-  "@effect/tsgo": 0.16.0
-  "@effect/vitest": 4.0.0-beta.99
+  "@effect/platform-browser": ^4.0.0-beta.99
+  "@effect/platform-node": ^4.0.0-beta.99
+  "@effect/sql-d1": ^4.0.0-beta.99
+  "@effect/sql-pg": ^4.0.0-beta.99
+  "@effect/tsgo": ^0.16.0
+  "@effect/vitest": ^4.0.0-beta.99
   "@oxlint/plugins": ^1.73.0
   "@tailwindcss/vite": ^4.3.2
   "@tanstack/react-router": ^1.170.18
@@ -49,11 +49,11 @@ catalog:
   "@vitest/expect": ^4.1.10
   "@vitest/web-worker": ^4.1.10
   asciify-engine: ^1.0.118
-  alchemy: 2.0.0-beta.63
+  alchemy: ^2.0.0-beta.63
   babel-plugin-react-compiler: ^1.0.0
-  drizzle-kit: 1.0.0-rc.4
-  drizzle-orm: 1.0.0-rc.4
-  effect: 4.0.0-beta.99
+  drizzle-kit: ^1.0.0-rc.4
+  drizzle-orm: ^1.0.0-rc.4
+  effect: ^4.0.0-beta.99
   happy-dom: ^20.10.6
   oxfmt: ^0.58.0
   oxlint: ^1.73.0
@@ -65,9 +65,9 @@ catalog:
   turbo: ^2.10.5
   typescript: ^7.0.2
   vite: ^8.1.4
-  vitest: 4.1.10
-  vocs: 2.5.3
-  waku: 1.0.0-beta.6
+  vitest: ^4.1.10
+  vocs: ^2.5.3
+  waku: ^1.0.0-beta.6
 
 packageExtensions:
   "vocs@*":
