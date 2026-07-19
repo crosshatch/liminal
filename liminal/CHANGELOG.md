@@ -1,5 +1,19 @@
 # liminal
 
+## 0.17.22
+
+### Patch Changes
+
+- [#488](https://github.com/crosshatch/liminal/pull/488)
+  [`1ec6fba`](https://github.com/crosshatch/liminal/commit/1ec6fba45c6490327e3392109a25033ceeb64cab)
+  Thanks @harrysolovay! - Trigger release to align effect beta with that of
+  Crosshatch.
+
+- Updated dependencies
+  [[`1ec6fba`](https://github.com/crosshatch/liminal/commit/1ec6fba45c6490327e3392109a25033ceeb64cab)]:
+  - liminal-util@0.0.16
+  - effect-workerd@0.0.12
+
 ## 0.17.21
 
 ### Patch Changes
