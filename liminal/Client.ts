@@ -23,6 +23,7 @@ import {
   Tracer,
   identity,
   Semaphore,
+  Struct,
 } from "effect"
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
@@ -116,17 +117,9 @@ export const Service =
 
     const protocol = Protocol(definition)
 
-    const state = tag.pipe(
-      Effect.flatMap(RcRef.get),
-      Effect.map(({ state }) => state),
-      Stream.unwrap,
-    )
+    const state = tag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("state")), Stream.unwrap)
 
-    const events = tag.pipe(
-      Effect.flatMap(RcRef.get),
-      Effect.map(({ events }) => events),
-      Stream.unwrap,
-    )
+    const events = tag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
 
     const fn = ((_tag: keyof D["external"], ...f: Array<any>) =>
       Effect.fnUntraced(
@@ -140,10 +133,7 @@ export const Service =
 
     const invalidate = tag.pipe(
       Effect.flatMap((rc) =>
-        RcRef.get(rc).pipe(
-          Effect.flatMap(({ end }) => end),
-          Effect.andThen(RcRef.invalidate(rc)),
-        ),
+        RcRef.get(rc).pipe(Effect.flatMap(Struct.get("end")), Effect.andThen(RcRef.invalidate(rc))),
       ),
       Effect.scoped,
       Effect.ignore,
@@ -389,7 +379,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                     : [[], state],
                 )
           const replayCount = Array.get(buffer, buffer.length - 1).pipe(
-            Option.map(({ seq }) => seq),
+            Option.map(Struct.get("seq")),
             Option.getOrElse(() => -1),
           )
           return buffer.length === 0

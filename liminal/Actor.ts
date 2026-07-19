@@ -1,4 +1,4 @@
-import { Context, Schema as S, Effect } from "effect"
+import { Context, Schema as S, Effect, flow, Struct } from "effect"
 import * as Boundary from "liminal-util/Boundary"
 import type { TopFromString } from "liminal-util/schema"
 
@@ -79,7 +79,7 @@ export const Service =
           Boundary.span("send-all", import.meta.url),
         ),
       disconnect: tag.pipe(
-        Effect.flatMap(({ clients }) => Effect.forEach(clients, ({ disconnect }) => disconnect)),
+        Effect.flatMap(flow(Struct.get("clients"), Effect.forEach(Struct.get("disconnect")))),
         Boundary.span("disconnect-all", import.meta.url),
       ),
     }

@@ -1,5 +1,5 @@
 import { BrowserWorkerRunner } from "@effect/platform-browser"
-import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Tracer } from "effect"
+import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Struct, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 import * as Boundary from "liminal-util/Boundary"
 import { encodeJsonString, decodeJsonString, type TopFromString } from "liminal-util/schema"
@@ -73,7 +73,7 @@ export const make = Effect.fnUntraced(
     const entries: Record<string, Entry> = {}
 
     const transport: ActorTransport<MessagePort, BrowserClient, AttachmentFields, D> = {
-      key: ({ port }) => port,
+      key: Struct.get("port"),
       send: ({ backing }, event) => {
         const { _tag } = event.event as never
         return Effect.gen(function* () {
@@ -88,7 +88,7 @@ export const make = Effect.fnUntraced(
           )
         }).pipe(Boundary.span("send", import.meta.url, { attributes: { _tag }, kind: "producer" }))
       },
-      close: ({ close }) => close,
+      close: Struct.get("close"),
       snapshot: () => Effect.void,
     }
 
