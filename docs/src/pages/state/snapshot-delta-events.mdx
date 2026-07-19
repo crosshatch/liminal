@@ -12,6 +12,14 @@ path.
 ## Hydrate on connect
 
 ```ts
+import { Effect } from "effect"
+
+const loadRoom = Effect.succeed({
+  id: "general",
+  members: ["Ada"],
+  messages: [] as Array<{ readonly content: string }>,
+})
+// ---cut---
 export const hydrate = Effect.gen(function* () {
   const room = yield* loadRoom
 
@@ -26,8 +34,29 @@ export const hydrate = Effect.gen(function* () {
 ## Delta from handlers
 
 ```ts
-export const sendMessage = RoomActor.handler(
-  "SendMessage",
+import { Effect, Schema as S } from "effect"
+import { Actor, Client, handler } from "liminal"
+
+class RoomClient extends Client.Service<RoomClient>()("docs/RoomClient", {
+  state: { messages: S.Array(S.Struct({ content: S.String })) },
+  events: { MessageAdded: { message: S.Struct({ content: S.String }) } },
+  external: {
+    SendMessage: {
+      payload: S.Struct({ content: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+class RoomActor extends Actor.Service<RoomActor>()("docs/RoomActor", {
+  client: RoomClient,
+  name: S.String,
+  attachments: {},
+}) {}
+const saveMessage = (content: string) => Effect.succeed({ content })
+// ---cut---
+export const sendMessage = handler(
+  RoomClient.definition.external.SendMessage,
   Effect.fn(function* ({ content }) {
     const message = yield* saveMessage(content)
 
@@ -41,6 +70,15 @@ export const sendMessage = RoomActor.handler(
 ## Reduce locally
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Client } from "liminal"
+
+class RoomClient extends Client.Service<RoomClient>()("docs/RoomClient", {
+  state: { messages: S.Array(S.Struct({ content: S.String })) },
+  events: { MessageAdded: { message: S.Struct({ content: S.String }) } },
+  external: {},
+}) {}
+// ---cut---
 export const MessageAdded = RoomClient.reducer(
   "MessageAdded",
   ({ message }) =>

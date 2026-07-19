@@ -17,10 +17,10 @@ import { FetchHttpClient } from "effect/unstable/http"
 import { Otlp } from "effect/unstable/observability"
 
 export const telemetryLive = (serviceName: string) =>
-  Otlp.layerJson(
+  Layer.unwrap(
     Effect.gen(function* () {
       const token = yield* Config.redacted("OTEL_TOKEN")
-      return {
+      return Otlp.layerJson({
         baseUrl: yield* Config.string("OTEL_EXPORTER_OTLP_ENDPOINT"),
         resource: {
           serviceName,
@@ -33,7 +33,7 @@ export const telemetryLive = (serviceName: string) =>
         },
         tracerExportInterval: "1 second",
         loggerExportInterval: "1 second",
-      }
+      })
     }),
   ).pipe(Layer.provide(FetchHttpClient.layer))
 ```
@@ -44,7 +44,19 @@ If your collector does not require authentication, omit `OTEL_TOKEN` and
 ## Add telemetry to the Worker prelude
 
 ```ts
-import { telemetryLive } from "./TelemetryLive.ts"
+import { Effect, Layer } from "effect"
+import { Assets, Worker } from "effect-workerd"
+import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
+
+const telemetryLive = (_serviceName: string) => Layer.empty
+const KvLive = Layer.empty
+const TicTacToeNamespace = { layer: Layer.empty }
+const ApiLive = HttpRouter.add(
+  "GET",
+  "/health",
+  Effect.succeed(HttpServerResponse.text("ok")),
+)
+// ---cut---
 
 export default Worker.make({
   handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
@@ -72,7 +84,12 @@ The actor runtime does not need a separate tracing wrapper. It runs inside the
 when actor spans and logs should be exported.
 
 ```ts
-prelude: Layer.mergeAll(KvLive, telemetryLive("tic-tac-toe-actor")),
+import { Layer } from "effect"
+
+const KvLive = Layer.empty
+const telemetryLive = (_serviceName: string) => Layer.empty
+
+const prelude = Layer.mergeAll(KvLive, telemetryLive("tic-tac-toe-actor"))
 ```
 
 Read [Actor Namespace](/core/actor-namespace) for the namespace/runtime split

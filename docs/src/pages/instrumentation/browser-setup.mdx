@@ -23,21 +23,29 @@ Browsers usually send OTLP through a same-origin proxy. See
 ```ts
 // app/runtime.ts
 import { BrowserSocket } from "@effect/platform-browser"
-import { Layer } from "effect"
+import { Layer, Schema as S } from "effect"
 import { FetchHttpClient } from "effect/unstable/http"
 import { Otlp } from "effect/unstable/observability"
 import { Atom } from "effect/unstable/reactivity"
 import { Client } from "liminal"
 
-import { TicTacToeClient } from "./TicTacToeClient.ts"
-import * as State from "./State.ts"
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "docs/TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean },
+    events: {},
+    external: {},
+  },
+) {}
+const State = { layer: Layer.empty }
+// ---cut---
 
 const TelemetryLive = Otlp.layerJson({
   baseUrl: "/otel",
   resource: {
     serviceName: "tic-tac-toe-web",
     attributes: {
-      "deployment.environment": import.meta.env.MODE,
+      "deployment.environment": "browser",
     },
   },
   tracerExportInterval: "1 second",
@@ -51,6 +59,7 @@ export const runtime = Atom.runtime(
         client: TicTacToeClient,
         url: "/play",
         replay: { mode: "startup" },
+        reducers: {},
       }).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor)),
     ),
     Layer.provideMerge(TelemetryLive),

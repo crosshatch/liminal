@@ -55,8 +55,27 @@ connecting client.
 
 ```ts
 import { Effect } from "effect"
+import { Schema as S } from "effect"
+import { Actor, Client } from "liminal"
 
-import { TicTacToeActor } from "./TicTacToeActor.ts"
+const Player = S.Literals(["X", "O"])
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "docs/TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean, name: Player },
+    events: { GameStarted: {} },
+    external: {},
+  },
+) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()(
+  "docs/TicTacToeActor",
+  {
+    client: TicTacToeClient,
+    name: S.String,
+    attachments: {},
+  },
+) {}
+// ---cut---
 
 export default Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
@@ -84,9 +103,25 @@ Reducers live next to the client runtime. `Client.reducer(...)` narrows the
 event tag and returns the reducer unchanged at runtime.
 
 ```ts
-import { Effect } from "effect"
+import { Effect, Schema as S } from "effect"
+import { Client } from "liminal"
 
-import { TicTacToeClient } from "./TicTacToeClient.ts"
+const Player = S.Literals(["X", "O"])
+const Coordinate = S.Literals([0, 1, 2])
+const Coordinates = S.Tuple([Coordinate, Coordinate])
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "docs/TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean, name: Player },
+    events: {
+      GameStarted: {},
+      MoveMade: { player: Player, position: Coordinates },
+      GameEnded: { winner: S.optional(Player) },
+    },
+    external: {},
+  },
+) {}
+// ---cut---
 
 export const GameStarted = TicTacToeClient.reducer(
   "GameStarted",
@@ -116,12 +151,25 @@ Pass the reducer table to `Client.layerSocket(...)`.
 
 ```ts
 import { BrowserSocket } from "@effect/platform-browser"
-import { Layer } from "effect"
+import { Effect, Layer, Schema as S } from "effect"
 import { Atom } from "effect/unstable/reactivity"
 import { Client } from "liminal"
 
-import { TicTacToeClient } from "./TicTacToeClient.ts"
-import * as reducers from "./reducers.ts"
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "docs/TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean, name: S.Literals(["X", "O"]) },
+    events: { GameStarted: {} },
+    external: {},
+  },
+) {}
+const reducers = {
+  GameStarted: TicTacToeClient.reducer(
+    "GameStarted",
+    () => (state) => Effect.succeed({ ...state, awaitingPartner: false }),
+  ),
+}
+// ---cut---
 
 export const runtime = Atom.runtime(
   Client.layerSocket({
@@ -138,8 +186,25 @@ export const runtime = Atom.runtime(
 `TicTacToeClient.state` is a stream of hydrated and reduced state values.
 
 ```ts
-import { runtime } from "./runtime"
-import { TicTacToeClient } from "./TicTacToeClient.ts"
+import { Effect, Layer, Schema as S } from "effect"
+import { Atom } from "effect/unstable/reactivity"
+import { Client } from "liminal"
+
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "docs/TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean, name: S.Literals(["X", "O"]) },
+    events: {},
+    external: {},
+  },
+) {}
+const runtime = Atom.runtime(
+  Layer.effect(
+    TicTacToeClient,
+    Effect.die(new Error("provided by Client.layerSocket")),
+  ),
+)
+// ---cut---
 
 export const stateAtom = runtime.atom(TicTacToeClient.state)
 ```

@@ -69,6 +69,11 @@ catalog:
   vocs: 2.5.3
   waku: 1.0.0-beta.6
 
+packageExtensions:
+  "vocs@*":
+    dependencies:
+      typescript: 5.9.3
+
 overrides:
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3

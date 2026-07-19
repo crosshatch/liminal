@@ -8,9 +8,23 @@ already-connected clients.
 ## Hydrate initial state
 
 ```ts
-import { Effect } from "effect"
+import { Effect, Schema as S } from "effect"
+import { Actor, Client } from "liminal"
 
-import { TicTacToeActor } from "./TicTacToeActor.ts"
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: { awaitingPartner: S.Boolean, name: S.Literals(["X", "O"]) },
+    external: {},
+    events: { GameStarted: {} },
+  },
+) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: TicTacToeClient,
+  name: S.String,
+  attachments: {},
+}) {}
+// ---cut---
 
 export const hydrate = Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
@@ -34,7 +48,7 @@ export const hydrate = Effect.gen(function* () {
 existing player and returns ready state to the second player.
 
 `onDisconnect` runs when a socket closes or disconnects and is supplied to
-`WorkerdActorRuntime.make(...)`.
+`ActorRuntime.make(...)`.
 
 Read [Snapshot and Delta Events](/state/snapshot-delta-events) for the state
 pattern and [Client State](/state/client-state) for the hydration and reduction

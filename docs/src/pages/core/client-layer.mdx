@@ -16,8 +16,16 @@ import { BrowserSocket } from "@effect/platform-browser"
 import { Layer } from "effect"
 import { Client } from "liminal"
 
-import { TicTacToeClient } from "./TicTacToeClient.ts"
-import * as reducers from "./reducers.ts"
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    external: {},
+    events: {},
+  },
+) {}
+const reducers = {}
+// ---cut---
 
 const TicTacToeClientLive = Client.layerSocket({
   client: TicTacToeClient,

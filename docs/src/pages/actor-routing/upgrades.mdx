@@ -14,11 +14,50 @@ An HTTP route decides:
 ## Upgrade from a route
 
 ```ts
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema as S } from "effect"
 import { HttpRouter } from "effect/unstable/http"
+import { Actor, ActorNamespace, Client } from "liminal"
 
-import { ChatNamespace } from "./chat/ChatNamespace.ts"
-import { LobbyNamespace } from "./lobby/LobbyNamespace.ts"
+const UserId = S.String.pipe(S.brand("UserId"))
+class AppClient extends Client.Service<AppClient>()("AppClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class ChatActor extends Actor.Service<ChatActor>()("ChatActor", {
+  client: AppClient,
+  name: S.String,
+  attachments: { userId: UserId },
+}) {}
+class LobbyActor extends Actor.Service<LobbyActor>()("LobbyActor", {
+  client: AppClient,
+  name: S.String,
+  attachments: {},
+}) {}
+class ChatNamespace extends ActorNamespace.Service<ChatNamespace>()(
+  "ChatNamespace",
+  {
+    binding: "CHAT",
+    actor: ChatActor,
+    internal: {},
+  },
+) {}
+class LobbyNamespace extends ActorNamespace.Service<LobbyNamespace>()(
+  "LobbyNamespace",
+  {
+    binding: "LOBBY",
+    actor: LobbyActor,
+    internal: {},
+  },
+) {}
+declare const readSessionToken: Effect.Effect<string>
+declare const lookupUser: (
+  token: string,
+) => Effect.Effect<{ readonly id: typeof UserId.Type } | undefined>
+declare const getActiveRoom: (
+  userId: typeof UserId.Type,
+) => Effect.Effect<string>
+// ---cut---
 
 export const ApiLive = Layer.mergeAll(
   HttpRouter.add(

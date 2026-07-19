@@ -5,12 +5,36 @@ Handlers implement client methods inside actor context.
 The simplest handler pattern is actor-bound.
 
 ```ts
-import { Effect } from "effect"
+import { Effect, Schema as S } from "effect"
+import { Actor, Client, handler } from "liminal"
 
-import { TicTacToeActor } from "./TicTacToeActor.ts"
+const Player = S.Literals(["X", "O"])
+const Coordinates = S.Tuple([S.Number, S.Number])
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {
+    Move: {
+      payload: S.Struct({ position: Coordinates }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+  events: { MoveMade: { player: Player, position: Coordinates } },
+}) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: Player },
+}) {}
+declare const saveMove: (
+  gameId: string,
+  player: typeof Player.Type,
+  position: typeof Coordinates.Type,
+) => Effect.Effect<void>
+// ---cut---
 
-export const handleMove = TicTacToeActor.handler(
-  "Move",
+export const handleMove = handler(
+  GameClient.definition.external.Move,
   Effect.fn(function* ({ position }) {
     const { currentClient, name: gameId } = yield* TicTacToeActor
     const { player } = yield* currentClient.attachments
@@ -21,9 +45,9 @@ export const handleMove = TicTacToeActor.handler(
 )
 ```
 
-`Actor.handler("Method", ...)` is a typed pass-through. It returns the handler
-unchanged at runtime but narrows the handler's payload, success, and failure
-types to the named method.
+`handler(method, implementation)` is a typed pass-through. It returns the
+handler unchanged at runtime but narrows its payload, success, and failure types
+to the supplied method.
 
 ## Related concepts
 

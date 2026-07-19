@@ -10,9 +10,18 @@ An actor ties together three things:
 
 ```ts
 import { Schema as S } from "effect"
-import { Actor } from "liminal"
+import { Actor, Client } from "liminal"
 
-import { Player, TicTacToeClient } from "./TicTacToeClient.ts"
+const Player = S.Literals(["X", "O"])
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    external: {},
+    events: {},
+  },
+) {}
+// ---cut---
 
 export class TicTacToeActor extends Actor.Service<TicTacToeActor>()(
   "examples/TicTacToeActor",

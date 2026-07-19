@@ -11,10 +11,10 @@ traces.
 Instead, Liminal persists session metadata in the WebSocket attachment:
 
 ```ts
-{
-  attachments: unknown
-  sessionId: string
-  trace: {
+type SocketAttachment = {
+  readonly attachments: unknown
+  readonly sessionId: string
+  readonly trace: {
     traceId: string
     spanId: string
     sampled: boolean

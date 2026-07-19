@@ -128,6 +128,8 @@ overrides:
   react-dom: ^19.2.4
   workerd: 1.20260415.1
 
+packageExtensionsChecksum: sha256-aeav3D6cmx9BbBoCbwxaFwj4IxDLXhQrWBt4CbiYXkI=
+
 patchedDependencies:
   '@changesets/apply-release-plan@7.1.1': 0c717746f1d847bca2d5ea338d9c67f35f7875ea00257df94780484a8a263379
   '@changesets/assemble-release-plan@6.0.10': 29cf7a343aefd3c59ad238a4cb067f0a1a0adbeed07b6d57d6f31d6c80a5e25e
@@ -224,6 +226,9 @@ importers:
 
   docs:
     dependencies:
+      '@effect/platform-browser':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.99(effect@4.0.0-beta.99)
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.17
@@ -236,6 +241,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.99
+      effect-workerd:
+        specifier: workspace:*
+        version: link:../effect-workerd
       liminal:
         specifier: workspace:*
         version: link:../liminal
@@ -256,7 +264,7 @@ importers:
         version: 8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
       vocs:
         specifier: 'catalog:'
-        version: 2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(typescript@7.0.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1))
+        version: 2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1))
       waku:
         specifier: 'catalog:'
         version: 1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0)
@@ -385,7 +393,7 @@ importers:
         version: 4.0.0-beta.99
       vocs:
         specifier: 'catalog:'
-        version: 2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(typescript@7.0.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1))
+        version: 2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1))
 
 packages:
 
@@ -6045,6 +6053,11 @@ packages:
   type@2.7.3:
     resolution: {integrity: sha512-8j+1QmAbPvLZow5Qpi6NCaN8FB60p/6x8/vfNqOk/hC+HuvFZhL4+WfekuhQLiqFZXOgQdrs3B+XxEmCc6b3FQ==}
 
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   typescript@7.0.2:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
@@ -8373,25 +8386,25 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.2':
     optional: true
 
-  '@scalar/api-client@3.13.3(tailwindcss@4.3.2)(typescript@7.0.2)':
+  '@scalar/api-client@3.13.3(tailwindcss@4.3.2)(typescript@5.9.3)':
     dependencies:
       '@headlessui/tailwindcss': 0.2.2(tailwindcss@4.3.2)
       '@headlessui/vue': 1.7.23(vue@3.5.39(typescript@7.0.2))
-      '@scalar/blocks': 0.1.4(tailwindcss@4.3.2)(typescript@7.0.2)
-      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@7.0.2)
+      '@scalar/blocks': 0.1.4(tailwindcss@4.3.2)(typescript@5.9.3)
+      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@5.9.3)
       '@scalar/helpers': 0.9.0
-      '@scalar/icons': 0.7.3(typescript@7.0.2)
-      '@scalar/oas-utils': 0.19.4(typescript@7.0.2)
+      '@scalar/icons': 0.7.3(typescript@5.9.3)
+      '@scalar/oas-utils': 0.19.4(typescript@5.9.3)
       '@scalar/openapi-types': 0.9.1
-      '@scalar/sidebar': 0.9.29(tailwindcss@4.3.2)(typescript@7.0.2)
+      '@scalar/sidebar': 0.9.29(tailwindcss@4.3.2)(typescript@5.9.3)
       '@scalar/snippetz': 0.9.21
       '@scalar/themes': 0.16.2
       '@scalar/typebox': 0.1.3
       '@scalar/types': 0.16.2
-      '@scalar/use-codemirror': 0.14.12(typescript@7.0.2)
-      '@scalar/use-hooks': 0.4.7(typescript@7.0.2)
-      '@scalar/use-toasts': 0.10.2(typescript@7.0.2)
-      '@scalar/workspace-store': 0.55.3(typescript@7.0.2)
+      '@scalar/use-codemirror': 0.14.12(typescript@5.9.3)
+      '@scalar/use-hooks': 0.4.7(typescript@5.9.3)
+      '@scalar/use-toasts': 0.10.2(typescript@5.9.3)
+      '@scalar/workspace-store': 0.55.3(typescript@5.9.3)
       '@vueuse/core': 13.9.0(vue@3.5.39(typescript@7.0.2))
       '@vueuse/integrations': 13.9.0(focus-trap@7.8.0)(fuse.js@7.5.0)(vue@3.5.39(typescript@7.0.2))
       focus-trap: 7.8.0
@@ -8402,7 +8415,7 @@ snapshots:
       pretty-ms: 9.3.0
       radix-vue: 1.9.17(vue@3.5.39(typescript@7.0.2))
       set-cookie-parser: 3.1.0
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       yaml: 2.9.0
       zod: 4.4.3
     transitivePeerDependencies:
@@ -8425,18 +8438,18 @@ snapshots:
     dependencies:
       '@scalar/helpers': 0.9.0
 
-  '@scalar/blocks@0.1.4(tailwindcss@4.3.2)(typescript@7.0.2)':
+  '@scalar/blocks@0.1.4(tailwindcss@4.3.2)(typescript@5.9.3)':
     dependencies:
-      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@7.0.2)
+      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@5.9.3)
       '@scalar/helpers': 0.9.0
-      '@scalar/icons': 0.7.3(typescript@7.0.2)
+      '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/snippetz': 0.9.21
       '@scalar/themes': 0.16.2
       '@scalar/types': 0.16.2
-      '@scalar/workspace-store': 0.55.3(typescript@7.0.2)
+      '@scalar/workspace-store': 0.55.3(typescript@5.9.3)
       '@types/har-format': 1.2.16
       js-base64: 3.8.1
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
     transitivePeerDependencies:
       - '@vue/composition-api'
       - supports-color
@@ -8463,7 +8476,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@scalar/components@0.27.6(tailwindcss@4.3.2)(typescript@7.0.2)':
+  '@scalar/components@0.27.6(tailwindcss@4.3.2)(typescript@5.9.3)':
     dependencies:
       '@floating-ui/utils': 0.2.10
       '@floating-ui/vue': 1.1.9(vue@3.5.39(typescript@7.0.2))
@@ -8471,13 +8484,13 @@ snapshots:
       '@headlessui/vue': 1.7.23(vue@3.5.39(typescript@7.0.2))
       '@scalar/code-highlight': 0.4.1
       '@scalar/helpers': 0.9.0
-      '@scalar/icons': 0.7.3(typescript@7.0.2)
+      '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/themes': 0.16.2
-      '@scalar/use-hooks': 0.4.7(typescript@7.0.2)
+      '@scalar/use-hooks': 0.4.7(typescript@5.9.3)
       '@vueuse/core': 13.9.0(vue@3.5.39(typescript@7.0.2))
-      cva: 1.0.0-beta.4(typescript@7.0.2)
+      cva: 1.0.0-beta.4(typescript@5.9.3)
       radix-vue: 1.9.17(vue@3.5.39(typescript@7.0.2))
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       vue-component-type-helpers: 3.3.7
     transitivePeerDependencies:
       - '@vue/composition-api'
@@ -8489,12 +8502,12 @@ snapshots:
 
   '@scalar/helpers@0.9.0': {}
 
-  '@scalar/icons@0.7.3(typescript@7.0.2)':
+  '@scalar/icons@0.7.3(typescript@5.9.3)':
     dependencies:
       '@phosphor-icons/core': 2.1.1
       '@types/node': 24.13.3
       chalk: 5.6.2
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
@@ -8510,14 +8523,14 @@ snapshots:
       pathe: 2.0.3
       yaml: 2.9.0
 
-  '@scalar/oas-utils@0.19.4(typescript@7.0.2)':
+  '@scalar/oas-utils@0.19.4(typescript@5.9.3)':
     dependencies:
       '@scalar/helpers': 0.9.0
       '@scalar/themes': 0.16.2
       '@scalar/types': 0.16.2
-      '@scalar/workspace-store': 0.55.3(typescript@7.0.2)
+      '@scalar/workspace-store': 0.55.3(typescript@5.9.3)
       flatted: 3.4.2
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       yaml: 2.9.0
     transitivePeerDependencies:
       - typescript
@@ -8551,15 +8564,15 @@ snapshots:
       '@scalar/helpers': 0.9.0
       '@scalar/validation': 0.6.0
 
-  '@scalar/sidebar@0.9.29(tailwindcss@4.3.2)(typescript@7.0.2)':
+  '@scalar/sidebar@0.9.29(tailwindcss@4.3.2)(typescript@5.9.3)':
     dependencies:
-      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@7.0.2)
+      '@scalar/components': 0.27.6(tailwindcss@4.3.2)(typescript@5.9.3)
       '@scalar/helpers': 0.9.0
-      '@scalar/icons': 0.7.3(typescript@7.0.2)
+      '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/themes': 0.16.2
-      '@scalar/use-hooks': 0.4.7(typescript@7.0.2)
-      '@scalar/workspace-store': 0.55.3(typescript@7.0.2)
-      vue: 3.5.39(typescript@7.0.2)
+      '@scalar/use-hooks': 0.4.7(typescript@5.9.3)
+      '@scalar/workspace-store': 0.55.3(typescript@5.9.3)
+      vue: 3.5.39(typescript@5.9.3)
     transitivePeerDependencies:
       - '@vue/composition-api'
       - supports-color
@@ -8600,7 +8613,7 @@ snapshots:
       type-fest: 5.8.0
       zod: 4.4.3
 
-  '@scalar/use-codemirror@0.14.12(typescript@7.0.2)':
+  '@scalar/use-codemirror@0.14.12(typescript@5.9.3)':
     dependencies:
       '@codemirror/autocomplete': 6.20.3
       '@codemirror/commands': 6.10.4
@@ -8616,31 +8629,31 @@ snapshots:
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
       '@replit/codemirror-css-color-picker': 6.3.0(@codemirror/language@6.12.4)(@codemirror/state@6.7.1)(@codemirror/view@6.43.6)
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
-  '@scalar/use-hooks@0.4.7(typescript@7.0.2)':
+  '@scalar/use-hooks@0.4.7(typescript@5.9.3)':
     dependencies:
-      '@scalar/use-toasts': 0.10.2(typescript@7.0.2)
+      '@scalar/use-toasts': 0.10.2(typescript@5.9.3)
       '@scalar/validation': 0.6.0
       '@vueuse/core': 13.9.0(vue@3.5.39(typescript@7.0.2))
-      cva: 1.0.0-beta.4(typescript@7.0.2)
+      cva: 1.0.0-beta.4(typescript@5.9.3)
       tailwind-merge: 3.5.0
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
-  '@scalar/use-toasts@0.10.2(typescript@7.0.2)':
+  '@scalar/use-toasts@0.10.2(typescript@5.9.3)':
     dependencies:
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       vue-sonner: 1.3.2
     transitivePeerDependencies:
       - typescript
 
   '@scalar/validation@0.6.0': {}
 
-  '@scalar/workspace-store@0.54.5(typescript@7.0.2)':
+  '@scalar/workspace-store@0.54.5(typescript@5.9.3)':
     dependencies:
       '@scalar/helpers': 0.8.2
       '@scalar/json-magic': 0.12.16
@@ -8652,12 +8665,12 @@ snapshots:
       '@scalar/validation': 0.6.0
       js-base64: 3.8.1
       type-fest: 5.8.0
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       yaml: 2.9.0
     transitivePeerDependencies:
       - typescript
 
-  '@scalar/workspace-store@0.55.3(typescript@7.0.2)':
+  '@scalar/workspace-store@0.55.3(typescript@5.9.3)':
     dependencies:
       '@scalar/asyncapi-upgrader': 0.1.2
       '@scalar/helpers': 0.9.0
@@ -8670,7 +8683,7 @@ snapshots:
       '@scalar/validation': 0.6.0
       js-base64: 3.8.1
       type-fest: 5.8.0
-      vue: 3.5.39(typescript@7.0.2)
+      vue: 3.5.39(typescript@5.9.3)
       yaml: 2.9.0
     transitivePeerDependencies:
       - typescript
@@ -8715,12 +8728,12 @@ snapshots:
       '@shikijs/core': 3.23.0
       '@shikijs/types': 3.23.0
 
-  '@shikijs/twoslash@3.23.0(typescript@7.0.2)':
+  '@shikijs/twoslash@3.23.0(typescript@5.9.3)':
     dependencies:
       '@shikijs/core': 3.23.0
       '@shikijs/types': 3.23.0
-      twoslash: 0.3.9(typescript@7.0.2)
-      typescript: 7.0.2
+      twoslash: 0.3.9(typescript@5.9.3)
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -8847,12 +8860,12 @@ snapshots:
       '@svgr/babel-plugin-transform-react-native-svg': 8.1.0(@babel/core@7.29.7)
       '@svgr/babel-plugin-transform-svg-component': 8.0.0(@babel/core@7.29.7)
 
-  '@svgr/core@8.1.0(typescript@7.0.2)':
+  '@svgr/core@8.1.0(typescript@5.9.3)':
     dependencies:
       '@babel/core': 7.29.7
       '@svgr/babel-preset': 8.1.0(@babel/core@7.29.7)
       camelcase: 6.3.0
-      cosmiconfig: 8.3.6(typescript@7.0.2)
+      cosmiconfig: 8.3.6(typescript@5.9.3)
       snake-case: 3.0.4
     transitivePeerDependencies:
       - supports-color
@@ -8863,11 +8876,11 @@ snapshots:
       '@babel/types': 7.29.7
       entities: 4.5.0
 
-  '@svgr/plugin-jsx@8.1.0(@svgr/core@8.1.0(typescript@7.0.2))':
+  '@svgr/plugin-jsx@8.1.0(@svgr/core@8.1.0(typescript@5.9.3))':
     dependencies:
       '@babel/core': 7.29.7
       '@svgr/babel-preset': 8.1.0(@babel/core@7.29.7)
-      '@svgr/core': 8.1.0(typescript@7.0.2)
+      '@svgr/core': 8.1.0(typescript@5.9.3)
       '@svgr/hast-util-to-babel-ast': 8.0.0
       svg-parser: 2.0.4
     transitivePeerDependencies:
@@ -9227,10 +9240,10 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  '@typescript/vfs@1.6.4(typescript@7.0.2)':
+  '@typescript/vfs@1.6.4(typescript@5.9.3)':
     dependencies:
       debug: 4.4.3
-      typescript: 7.0.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -9836,14 +9849,14 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
-  cosmiconfig@8.3.6(typescript@7.0.2):
+  cosmiconfig@8.3.6(typescript@5.9.3):
     dependencies:
       import-fresh: 3.3.1
       js-yaml: 4.3.0
       parse-json: 5.2.0
       path-type: 4.0.0
     optionalDependencies:
-      typescript: 7.0.2
+      typescript: 5.9.3
 
   crelt@1.0.7: {}
 
@@ -9855,11 +9868,11 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  cva@1.0.0-beta.4(typescript@7.0.2):
+  cva@1.0.0-beta.4(typescript@5.9.3):
     dependencies:
       clsx: 2.1.1
     optionalDependencies:
-      typescript: 7.0.2
+      typescript: 5.9.3
 
   d@1.0.2:
     dependencies:
@@ -12591,11 +12604,11 @@ snapshots:
 
   twoslash-protocol@0.3.9: {}
 
-  twoslash@0.3.9(typescript@7.0.2):
+  twoslash@0.3.9(typescript@5.9.3):
     dependencies:
-      '@typescript/vfs': 1.6.4(typescript@7.0.2)
+      '@typescript/vfs': 1.6.4(typescript@5.9.3)
       twoslash-protocol: 0.3.9
-      typescript: 7.0.2
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -12612,6 +12625,8 @@ snapshots:
       mime-types: 3.0.2
 
   type@2.7.3: {}
+
+  typescript@5.9.3: {}
 
   typescript@7.0.2:
     optionalDependencies:
@@ -12724,7 +12739,7 @@ snapshots:
 
   unpipe@1.0.0: {}
 
-  unplugin-icons@22.5.0(@svgr/core@8.1.0(typescript@7.0.2))(@vue/compiler-sfc@3.5.39):
+  unplugin-icons@22.5.0(@svgr/core@8.1.0(typescript@5.9.3))(@vue/compiler-sfc@3.5.39):
     dependencies:
       '@antfu/install-pkg': 1.1.0
       '@iconify/utils': 3.1.4
@@ -12732,7 +12747,7 @@ snapshots:
       local-pkg: 1.2.1
       unplugin: 2.3.11
     optionalDependencies:
-      '@svgr/core': 8.1.0(typescript@7.0.2)
+      '@svgr/core': 8.1.0(typescript@5.9.3)
       '@vue/compiler-sfc': 3.5.39
     transitivePeerDependencies:
       - supports-color
@@ -12844,7 +12859,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vocs@2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(typescript@7.0.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1)):
+  vocs@2.5.3(@tanstack/react-router@1.170.18(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(@vue/compiler-sfc@3.5.39)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(rolldown@1.1.5)(rollup@4.62.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(waku@1.0.0-beta.6(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.108.1(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1)):
     dependencies:
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@codesandbox/sandpack-react': 2.20.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -12859,16 +12874,16 @@ snapshots:
       '@mdx-js/rollup': 3.1.1(rollup@4.62.2)
       '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       '@remix-run/node-fetch-server': 0.13.3
-      '@scalar/api-client': 3.13.3(tailwindcss@4.3.2)(typescript@7.0.2)
+      '@scalar/api-client': 3.13.3(tailwindcss@4.3.2)(typescript@5.9.3)
       '@scalar/openapi-parser': 0.28.8
       '@scalar/snippetz': 0.9.21
-      '@scalar/workspace-store': 0.54.5(typescript@7.0.2)
+      '@scalar/workspace-store': 0.54.5(typescript@5.9.3)
       '@shikijs/rehype': 3.23.0
       '@shikijs/transformers': 3.23.0
-      '@shikijs/twoslash': 3.23.0(typescript@7.0.2)
+      '@shikijs/twoslash': 3.23.0(typescript@5.9.3)
       '@shikijs/types': 3.23.0
-      '@svgr/core': 8.1.0(typescript@7.0.2)
-      '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(typescript@7.0.2))
+      '@svgr/core': 8.1.0(typescript@5.9.3)
+      '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(typescript@5.9.3))
       '@tailwindcss/vite': 4.3.2(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))
       '@takumi-rs/image-response': 0.62.8
       '@takumi-rs/wasm': 0.62.8
@@ -12915,11 +12930,12 @@ snapshots:
       tailwindcss: 4.3.2
       tailwindcss-logical: 4.2.0(tailwindcss@4.3.2)
       tsx: 4.23.1
-      twoslash: 0.3.9(typescript@7.0.2)
+      twoslash: 0.3.9(typescript@5.9.3)
+      typescript: 5.9.3
       unhead: 3.1.8(esbuild@0.28.1)(rolldown@1.1.5)(rollup@4.62.2)(vite@8.1.4(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.1)(yaml@2.9.0))(webpack@5.108.1(esbuild@0.28.1))
       unified: 11.0.5
       unist-util-visit: 5.1.0
-      unplugin-icons: 22.5.0(@svgr/core@8.1.0(typescript@7.0.2))(@vue/compiler-sfc@3.5.39)
+      unplugin-icons: 22.5.0(@svgr/core@8.1.0(typescript@5.9.3))(@vue/compiler-sfc@3.5.39)
       urlpattern-polyfill: 10.1.0
       vfile: 6.0.3
       vite-plugin-arraybuffer: 0.1.4
@@ -12962,7 +12978,6 @@ snapshots:
       - sortablejs
       - supports-color
       - svelte
-      - typescript
       - universal-cookie
       - unloader
       - vue-template-compiler
@@ -12976,6 +12991,16 @@ snapshots:
       vue: 3.5.39(typescript@7.0.2)
 
   vue-sonner@1.3.2: {}
+
+  vue@3.5.39(typescript@5.9.3):
+    dependencies:
+      '@vue/compiler-dom': 3.5.39
+      '@vue/compiler-sfc': 3.5.39
+      '@vue/runtime-dom': 3.5.39
+      '@vue/server-renderer': 3.5.39(vue@3.5.39(typescript@7.0.2))
+      '@vue/shared': 3.5.39
+    optionalDependencies:
+      typescript: 5.9.3
 
   vue@3.5.39(typescript@7.0.2):
     dependencies:
