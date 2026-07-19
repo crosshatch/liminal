@@ -1,11 +1,11 @@
-import { Effect, flow, Ref } from "effect"
+import { Effect, flow, Ref, Struct } from "effect"
 import { Prompt, Chat } from "effect/unstable/ai"
 
 export const append = (message: Prompt.Message) =>
   Chat.Chat.pipe(
     Effect.flatMap(
       flow(
-        ({ history }) => history,
+        Struct.get("history"),
         Ref.update(({ content }) => Prompt.fromMessages([...content, message])),
       ),
     ),

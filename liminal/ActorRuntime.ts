@@ -13,6 +13,7 @@ import {
   Tracer,
   pipe,
   Exit,
+  Struct,
 } from "effect"
 import { DoState, Env } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
@@ -175,7 +176,7 @@ export const make = <
     AttachmentFields,
     D
   > = {
-    key: ({ socket }) => socket,
+    key: Struct.get("socket"),
     send: ({ socket, session }, event) => {
       const { _tag } = event.event as never
       return Effect.gen(function* () {

@@ -1,4 +1,4 @@
-import { Schema as S, Effect, Cause, Ref } from "effect"
+import { Schema as S, Effect, Cause, Ref, Struct } from "effect"
 import * as Boundary from "liminal-util/Boundary"
 import type { TopFromString } from "liminal-util/schema"
 
@@ -75,7 +75,7 @@ export const make = <
   const handles = new Set<Handle>()
 
   const entry = (key: Key) => Effect.fromNullishOr(entries.get(key))
-  const get = (key: Key) => entry(key).pipe(Effect.map(({ handle }) => handle))
+  const get = (key: Key) => entry(key).pipe(Effect.map(Struct.get("handle")))
 
   const unregister = (key: Key) =>
     Effect.sync(() => {
