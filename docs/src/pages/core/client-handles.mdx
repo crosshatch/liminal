@@ -31,6 +31,22 @@ Each exposes the same `send` and `disconnect` shape:
 ## Broadcast
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Actor, Client } from "liminal"
+
+const Player = S.Literals(["X", "O"])
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: { GameEnded: { winner: Player } },
+}) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: Player },
+}) {}
+declare const player: typeof Player.Type
+// ---cut---
 Effect.gen(function* () {
   yield* TicTacToeActor.all.send("GameEnded", { winner: player })
 })
@@ -39,6 +55,22 @@ Effect.gen(function* () {
 ## Selective disconnect
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Actor, Client } from "liminal"
+
+const Player = S.Literals(["X", "O"])
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: Player },
+}) {}
+declare const bannedPlayers: ReadonlySet<typeof Player.Type>
+// ---cut---
 Effect.gen(function* () {
   const { clients } = yield* TicTacToeActor
 
@@ -54,6 +86,20 @@ Effect.gen(function* () {
 ## Whole-actor disconnect
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Actor, Client } from "liminal"
+
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: {},
+}) {}
+// ---cut---
 Effect.gen(function* () {
   yield* TicTacToeActor.all.disconnect
 })

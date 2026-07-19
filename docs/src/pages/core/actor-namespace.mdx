@@ -1,18 +1,32 @@
 # Actor Namespace
 
-`WorkerdActorNamespace` is the Worker-side handle for a Cloudflare Durable
-Object actor.
+`ActorNamespace` is the Worker-side handle for a Cloudflare Durable Object
+actor.
 
 The namespace is separate from the actor runtime. It binds a Cloudflare Durable
 Object namespace, validates upgrade requests, and exposes handles for upgrading
 clients or calling internal methods between Durable Object instances.
 
 ```ts
-import { WorkerdActorNamespace } from "liminal/workerd"
+import { Schema as S } from "effect"
+import { Actor, ActorNamespace, Client } from "liminal"
 
-import { TicTacToeActor } from "./TicTacToeActor.ts"
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    external: {},
+    events: {},
+  },
+) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: TicTacToeClient,
+  name: S.String,
+  attachments: {},
+}) {}
+// ---cut---
 
-export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeNamespace>()(
+export class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
   "TicTacToeNamespace",
   {
     binding: "TICTACTOE",
@@ -34,10 +48,41 @@ export class TicTacToeNamespace extends WorkerdActorNamespace.Service<TicTacToeN
 Use `Namespace.bind(name)` to get a handle for one Durable Object instance.
 
 ```ts
-const game = TicTacToeNamespace.bind(gameId)
+import { Effect, Schema as S } from "effect"
+import { Actor, ActorNamespace, Client } from "liminal"
 
-yield * game.upgrade({ player: "X" })
-yield * game.call("SomeInternalMethod", { value: 1 })
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class GameActor extends Actor.Service<GameActor>()("GameActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: S.String },
+}) {}
+class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
+  "TicTacToeNamespace",
+  {
+    binding: "TICTACTOE",
+    actor: GameActor,
+    internal: {
+      SomeInternalMethod: {
+        payload: S.Struct({ value: S.Number }),
+        success: S.Void,
+        failure: S.Never,
+      },
+    },
+  },
+) {}
+const gameId = "game-123"
+// ---cut---
+const program = Effect.gen(function* () {
+  const game = TicTacToeNamespace.bind(gameId)
+
+  yield* game.upgrade({ player: "X" })
+  yield* game.call("SomeInternalMethod", { value: 1 })
+})
 ```
 
 `upgrade(...)` forwards the current request into the Durable Object as a
@@ -50,23 +95,65 @@ Use `TicTacToeNamespace.layer` in the Worker runtime. The binding name comes
 from the namespace definition.
 
 ```ts
+import { Schema as S } from "effect"
+import { Actor, ActorNamespace, Client } from "liminal"
+
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class GameActor extends Actor.Service<GameActor>()("GameActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: {},
+}) {}
+class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
+  "TicTacToeNamespace",
+  {
+    binding: "TICTACTOE",
+    actor: GameActor,
+    internal: {},
+  },
+) {}
+// ---cut---
 const WorkerLive = TicTacToeNamespace.layer
 ```
 
 ## Define the runtime
 
-The Durable Object class itself comes from `WorkerdActorRuntime.make(...)`.
+The Durable Object class itself comes from `ActorRuntime.make(...)`.
 
 ```ts
-import { Effect, Layer } from "effect"
-import { WorkerdActorRuntime } from "liminal/workerd"
+import { Effect, Layer, Schema as S } from "effect"
+import { Actor, ActorNamespace, ActorRuntime, Client, handler } from "liminal"
 
-import Move from "./handleMove.ts"
-import hydrate from "./hydrate.ts"
-import { KvLive } from "./KvLive.ts"
-import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {
+    Move: { payload: S.Struct({}), success: S.Void, failure: S.Never },
+  },
+  events: {},
+}) {}
+class GameActor extends Actor.Service<GameActor>()("GameActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: {},
+}) {}
+class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
+  "TicTacToeNamespace",
+  {
+    binding: "TICTACTOE",
+    actor: GameActor,
+    internal: {},
+  },
+) {}
+const KvLive = Layer.empty
+const hydrate = Effect.succeed({})
+const Move = handler(GameClient.definition.external.Move, () => Effect.void)
+// ---cut---
 
-export class TicTacToeRuntime extends WorkerdActorRuntime.make({
+export class TicTacToeRuntime extends ActorRuntime.make({
   namespace: TicTacToeNamespace,
   prelude: KvLive,
   hydrate,

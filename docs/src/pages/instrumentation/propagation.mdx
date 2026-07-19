@@ -13,10 +13,10 @@ WebSocket messages and browser worker-runner messages use a small Liminal trace
 envelope:
 
 ```ts
-{
-  traceId: string
-  spanId: string
-  sampled: boolean
+type TraceEnvelope = {
+  readonly traceId: string
+  readonly spanId: string
+  readonly sampled: boolean
 }
 ```
 

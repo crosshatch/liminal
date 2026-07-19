@@ -8,6 +8,9 @@ export default defineConfig({
     repo: "liminal",
   }),
   description: PackageJson.description,
+  twoslash: {
+    explicitTrigger: false,
+  },
   banner: {
     content: "Join the Crosshatch discord.",
     dismissable: false,

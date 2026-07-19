@@ -9,10 +9,42 @@ when flows shift between contexts, such as moving from a lobby into a chat room.
 ## Merge clients
 
 ```ts
-import { Audition } from "liminal"
+import { Schema as S } from "effect"
+import { Audition, Client } from "liminal"
 
-import { ChatClient } from "./chat/ChatClient.ts"
-import { LobbyClient } from "./lobby/LobbyClient.ts"
+class LobbyClient extends Client.Service<LobbyClient>()("docs/LobbyClient", {
+  state: { roomId: S.String },
+  events: {},
+  external: {
+    JoinRoom: {
+      payload: S.Struct({ roomId: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+    SendMessage: {
+      payload: S.Struct({ content: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+class ChatClient extends Client.Service<ChatClient>()("docs/ChatClient", {
+  state: { roomId: S.String },
+  events: {},
+  external: {
+    JoinRoom: {
+      payload: S.Struct({ roomId: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+    SendMessage: {
+      payload: S.Struct({ content: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+// ---cut---
 
 export const audition = Audition.empty.pipe(
   Audition.add(LobbyClient),
@@ -23,6 +55,47 @@ export const audition = Audition.empty.pipe(
 After that, callers can use one method surface:
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Audition, Client } from "liminal"
+
+class LobbyClient extends Client.Service<LobbyClient>()("docs/LobbyClient", {
+  state: {},
+  events: {},
+  external: {
+    JoinRoom: {
+      payload: S.Struct({ roomId: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+    SendMessage: {
+      payload: S.Struct({ content: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+class ChatClient extends Client.Service<ChatClient>()("docs/ChatClient", {
+  state: {},
+  events: {},
+  external: {
+    JoinRoom: {
+      payload: S.Struct({ roomId: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+    SendMessage: {
+      payload: S.Struct({ content: S.String }),
+      success: S.Void,
+      failure: S.Never,
+    },
+  },
+}) {}
+const audition = Audition.empty.pipe(
+  Audition.add(LobbyClient),
+  Audition.add(ChatClient),
+)
+const roomId = "general"
+// ---cut---
 Effect.gen(function* () {
   yield* audition.fn("JoinRoom")({ roomId })
   yield* audition.fn("SendMessage")({ content: "Hello!" })
@@ -36,6 +109,10 @@ audition.
 ## Merge events
 
 ```ts
+import { Audition } from "liminal"
+
+const audition = Audition.empty
+// ---cut---
 const source = audition.events
 ```
 
@@ -43,6 +120,11 @@ An app-wide view can listen to merged events, or subscribe to `audition.state`
 for the currently active hydrated state.
 
 ```ts
+import { Stream } from "effect"
+import { Audition } from "liminal"
+
+const audition = Audition.empty
+// ---cut---
 const source = audition.events.pipe(Stream.forever)
 const state = audition.state.pipe(Stream.forever)
 ```
@@ -54,6 +136,20 @@ const state = audition.state.pipe(Stream.forever)
 With:
 
 ```ts
+import { Schema as S } from "effect"
+import { Audition, Client } from "liminal"
+
+class LobbyClient extends Client.Service<LobbyClient>()("docs/LobbyClient", {
+  state: {},
+  events: {},
+  external: {},
+}) {}
+class ChatClient extends Client.Service<ChatClient>()("docs/ChatClient", {
+  state: {},
+  events: {},
+  external: {},
+}) {}
+// ---cut---
 Audition.empty.pipe(Audition.add(LobbyClient), Audition.add(ChatClient))
 ```
 

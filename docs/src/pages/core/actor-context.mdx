@@ -4,6 +4,20 @@ Handlers and lifecycle hooks read actor runtime context by yielding the actor
 tag.
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Actor, Client } from "liminal"
+
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class TicTacToeActor extends Actor.Service<TicTacToeActor>()("TicTacToeActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: S.String },
+}) {}
+// ---cut---
 Effect.gen(function* () {
   const { name, clients, currentClient } = yield* TicTacToeActor
 

@@ -6,21 +6,43 @@ The Worker entrypoint usually exports:
 - each Durable Object class as a named export
 
 `Worker.make(...)` supplies the Worker-side runtime for ordinary HTTP handling.
-`WorkerdActorNamespace` provides the Worker-side Durable Object binding, while
-`WorkerdActorRuntime.make(...)` defines the Durable Object class.
+`ActorNamespace` provides the Worker-side Durable Object binding, while
+`ActorRuntime.make(...)` defines the Durable Object class.
 
 ## Build the entrypoint
 
 ```ts
 // main.ts
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Schema as S } from "effect"
 import { Assets, Worker } from "effect-workerd"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
+import { Actor, ActorNamespace, Client } from "liminal"
 
-import * as GameState from "./Games.ts"
-import { KvLive } from "./KvLive.ts"
-import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
-import { TicTacToeRuntime } from "./TicTacToeRuntime.ts"
+const Player = S.Literals(["X", "O"])
+class GameClient extends Client.Service<GameClient>()("GameClient", {
+  state: {},
+  external: {},
+  events: {},
+}) {}
+class GameActor extends Actor.Service<GameActor>()("GameActor", {
+  client: GameClient,
+  name: S.String,
+  attachments: { player: Player },
+}) {}
+class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
+  "TicTacToeNamespace",
+  {
+    binding: "TICTACTOE",
+    actor: GameActor,
+    internal: {},
+  },
+) {}
+class TicTacToeRuntime {}
+const GameState = {
+  init: Effect.succeed({ gameId: "game-123", player: "X" as const }),
+}
+const KvLive = Layer.empty
+// ---cut---
 
 export { TicTacToeRuntime as TicTacToe }
 

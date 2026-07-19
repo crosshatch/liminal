@@ -3,6 +3,24 @@
 `Client.fn(...)` invokes a named external method from the client protocol.
 
 ```ts
+import { Effect, Schema as S } from "effect"
+import { Client } from "liminal"
+
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    events: {},
+    external: {
+      Move: {
+        payload: S.Struct({ position: S.Tuple([S.Number, S.Number]) }),
+        success: S.Void,
+        failure: S.Never,
+      },
+    },
+  },
+) {}
+// ---cut---
 Effect.gen(function* () {
   yield* TicTacToeClient.fn("Move")({
     position: [1, 1],
@@ -30,6 +48,18 @@ fail with:
 re-acquires it.
 
 ```ts
+import { Effect } from "effect"
+import { Client } from "liminal"
+
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    events: {},
+    external: {},
+  },
+) {}
+// ---cut---
 Effect.gen(function* () {
   yield* TicTacToeClient.invalidate
 })

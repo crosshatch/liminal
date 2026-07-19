@@ -34,7 +34,14 @@ If a method is shared, its handler can be shared too.
 import { Effect } from "effect"
 import { handler } from "liminal"
 
-import { UpdateProfile } from "../shared/methods/UpdateProfile.ts"
+import { Schema as S } from "effect"
+
+const UpdateProfile = {
+  payload: S.Struct({ displayName: S.String, avatarUrl: S.String }),
+  success: S.Struct({ updated: S.Boolean }),
+  failure: S.Never,
+}
+// ---cut---
 
 export default handler(
   UpdateProfile,
@@ -45,6 +52,5 @@ export default handler(
 )
 ```
 
-If the handler only makes sense for one actor, `Actor.handler("Method", ...)` is
-usually simpler for external methods. Internal handlers are supplied to
-`WorkerdActorRuntime.make({ internal: ... })`.
+Internal and external handlers are supplied to `ActorRuntime.make(...)` in the
+corresponding method table.

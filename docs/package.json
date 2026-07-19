@@ -7,10 +7,12 @@
     "dev": "alchemy dev"
   },
   "dependencies": {
+    "@effect/platform-browser": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "alchemy": "catalog:",
     "effect": "catalog:",
+    "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
     "liminal-util": "workspace:*",
     "react": "catalog:",

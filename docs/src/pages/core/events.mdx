@@ -5,6 +5,24 @@
 Events arrive as a tagged union keyed by `_tag`.
 
 ```ts
+import { Effect, Schema as S, Stream } from "effect"
+import { Client } from "liminal"
+
+const Player = S.Literals(["X", "O"])
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    external: {},
+    events: {
+      AwaitingPartner: {},
+      GameStarted: { player: Player },
+      MoveMade: { player: Player, position: S.Tuple([S.Number, S.Number]) },
+      GameEnded: { winner: S.optional(Player) },
+    },
+  },
+) {}
+// ---cut---
 Effect.gen(function* () {
   yield* TicTacToeClient.events.pipe(
     Stream.runForEach(
@@ -40,6 +58,17 @@ the event stream into an [Client State](/state/client-state) instead.
 Replay only affects `client.events`.
 
 ```ts
+import { Client } from "liminal"
+
+class TicTacToeClient extends Client.Service<TicTacToeClient>()(
+  "TicTacToeClient",
+  {
+    state: {},
+    external: {},
+    events: {},
+  },
+) {}
+// ---cut---
 Client.layerSocket({
   client: TicTacToeClient,
   url: "/play",
@@ -47,6 +76,7 @@ Client.layerSocket({
     mode: "startup",
     limit: 16,
   },
+  reducers: {},
 })
 ```
 
