@@ -18,7 +18,6 @@ export const WorkerConfig = Effect.fn(function* ({
 }) {
   const { stage } = yield* Stack
   return {
-    observability: { enabled: true },
     placement: { mode: "smart" },
     ...(stage === "prod"
       ? { domain: prepends(domain) }
