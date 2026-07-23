@@ -1,6 +1,6 @@
+import * as Boundary from "@crosshatch/util/Boundary"
+import type { TopFromString } from "@crosshatch/util/schema"
 import { Context, Schema as S, Effect, flow, Struct } from "effect"
-import * as Boundary from "liminal-util/Boundary"
-import type { TopFromString } from "liminal-util/schema"
 
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"

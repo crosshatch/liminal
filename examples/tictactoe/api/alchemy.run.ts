@@ -1,7 +1,7 @@
+import { WorkerConfig } from "@crosshatch/util/alchemicals/WorkerConfig"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"
-import { WorkerConfig } from "liminal-util/alchemicals/WorkerConfig"
 
 export default Alchemy.Stack(
   "liminal-example-tictactoe",

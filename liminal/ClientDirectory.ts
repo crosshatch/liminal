@@ -1,6 +1,6 @@
+import * as Boundary from "@crosshatch/util/Boundary"
+import type { TopFromString } from "@crosshatch/util/schema"
 import { Schema as S, Effect, Cause, Ref, Struct } from "effect"
-import * as Boundary from "liminal-util/Boundary"
-import type { TopFromString } from "liminal-util/schema"
 
 import { phantom } from "./_util/phantom.ts"
 import type { Actor } from "./Actor.ts"

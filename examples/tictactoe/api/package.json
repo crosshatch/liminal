@@ -8,11 +8,11 @@
   "dependencies": {
     "@cloudflare/vitest-pool-workers": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@crosshatch/util": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
-    "liminal-util": "workspace:*",
     "vitest": "catalog:"
   }
 }

@@ -1,6 +1,6 @@
+import * as Boundary from "@crosshatch/util/Boundary"
 import { absurd, Effect, Context } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
-import * as Boundary from "liminal-util/Boundary"
 
 import * as Binding from "./Binding.ts"
 

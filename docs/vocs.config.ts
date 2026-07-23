@@ -1,4 +1,4 @@
-import { VocsConfig } from "liminal-util/vocs"
+import { VocsConfig } from "@crosshatch/util/vocs"
 import PackageJson from "liminal/package.json" with { type: "json" }
 import { defineConfig } from "vocs/config"
 

@@ -1,3 +1,9 @@
+[submodule "konfik"]
+	path = konfik
+	url = git@github.com:crosshatch/konfik.git
+[submodule "crosshatch"]
+	path = crosshatch
+	url = git@github.com:crosshatch/crosshatch.git
 [submodule "repos/TanStack/router"]
 	path = repos/TanStack/router
 	url = git@github.com:TanStack/router.git
@@ -13,9 +19,6 @@
 [submodule "repos/vitejs/vite"]
 	path = repos/vitejs/vite
 	url = git@github.com:vitejs/vite.git
-[submodule "konfik"]
-	path = konfik
-	url = git@github.com:crosshatch/konfik.git
 [submodule "repos/cloudflare/workerd"]
 	path = repos/cloudflare/workerd
 	url = git@github.com:cloudflare/workerd.git

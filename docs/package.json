@@ -7,6 +7,7 @@
     "dev": "alchemy dev"
   },
   "dependencies": {
+    "@crosshatch/util": "workspace:*",
     "@effect/platform-browser": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
@@ -14,7 +15,6 @@
     "effect": "catalog:",
     "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
-    "liminal-util": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

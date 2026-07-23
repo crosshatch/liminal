@@ -1,8 +1,8 @@
+import { GithubDeployer } from "@crosshatch/util/alchemicals/GithubDeployer"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Github from "alchemy/GitHub"
 import { Layer, Effect } from "effect"
-import { GithubDeployer } from "liminal-util/alchemicals/GithubDeployer"
 
 export default Alchemy.Stack(
   "github-crosshatch-liminal",
