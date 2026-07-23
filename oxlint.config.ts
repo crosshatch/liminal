@@ -4,6 +4,6 @@ import { baseConfig, rest } from "./konfik/oxlint/baseConfig.ts"
 import { defineReactConfig } from "./konfik/oxlint/defineReactConfig.ts"
 
 export default defineConfig({
-  extends: [baseConfig, defineReactConfig(["examples/*/app/**/*", "crosshatch/docs/**/*"])],
+  extends: [baseConfig, defineReactConfig(["crosshatch/docs/**/*", "docs/**/*", "examples/*/app/**/*"])],
   ...rest(),
 })

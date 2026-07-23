@@ -4,7 +4,7 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "node ./konfik/main.ts clean --ignore '**/repos'",
-    "dev": "pnpm i && PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false turbo run dev //#watch //#aliases --filter=!./crosshatch/**",
+    "dev": "pnpm i && PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false turbo run dev //#watch //#aliases",
     "aliases": "caddy run --config ./Caddyfile",
     "format": "oxfmt --config ./.oxfmtrc.jsonc",
     "sync-repos": "node ./konfik/main.ts sync-repos",
