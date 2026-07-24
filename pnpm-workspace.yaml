@@ -34,6 +34,14 @@ minimumReleaseAgeExclude:
   - turbo@2.9.18
   - vite@8.1.2
   - vocs@2.6.2
+  - "@effect/tsgo-darwin-arm64@0.24.2"
+  - "@effect/tsgo-darwin-x64@0.24.2"
+  - "@effect/tsgo-linux-arm64@0.24.2"
+  - "@effect/tsgo-linux-arm@0.24.2"
+  - "@effect/tsgo-linux-x64@0.24.2"
+  - "@effect/tsgo-win32-arm64@0.24.2"
+  - "@effect/tsgo-win32-x64@0.24.2"
+  - "@effect/tsgo@0.24.2"
 
 allowBuilds:
   bigint-buffer: false
@@ -104,7 +112,7 @@ catalog:
   "@vitest/expect": ^4.1.10
   "@vitest/web-worker": ^4.1.10
   alchemy: ^2.0.0-beta.63
-  "@effect/tsgo": ^0.24.3
+  "@effect/tsgo": 0.24.2
   babel-plugin-react-compiler: ^1.0.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
