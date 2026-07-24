@@ -6,6 +6,6 @@
     { "path": "./examples" },
     { "path": "./konfik" },
     { "path": "./liminal" },
-    { "path": "./liminal-util" }
+    { "path": "./crosshatch" }
   ]
 }

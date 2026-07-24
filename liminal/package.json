@@ -39,10 +39,10 @@
   },
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@crosshatch/util": "workspace:*",
     "@effect/platform-browser": "catalog:",
     "@effect/sql-d1": "catalog:",
     "effect": "catalog:",
-    "effect-workerd": "workspace:*",
-    "liminal-util": "workspace:*"
+    "effect-workerd": "workspace:*"
   }
 }

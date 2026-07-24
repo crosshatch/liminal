@@ -1,6 +1,7 @@
 name: Check
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -17,7 +18,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
+      - run: |
+          git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 -- konfik crosshatch
+          git -c url.https://github.com/.insteadOf=git@github.com: -C crosshatch submodule update --init --depth 1 -- konfik
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm format --check
       - run: pnpm lint

@@ -1,3 +1,5 @@
+import * as Boundary from "@crosshatch/util/Boundary"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "@crosshatch/util/schema"
 import { DurableObject } from "cloudflare:workers"
 import {
   Layer,
@@ -19,8 +21,6 @@ import { DoState, Env } from "effect-workerd"
 import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"
-import * as Boundary from "liminal-util/Boundary"
-import { type TopFromString, encodeJsonString, decodeJsonString } from "liminal-util/schema"
 
 import type { ActorNamespace } from "./ActorNamespace.ts"
 import type { ActorTransport } from "./ActorTransport.ts"

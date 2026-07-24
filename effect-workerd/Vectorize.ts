@@ -1,5 +1,5 @@
+import type { TopFromString } from "@crosshatch/util/schema"
 import { Context, Data, Effect, Layer, Schema as S } from "effect"
-import type { TopFromString } from "liminal-util/schema"
 
 import * as Binding from "./Binding.ts"
 import type { Env } from "./Env.ts"

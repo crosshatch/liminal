@@ -1,9 +1,9 @@
+import * as Boundary from "@crosshatch/util/Boundary"
+import { type TopFromString, encodeJsonString } from "@crosshatch/util/schema"
 import { Layer, Effect, Schema as S, Context, flow, String, Array, Encoding, Exit } from "effect"
 import { Binding, Env, NativeRequest } from "effect-workerd"
 import { SecWebSocketProtocol, close } from "effect-workerd/socket_util"
 import { HttpServerResponse, HttpTraceContext } from "effect/unstable/http"
-import * as Boundary from "liminal-util/Boundary"
-import { type TopFromString, encodeJsonString } from "liminal-util/schema"
 
 import type { Actor } from "./Actor.ts"
 import type { ActorHandle } from "./ActorHandle.ts"

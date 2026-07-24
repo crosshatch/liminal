@@ -1,3 +1,4 @@
+import * as Boundary from "@crosshatch/util/Boundary"
 import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Option, pipe } from "effect"
 import {
   Headers,
@@ -8,7 +9,6 @@ import {
   HttpServerResponse,
   HttpTraceContext,
 } from "effect/unstable/http"
-import * as Boundary from "liminal-util/Boundary"
 
 import { Env } from "./Env.ts"
 import { ExecutionContext } from "./ExecutionContext.ts"

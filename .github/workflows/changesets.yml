@@ -1,5 +1,6 @@
 name: Changesets
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +19,9 @@ jobs:
       - run: |
           git config user.name "madhatcher"
           git config user.email "144481279+madhatcher@users.noreply.github.com"
-      - run: "git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init konfik"
+      - run: |
+          git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 -- konfik crosshatch
+          git -c url.https://github.com/.insteadOf=git@github.com: -C crosshatch submodule update --init --depth 1 -- konfik
       - uses: crosshatch/konfik/.github/actions/configure_environment@main
       - run: pnpm build
       - uses: changesets/action@v1

@@ -7,5 +7,5 @@
   },
   "include": [".", "package.json"],
   "exclude": ["dist", "vitest.config.ts"],
-  "references": [{ "path": "../effect-workerd" }, { "path": "../liminal-util" }]
+  "references": [{ "path": "../effect-workerd" }, { "path": "../crosshatch/@crosshatch/util" }]
 }
