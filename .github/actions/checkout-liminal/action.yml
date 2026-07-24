@@ -1,0 +1,9 @@
+name: Checkout Liminal
+description: Checkout Liminal and initialize required submodules.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --depth 1 -- konfik crosshatch
+        git -c url.https://github.com/.insteadOf=git@github.com: -C crosshatch submodule update --init --depth 1 -- konfik
