@@ -1,5 +1,5 @@
 name: Checkout Liminal
-description: Initialize required submodules after the repo has been checked out.
+description: Checkout Liminal and initialize required submodules.
 runs:
   using: composite
   steps:
