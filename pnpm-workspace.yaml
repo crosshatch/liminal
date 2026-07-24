@@ -159,6 +159,7 @@ packageExtensions:
 
 overrides:
   "crosshatch.dev>typescript": 5.9.3
+  "liminal.actor>typescript": 5.9.3
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
   react: ^19.2.4
