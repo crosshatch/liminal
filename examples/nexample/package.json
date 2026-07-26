@@ -1,0 +1,17 @@
+{
+  "name": "@liminal-examples/nexample",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "alchemy dev"
+  },
+  "dependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@crosshatch/util": "workspace:*",
+    "alchemy": "catalog:",
+    "effect": "catalog:",
+    "liminext": "workspace:*",
+    "vitest": "catalog:"
+  }
+}

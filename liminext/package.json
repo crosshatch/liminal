@@ -1,0 +1,37 @@
+{
+  "name": "liminext",
+  "version": "0.0.0",
+  "description": "Effect x Actors",
+  "bugs": {
+    "url": "https://github.com/crosshatch/liminal/issues"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crosshatch/liminal.git",
+    "directory": "liminal"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./*": "./dist/*.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@crosshatch/util": "workspace:*",
+    "@effect/platform-browser": "catalog:",
+    "@effect/sql-d1": "catalog:",
+    "alchemy": "catalog:",
+    "crosshatch": "workspace:*",
+    "effect": "catalog:"
+  }
+}
