@@ -3,12 +3,12 @@ import { ActorRuntime } from "liminal"
 
 import Move from "./handleMove.ts"
 import hydrate from "./hydrate.ts"
-import { KvLive } from "./KvLive.ts"
+import { layer as layerKv } from "./Kv.ts"
 import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
 export class TicTacToeRuntime extends ActorRuntime.make({
   namespace: TicTacToeNamespace,
-  prelude: KvLive,
+  prelude: layerKv,
   hydrate,
   onDisconnect: Effect.void,
   external: { Move },

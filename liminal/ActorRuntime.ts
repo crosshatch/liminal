@@ -1,5 +1,4 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { type TopFromString, encodeJsonString, decodeJsonString } from "@crosshatch/util/schema"
 import { DurableObject } from "cloudflare:workers"
 import {
   Layer,
@@ -22,6 +21,7 @@ import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, HttpClient, HttpTraceContext } from "effect/unstable/http"
 
+import { type TopFromString, encodeJsonString, decodeJsonString } from "./_schema_util.ts"
 import type { ActorNamespace } from "./ActorNamespace.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
@@ -240,7 +240,7 @@ export const make = <
         )
       }
 
-      const Live = Layer.mergeAll(
+      const layerRuntime = Layer.mergeAll(
         FetchHttpClient.layer,
         Layer.succeed(DoState.DoState, state),
         Layer.succeed(Env, env as never),
@@ -260,7 +260,7 @@ export const make = <
         Layer.provideMerge(Clock.layer),
       )
 
-      const HydrateClientsLive = Effect.gen({ self: this }, function* () {
+      const layerHydrateClients = Effect.gen({ self: this }, function* () {
         for (const socket of state.getWebSockets()) {
           const { attachments, session } = yield* decodeSocketAttachment(socket.deserializeAttachment())
           yield* this.directory
@@ -270,7 +270,7 @@ export const make = <
       }).pipe(Boundary.span("hydrate", import.meta.url), Layer.effectDiscard)
 
       const runtime = ManagedRuntime.make(
-        HydrateClientsLive.pipe(Layer.provideMerge(Live), Boundary.layer("actor", import.meta.url)),
+        layerHydrateClients.pipe(Layer.provideMerge(layerRuntime), Boundary.layer("actor", import.meta.url)),
       )
       this.run = <A, E, R extends ManagedRuntime.ManagedRuntime.Services<typeof runtime>>(
         effect: Effect.Effect<A, E, R>,

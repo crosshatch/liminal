@@ -1,4 +1,3 @@
-import type { TopFromString } from "@crosshatch/util/schema"
 import { Context, Data, Effect, Layer, Schema as S } from "effect"
 
 import * as Binding from "./Binding.ts"
@@ -7,7 +6,7 @@ import type { Env } from "./Env.ts"
 export interface VectorizeDefinition {
   readonly binding: string
 
-  readonly id: TopFromString
+  readonly id: S.Codec<any, string, any, any>
 
   readonly metadata: Record<string, S.Top & { readonly Encoded: string | number | boolean | Array<string> }>
 }

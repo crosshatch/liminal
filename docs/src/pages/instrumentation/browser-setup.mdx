@@ -40,7 +40,7 @@ class TicTacToeClient extends Client.Service<TicTacToeClient>()(
 const State = { layer: Layer.empty }
 // ---cut---
 
-const TelemetryLive = Otlp.layerJson({
+const layerTelemetry = Otlp.layerJson({
   baseUrl: "/otel",
   resource: {
     serviceName: "tic-tac-toe-web",
@@ -62,7 +62,7 @@ export const runtime = Atom.runtime(
         reducers: {},
       }).pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor)),
     ),
-    Layer.provideMerge(TelemetryLive),
+    Layer.provideMerge(layerTelemetry),
   ),
 )
 ```

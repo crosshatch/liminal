@@ -28,5 +28,6 @@ jobs:
           publish: pnpm changeset publish
           commit: version packages
           title: version packages
+          prDraft: create
         env:
           GITHUB_TOKEN: ${{ secrets.MADHATCHER_PAT }}

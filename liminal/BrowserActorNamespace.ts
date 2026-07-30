@@ -1,9 +1,9 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { encodeJsonString, decodeJsonString, type TopFromString } from "@crosshatch/util/schema"
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Struct, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 
+import { encodeJsonString, decodeJsonString, type TopFromString } from "./_schema_util.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
@@ -117,7 +117,7 @@ export const make = Effect.fnUntraced(
               readonly key: string
               readonly entry: Entry
               readonly currentClient: ClientHandle<ActorSelf, AttachmentFields, D>
-              readonly ActorLive: Layer.Layer<ActorSelf>
+              readonly layerActor: Layer.Layer<ActorSelf>
             }>
           >(Option.none())
 
@@ -171,21 +171,21 @@ export const make = Effect.fnUntraced(
                       { port, backing, close: closeScope },
                       attachments,
                     )
-                    const ActorLive = Layer.succeed(actor, {
+                    const layerActor = Layer.succeed(actor, {
                       name,
                       clients: entry.directory.handles,
                       currentClient,
                     })
-                    yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
+                    yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, layerActor }))
                     const initial = yield* hydrate.pipe(
                       entry.mutex,
                       Effect.scoped,
                       Boundary.span("onConnect", import.meta.url),
-                      Effect.provide(ActorLive),
+                      Effect.provide(layerActor),
                     )
                     return yield* backing.send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
                   }
-                  const { entry, ActorLive } = state.value
+                  const { entry, layerActor } = state.value
                   if (message._tag === "Audition.Payload") {
                     return yield* Effect.die(undefined)
                   }
@@ -235,7 +235,7 @@ export const make = Effect.fnUntraced(
                           : undefined,
                     }),
                     Effect.scoped,
-                    Effect.provide(ActorLive),
+                    Effect.provide(layerActor),
                     entry.mutex,
                   )
                 },

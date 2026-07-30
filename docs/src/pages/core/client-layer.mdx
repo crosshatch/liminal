@@ -27,7 +27,7 @@ class TicTacToeClient extends Client.Service<TicTacToeClient>()(
 const reducers = {}
 // ---cut---
 
-const TicTacToeClientLive = Client.layerSocket({
+const layerTicTacToeClient = Client.layerSocket({
   client: TicTacToeClient,
   url: "/play",
   replay: { mode: "startup" },

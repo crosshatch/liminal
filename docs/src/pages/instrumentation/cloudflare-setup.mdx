@@ -11,12 +11,12 @@ the telemetry layer should be fully provided with `FetchHttpClient.layer`.
 ## Define telemetry
 
 ```ts
-// api/TelemetryLive.ts
+// api/Telemetry.ts
 import { Config, Effect, Layer, Redacted } from "effect"
 import { FetchHttpClient } from "effect/unstable/http"
 import { Otlp } from "effect/unstable/observability"
 
-export const telemetryLive = (serviceName: string) =>
+export const layer = (serviceName: string) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const token = yield* Config.redacted("OTEL_TOKEN")
@@ -48,10 +48,10 @@ import { Effect, Layer } from "effect"
 import { Assets, Worker } from "effect-workerd"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 
-const telemetryLive = (_serviceName: string) => Layer.empty
-const KvLive = Layer.empty
+const layerTelemetry = (_serviceName: string) => Layer.empty
+const layerKv = Layer.empty
 const TicTacToeNamespace = { layer: Layer.empty }
-const ApiLive = HttpRouter.add(
+const layerApi = HttpRouter.add(
   "GET",
   "/health",
   Effect.succeed(HttpServerResponse.text("ok")),
@@ -59,10 +59,10 @@ const ApiLive = HttpRouter.add(
 // ---cut---
 
 export default Worker.make({
-  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  handler: layerApi.pipe(HttpRouter.toHttpEffect, Effect.flatten),
   prelude: Layer.mergeAll(
-    KvLive,
-    telemetryLive("tic-tac-toe-worker"),
+    layerKv,
+    layerTelemetry("tic-tac-toe-worker"),
     TicTacToeNamespace.layer,
     Assets.layer("ASSETS"),
   ),
@@ -86,10 +86,10 @@ when actor spans and logs should be exported.
 ```ts
 import { Layer } from "effect"
 
-const KvLive = Layer.empty
-const telemetryLive = (_serviceName: string) => Layer.empty
+const layerKv = Layer.empty
+const layerTelemetry = (_serviceName: string) => Layer.empty
 
-const prelude = Layer.mergeAll(KvLive, telemetryLive("tic-tac-toe-actor"))
+const prelude = Layer.mergeAll(layerKv, layerTelemetry("tic-tac-toe-actor"))
 ```
 
 Read [Actor Namespace](/core/actor-namespace) for the namespace/runtime split

@@ -117,7 +117,7 @@ class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
   },
 ) {}
 // ---cut---
-const WorkerLive = TicTacToeNamespace.layer
+const layerWorker = TicTacToeNamespace.layer
 ```
 
 ## Define the runtime
@@ -148,14 +148,14 @@ class TicTacToeNamespace extends ActorNamespace.Service<TicTacToeNamespace>()(
     internal: {},
   },
 ) {}
-const KvLive = Layer.empty
+const layerKv = Layer.empty
 const hydrate = Effect.succeed({})
 const Move = handler(GameClient.definition.external.Move, () => Effect.void)
 // ---cut---
 
 export class TicTacToeRuntime extends ActorRuntime.make({
   namespace: TicTacToeNamespace,
-  prelude: KvLive,
+  prelude: layerKv,
   hydrate,
   onDisconnect: Effect.void,
   external: { Move },
