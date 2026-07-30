@@ -20,7 +20,7 @@ export const matrix: {
 } = Function.dual(2, <Layers extends LayerRecord, A, E, R>(effect: Effect.Effect<A, E, R>, layers: Layers) => {
   return Effect.all(
     Record.fromEntries(
-      Record.toEntries(layers).map(([key, Live]) => [key, effect.pipe(branch, Effect.provide(Live as never))]),
+      Record.toEntries(layers).map(([key, layer]) => [key, effect.pipe(branch, Effect.provide(layer as never))]),
     ),
     { concurrency: "unbounded" },
   )

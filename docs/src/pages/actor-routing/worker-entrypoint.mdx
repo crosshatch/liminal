@@ -41,12 +41,12 @@ class TicTacToeRuntime {}
 const GameState = {
   init: Effect.succeed({ gameId: "game-123", player: "X" as const }),
 }
-const KvLive = Layer.empty
+const layerKv = Layer.empty
 // ---cut---
 
 export { TicTacToeRuntime as TicTacToe }
 
-const ApiLive = Layer.mergeAll(
+const layerApi = Layer.mergeAll(
   HttpRouter.add("GET", "/", Effect.succeed(HttpServerResponse.text("ok"))),
   HttpRouter.add(
     "GET",
@@ -65,9 +65,9 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  handler: layerApi.pipe(HttpRouter.toHttpEffect, Effect.flatten),
   prelude: Layer.mergeAll(
-    KvLive,
+    layerKv,
     TicTacToeNamespace.layer,
     Assets.layer("ASSETS"),
   ),

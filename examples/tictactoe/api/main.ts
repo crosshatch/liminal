@@ -3,12 +3,12 @@ import { Assets, Worker } from "effect-workerd"
 import { HttpRouter, HttpServerResponse } from "effect/unstable/http"
 
 import * as GameState from "./Games.ts"
-import { KvLive } from "./KvLive.ts"
+import { layer as layerKv } from "./Kv.ts"
 import { TicTacToeNamespace } from "./TicTacToeNamespace.ts"
 
 export * from "./TicTacToeRuntime.ts"
 
-const ApiLive = Layer.mergeAll(
+const layerApi = Layer.mergeAll(
   HttpRouter.add("GET", "/health", Effect.succeed(HttpServerResponse.text("ok"))),
   HttpRouter.add(
     "GET",
@@ -27,6 +27,6 @@ const ApiLive = Layer.mergeAll(
 )
 
 export default Worker.make({
-  handler: ApiLive.pipe(HttpRouter.toHttpEffect, Effect.flatten),
-  prelude: Layer.mergeAll(KvLive, TicTacToeNamespace.layer, Assets.layer("ASSETS")),
+  handler: layerApi.pipe(HttpRouter.toHttpEffect, Effect.flatten),
+  prelude: Layer.mergeAll(layerKv, TicTacToeNamespace.layer, Assets.layer("ASSETS")),
 })

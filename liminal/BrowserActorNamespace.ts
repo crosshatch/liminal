@@ -117,7 +117,7 @@ export const make = Effect.fnUntraced(
               readonly key: string
               readonly entry: Entry
               readonly currentClient: ClientHandle<ActorSelf, AttachmentFields, D>
-              readonly ActorLive: Layer.Layer<ActorSelf>
+              readonly layerActor: Layer.Layer<ActorSelf>
             }>
           >(Option.none())
 
@@ -171,21 +171,21 @@ export const make = Effect.fnUntraced(
                       { port, backing, close: closeScope },
                       attachments,
                     )
-                    const ActorLive = Layer.succeed(actor, {
+                    const layerActor = Layer.succeed(actor, {
                       name,
                       clients: entry.directory.handles,
                       currentClient,
                     })
-                    yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, ActorLive }))
+                    yield* Ref.set(stateRef, Option.some({ key, entry, currentClient, layerActor }))
                     const initial = yield* hydrate.pipe(
                       entry.mutex,
                       Effect.scoped,
                       Boundary.span("onConnect", import.meta.url),
-                      Effect.provide(ActorLive),
+                      Effect.provide(layerActor),
                     )
                     return yield* backing.send(0, yield* encodeAuditionSuccess({ _tag: "Audition.Success", initial }))
                   }
-                  const { entry, ActorLive } = state.value
+                  const { entry, layerActor } = state.value
                   if (message._tag === "Audition.Payload") {
                     return yield* Effect.die(undefined)
                   }
@@ -235,7 +235,7 @@ export const make = Effect.fnUntraced(
                           : undefined,
                     }),
                     Effect.scoped,
-                    Effect.provide(ActorLive),
+                    Effect.provide(layerActor),
                     entry.mutex,
                   )
                 },

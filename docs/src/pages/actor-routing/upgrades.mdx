@@ -59,7 +59,7 @@ declare const getActiveRoom: (
 ) => Effect.Effect<string>
 // ---cut---
 
-export const ApiLive = Layer.mergeAll(
+export const layerApi = Layer.mergeAll(
   HttpRouter.add(
     "GET",
     "/connect",

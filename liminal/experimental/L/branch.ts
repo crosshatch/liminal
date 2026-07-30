@@ -1,5 +1,5 @@
 import { Effect } from "effect"
 
-import { BranchLive } from "../BranchLive.ts"
+import { layer } from "../Branch.ts"
 
-export const branch = Effect.provide(BranchLive)
+export const branch = Effect.provide(layer)
