@@ -1,4 +1,4 @@
-import { Data, Context, Pipeable, Function, Effect } from "effect"
+import { type Data, Context, Pipeable, Function, Effect } from "effect"
 
 import * as Binding from "./Binding.ts"
 

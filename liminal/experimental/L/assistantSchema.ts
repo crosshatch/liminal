@@ -1,4 +1,4 @@
-import { Effect, Schema as S } from "effect"
+import { Effect, type Schema as S } from "effect"
 import { Prompt, LanguageModel } from "effect/unstable/ai"
 
 import { append } from "./append.ts"

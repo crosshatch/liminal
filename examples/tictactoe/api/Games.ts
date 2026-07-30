@@ -1,5 +1,5 @@
-import { Effect, Types } from "effect"
-import { KeyValueStore } from "effect/unstable/persistence"
+import { type Effect, type Types } from "effect"
+import { type KeyValueStore } from "effect/unstable/persistence"
 
 import type { Player } from "./domain.ts"
 

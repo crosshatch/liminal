@@ -1,5 +1,5 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { Context, Schema as S, Effect, flow, Struct } from "effect"
+import { Context, type Schema as S, Effect, flow, Struct } from "effect"
 
 import type { TopFromString } from "./_schema_util.ts"
 import type * as ActorClient from "./Client.ts"

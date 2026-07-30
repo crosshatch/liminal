@@ -1,14 +1,14 @@
 import * as Boundary from "@crosshatch/util/Boundary"
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Struct, Tracer } from "effect"
-import { WorkerRunner } from "effect/unstable/workers"
+import { type WorkerRunner } from "effect/unstable/workers"
 
 import { encodeJsonString, decodeJsonString, type TopFromString } from "./_schema_util.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
 import type { ClientHandle } from "./ClientHandle.ts"
-import * as Method from "./Method.ts"
+import type * as Method from "./Method.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
 import * as Tracing from "./Tracing.ts"
 

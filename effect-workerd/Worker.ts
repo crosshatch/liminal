@@ -1,9 +1,9 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { Layer, Scope, Effect, ManagedRuntime, ConfigProvider, Option, pipe } from "effect"
+import { Layer, type Scope, Effect, ManagedRuntime, ConfigProvider, Option, pipe } from "effect"
 import {
   Headers,
   FetchHttpClient,
-  HttpClient,
+  type HttpClient,
   HttpServer,
   HttpServerRequest,
   HttpServerResponse,

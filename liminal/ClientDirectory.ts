@@ -1,11 +1,11 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { Schema as S, Effect, Cause, Ref, Struct } from "effect"
+import { type Schema as S, Effect, type Cause, Ref, Struct } from "effect"
 
 import type { TopFromString } from "./_schema_util.ts"
 import { phantom } from "./_util/phantom.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
-import * as ClientHandle from "./ClientHandle.ts"
+import type * as ClientHandle from "./ClientHandle.ts"
 import type { ProtocolDefinition, Disconnect, Protocol } from "./Protocol.ts"
 
 export interface ClientEntry<Client, Handle> {
