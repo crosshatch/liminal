@@ -22,5 +22,6 @@ export const matrix: {
     Record.fromEntries(
       Record.toEntries(layers).map(([key, Live]) => [key, effect.pipe(branch, Effect.provide(Live as never))]),
     ),
+    { concurrency: "unbounded" },
   )
 })

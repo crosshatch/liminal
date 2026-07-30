@@ -1,7 +1,7 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import type { TopFromString } from "@crosshatch/util/schema"
 import { Schema as S, Effect, Cause, Ref, Struct } from "effect"
 
+import type { TopFromString } from "./_schema_util.ts"
 import { phantom } from "./_util/phantom.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"

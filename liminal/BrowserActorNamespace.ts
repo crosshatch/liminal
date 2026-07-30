@@ -1,9 +1,9 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { encodeJsonString, decodeJsonString, type TopFromString } from "@crosshatch/util/schema"
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Struct, Tracer } from "effect"
 import { WorkerRunner } from "effect/unstable/workers"
 
+import { encodeJsonString, decodeJsonString, type TopFromString } from "./_schema_util.ts"
 import type { Actor } from "./Actor.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"

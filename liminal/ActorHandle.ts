@@ -1,8 +1,8 @@
-import type { TopFromString } from "@crosshatch/util/schema"
 import { Schema as S, Effect, Cause, Encoding } from "effect"
 import { NativeRequest } from "effect-workerd"
 import { HttpServerResponse } from "effect/unstable/http"
 
+import type { TopFromString } from "./_schema_util.ts"
 import type { Send } from "./ClientHandle.ts"
 import type { Methods } from "./Method.ts"
 import type { ProtocolDefinition } from "./Protocol.ts"
