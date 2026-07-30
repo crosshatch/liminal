@@ -1,6 +1,6 @@
-import { Layer, Effect, Schema as S, Data, Context } from "effect"
+import { type Layer, type Effect, type Schema as S, Data, type Context } from "effect"
 
-import * as Loader from "./Loader.ts"
+import type * as Loader from "./Loader.ts"
 
 export type Template<A> = (...[value]: A extends undefined ? [] : [value: A]) => string
 

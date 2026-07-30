@@ -1,4 +1,4 @@
-import { Effect, Schema as S, Option, Context, Layer } from "effect"
+import { Effect, Schema as S, Option, Context, type Layer } from "effect"
 
 import * as Binding from "./Binding.ts"
 import type { Env } from "./Env.ts"

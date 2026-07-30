@@ -1,6 +1,6 @@
-import { Schema as S, Pipeable, Stream, Effect, Function, Types } from "effect"
+import { type Schema as S, Pipeable, Stream, Effect, Function, type Types } from "effect"
 
-import * as Client from "./Client.ts"
+import type * as Client from "./Client.ts"
 import { type ClientError, AuditionError } from "./errors.ts"
 import type { Fn } from "./Fn.ts"
 import type { Methods } from "./Method.ts"

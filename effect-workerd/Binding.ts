@@ -1,5 +1,5 @@
 import * as Boundary from "@crosshatch/util/Boundary"
-import { Context, Layer, Effect, Schema as S, SchemaIssue } from "effect"
+import { type Context, Layer, Effect, Schema as S, SchemaIssue } from "effect"
 
 import { Env } from "./Env.ts"
 

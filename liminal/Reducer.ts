@@ -1,4 +1,4 @@
-import { Schema as S, Types, Effect } from "effect"
+import { type Schema as S, type Types, type Effect } from "effect"
 
 import type { ProtocolDefinition } from "./Protocol.ts"
 

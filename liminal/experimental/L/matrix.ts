@@ -1,4 +1,4 @@
-import { Effect, Function, Layer, Record } from "effect"
+import { Effect, Function, type Layer, Record } from "effect"
 
 import { branch } from "./branch.ts"
 

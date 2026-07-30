@@ -1,4 +1,4 @@
-import { Schema as S, Effect } from "effect"
+import { type Schema as S, type Effect } from "effect"
 
 export interface Method {
   readonly payload: S.Top

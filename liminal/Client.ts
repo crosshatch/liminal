@@ -13,8 +13,8 @@ import {
   Ref,
   Scope,
   Stream,
-  Take,
-  Schema as S,
+  type Take,
+  type Schema as S,
   Array,
   Fiber,
   Exit,
@@ -33,7 +33,7 @@ import { decodeJsonString, encodeJsonString } from "./_schema_util.ts"
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
 import type { Fn, FnError, FnNoSelf } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
-import * as Reducer from "./Reducer.ts"
+import type * as Reducer from "./Reducer.ts"
 import * as Tracing from "./Tracing.ts"
 
 export const TypeId = "~liminal/Client" as const
