@@ -1,4 +1,4 @@
-import { WorkerConfig } from "@crosshatch/util/alchemicals/WorkerConfig"
+import { WorkerConfig } from "@crosshatch/alchemy/WorkerConfig"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"

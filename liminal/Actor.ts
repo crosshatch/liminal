@@ -4,7 +4,7 @@ import { Context, type Schema as S, Effect, flow, Struct } from "effect"
 import type { TopFromString } from "./_schema_util.ts"
 import type * as ActorClient from "./Client.ts"
 import type { ClientHandle, Sender } from "./ClientHandle.ts"
-import { type ProtocolDefinition } from "./Protocol.ts"
+import type { ProtocolDefinition } from "./Protocol.ts"
 
 export const TypeId = "~liminal/Actor" as const
 

@@ -1,6 +1,6 @@
-import { type Schema as S, type Effect, type Cause, type Encoding } from "effect"
-import { type NativeRequest } from "effect-workerd"
-import { type HttpServerResponse } from "effect/unstable/http"
+import type { Schema as S, Effect, Cause, Encoding } from "effect"
+import type { NativeRequest } from "effect-workerd"
+import type { HttpServerResponse } from "effect/unstable/http"
 
 import type { TopFromString } from "./_schema_util.ts"
 import type { Send } from "./ClientHandle.ts"

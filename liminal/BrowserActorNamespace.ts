@@ -1,7 +1,7 @@
 import * as Boundary from "@crosshatch/util/Boundary"
 import { BrowserWorkerRunner } from "@effect/platform-browser"
 import { Effect, Exit, Layer, Option, Ref, Schema as S, Scope, Semaphore, Stream, Struct, Tracer } from "effect"
-import { type WorkerRunner } from "effect/unstable/workers"
+import type { WorkerRunner } from "effect/unstable/workers"
 
 import { encodeJsonString, decodeJsonString, type TopFromString } from "./_schema_util.ts"
 import type { Actor } from "./Actor.ts"
