@@ -123,6 +123,9 @@ catalogs:
     happy-dom:
       specifier: ^20.10.6
       version: 20.10.6
+    http-message-sig:
+      specifier: ^0.1.0
+      version: 0.1.0
     lucide-static:
       specifier: ^1.24.0
       version: 1.25.0
@@ -303,6 +306,9 @@ importers:
       '@effect/platform-browser':
         specifier: 'catalog:'
         version: 4.0.0-beta.100(effect@4.0.0-beta.100)
+      '@standard-schema/spec':
+        specifier: 'catalog:'
+        version: 1.1.0
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.100
@@ -345,12 +351,12 @@ importers:
       '@solana/transactions':
         specifier: 'catalog:'
         version: 6.10.0(typescript@7.0.2)
-      '@standard-schema/spec':
-        specifier: 'catalog:'
-        version: 1.1.0
       effect:
         specifier: 'catalog:'
         version: 4.0.0-beta.100
+      http-message-sig:
+        specifier: 'catalog:'
+        version: 0.1.0
       ox:
         specifier: 'catalog:'
         version: 0.10.6(typescript@7.0.2)(zod@3.25.76)
@@ -5143,6 +5149,9 @@ packages:
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
+
+  http-message-sig@0.1.0:
+    resolution: {integrity: sha512-F3ZRFxqgmo7RhftIr0mMi3yPJfqs7U0VHRlfq45pSbxHEXnh35c2BQoMSPp9Wxy4b5L8OvCNgUlb/pzdNeLM3Q==}
 
   human-id@4.2.0:
     resolution: {integrity: sha512-K3GbkIWqyvvlpfhBPlbEvD97TtqBpAYA4kt+cn2lD2x2HuohzZCibcA2nOlnJT6exqvJLggoB5nv2dNf192nEA==}
@@ -12014,6 +12023,8 @@ snapshots:
       setprototypeof: 1.2.0
       statuses: 2.0.2
       toidentifier: 1.0.1
+
+  http-message-sig@0.1.0: {}
 
   human-id@4.2.0: {}
 
