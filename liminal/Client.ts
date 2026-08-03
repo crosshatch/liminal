@@ -1,4 +1,5 @@
 import * as Boundary from "@crosshatch/util/Boundary"
+import { decodeJsonString, encodeJsonString } from "@crosshatch/util/schema"
 import {
   Context,
   Encoding,
@@ -29,7 +30,6 @@ import {
 import { Socket } from "effect/unstable/socket"
 import { Worker } from "effect/unstable/workers"
 
-import { decodeJsonString, encodeJsonString } from "./_schema_util.ts"
 import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
 import type { Fn, FnError, FnNoSelf } from "./Fn.ts"
 import { Protocol, type ProtocolDefinition } from "./Protocol.ts"

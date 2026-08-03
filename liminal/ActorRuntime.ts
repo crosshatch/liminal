@@ -1,4 +1,5 @@
 import * as Boundary from "@crosshatch/util/Boundary"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "@crosshatch/util/schema"
 import { DurableObject } from "cloudflare:workers"
 import {
   Layer,
@@ -21,7 +22,6 @@ import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, type HttpClient, HttpTraceContext } from "effect/unstable/http"
 
-import { type TopFromString, encodeJsonString, decodeJsonString } from "./_schema_util.ts"
 import type { ActorNamespace } from "./ActorNamespace.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
