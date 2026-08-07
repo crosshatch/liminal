@@ -16,7 +16,7 @@ export const SendMessage = {
   }),
   success: S.Struct({
     messageId: S.String,
-    timestamp: S.Date,
+    timestamp: S.DateTimeUtc,
   }),
   failure: S.Never,
 }

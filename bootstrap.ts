@@ -2,7 +2,7 @@ import { GithubDeployer } from "@crosshatch/alchemy/GithubDeployer"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Github from "alchemy/GitHub"
-import { Layer, Effect } from "effect"
+import { Layer } from "effect"
 
 export default Alchemy.Stack(
   "github-crosshatch-liminal",
@@ -10,10 +10,8 @@ export default Alchemy.Stack(
     state: Cloudflare.state(),
     providers: Layer.mergeAll(Github.providers(), Cloudflare.providers()),
   },
-  Effect.gen(function* () {
-    yield* GithubDeployer({
-      owner: "crosshatch",
-      repository: "liminal",
-    })
+  GithubDeployer({
+    owner: "crosshatch",
+    repository: "liminal",
   }),
 )

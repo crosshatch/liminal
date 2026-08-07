@@ -7,6 +7,7 @@
     "dev": "alchemy dev"
   },
   "dependencies": {
+    "@crosshatch/alchemy": "workspace:*",
     "@crosshatch/util": "workspace:*",
     "@effect/platform-browser": "catalog:",
     "@types/react": "catalog:",

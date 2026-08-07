@@ -9,7 +9,7 @@ export class Loader extends Context.Service<
   {
     readonly load: (key: string) => Effect.Effect<Option.Option<string>, LoaderError>
   }
->()("liminal/Loader") {}
+>()("liminal/experimental/Loader") {}
 
 export const layerFs = Layer.effect(
   Loader,

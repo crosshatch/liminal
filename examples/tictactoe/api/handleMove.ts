@@ -28,10 +28,10 @@ export default handler(
     const { board, turn } = yield* getBoard(gameId)
     const { player } = yield* currentClient.attachments
     if (turn !== player) {
-      return yield* new OutOfTurnError()
+      return yield* OutOfTurnError.make()
     }
     if (board[position[0]][position[1]] !== undefined) {
-      return yield* new SlotTakenError()
+      return yield* SlotTakenError.make()
     }
     yield* TicTacToeActor.all.send("MoveMade", { player, position })
     if (LINES.some((line) => line.every(([r, c]) => board[r][c] === player))) {

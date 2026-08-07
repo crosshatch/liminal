@@ -1,4 +1,4 @@
-import { WorkerConfig } from "@crosshatch/alchemy/WorkerConfig"
+import { WorkerConfig } from "@crosshatch/alchemy"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import { Effect } from "effect"
@@ -14,7 +14,7 @@ export default Alchemy.Stack(
       domain: "tictactoe.liminal.actor",
       assets: "../app",
     })
-    const STAGE = yield* Alchemy.Stage
+    const CHX_INTERNAL_STAGE = yield* Alchemy.Stage
     yield* Cloudflare.Website.Vite("Entry", {
       ...base,
       dev: {
@@ -23,8 +23,8 @@ export default Alchemy.Stack(
         strictPort: true,
       },
       env: {
-        STAGE,
-        VITE_PUBLIC_STAGE: STAGE,
+        CHX_INTERNAL_STAGE,
+        VITE_PUBLIC_CHX_INTERNAL_STAGE: CHX_INTERNAL_STAGE,
         BUCKET: Cloudflare.R2.Bucket("Bucket"),
         TICTACTOE: Cloudflare.DurableObject("TicTacToeRuntime", {
           className: "TicTacToeRuntime",

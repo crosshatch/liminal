@@ -15,16 +15,16 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
   - alchemy
-  - "@effect/ai-openai-compat@4.0.0-beta.97"
-  - "@effect/atom-react@4.0.0-beta.97"
-  - "@effect/openapi-generator@4.0.0-beta.97"
-  - "@effect/platform-browser@4.0.0-beta.97"
-  - "@effect/platform-node-shared@4.0.0-beta.97"
-  - "@effect/platform-node@4.0.0-beta.97"
-  - "@effect/sql-d1@4.0.0-beta.97"
-  - "@effect/vitest@4.0.0-beta.97"
-  - effect@4.0.0-beta.97
-  - "@effect/sql-pg@4.0.0-beta.97"
+  - "@effect/ai-openai-compat@4.0.0-beta.104"
+  - "@effect/atom-react@4.0.0-beta.104"
+  - "@effect/openapi-generator@4.0.0-beta.104"
+  - "@effect/platform-browser@4.0.0-beta.104"
+  - "@effect/platform-node-shared@4.0.0-beta.104"
+  - "@effect/platform-node@4.0.0-beta.104"
+  - "@effect/sql-d1@4.0.0-beta.104"
+  - "@effect/vitest@4.0.0-beta.104"
+  - effect@4.0.0-beta.104
+  - "@effect/sql-pg@4.0.0-beta.104"
   - "@turbo/darwin-64@2.9.18"
   - "@turbo/darwin-arm64@2.9.18"
   - "@turbo/linux-64@2.9.18"
@@ -33,15 +33,15 @@ minimumReleaseAgeExclude:
   - "@turbo/windows-arm64@2.9.18"
   - turbo@2.9.18
   - vite@8.1.2
-  - vocs@2.6.2
-  - "@effect/tsgo-darwin-arm64@0.24.2"
-  - "@effect/tsgo-darwin-x64@0.24.2"
-  - "@effect/tsgo-linux-arm64@0.24.2"
-  - "@effect/tsgo-linux-arm@0.24.2"
-  - "@effect/tsgo-linux-x64@0.24.2"
-  - "@effect/tsgo-win32-arm64@0.24.2"
-  - "@effect/tsgo-win32-x64@0.24.2"
-  - "@effect/tsgo@0.24.2"
+  - vocs@2.8.5
+  - "@effect/tsgo-darwin-arm64@0.33.0"
+  - "@effect/tsgo-darwin-x64@0.33.0"
+  - "@effect/tsgo-linux-arm64@0.33.0"
+  - "@effect/tsgo-linux-arm@0.33.0"
+  - "@effect/tsgo-linux-x64@0.33.0"
+  - "@effect/tsgo-win32-arm64@0.33.0"
+  - "@effect/tsgo-win32-x64@0.33.0"
+  - "@effect/tsgo@0.33.0"
 
 allowBuilds:
   bigint-buffer: false
@@ -69,16 +69,16 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.18.4
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^5.20260713.1
-  "@distilled.cloud/coinbase": ^0.29.1
-  "@effect/ai-openai-compat": ^4.0.0-beta.99
-  "@effect/atom-react": ^4.0.0-beta.99
+  "@distilled.cloud/coinbase": 1.0.0-rc.2
+  "@effect/ai-openai-compat": ^4.0.0-beta.104
+  "@effect/atom-react": ^4.0.0-beta.104
   "@effect/language-service": ^0.86.6
-  "@effect/openapi-generator": ^4.0.0-beta.99
-  "@effect/platform-browser": ^4.0.0-beta.99
-  "@effect/platform-node": ^4.0.0-beta.99
-  "@effect/sql-d1": ^4.0.0-beta.99
-  "@effect/sql-pg": ^4.0.0-beta.99
-  "@effect/vitest": ^4.0.0-beta.99
+  "@effect/openapi-generator": ^4.0.0-beta.104
+  "@effect/platform-browser": ^4.0.0-beta.104
+  "@effect/platform-node": ^4.0.0-beta.104
+  "@effect/sql-d1": ^4.0.0-beta.104
+  "@effect/sql-pg": ^4.0.0-beta.104
+  "@effect/vitest": ^4.0.0-beta.104
   "@electric-sql/pglite": ^0.3.15
   "@icons-pack/react-simple-icons": ^13.13.0
   "@kitlangton/motel": ^0.2.6
@@ -111,8 +111,8 @@ catalog:
   "@vitest/coverage-v8": ^4.1.10
   "@vitest/expect": ^4.1.10
   "@vitest/web-worker": ^4.1.10
-  alchemy: ^2.0.0-beta.63
-  "@effect/tsgo": 0.24.2
+  alchemy: 2.0.0-beta.70
+  "@effect/tsgo": 0.33.0
   babel-plugin-react-compiler: ^1.0.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -120,7 +120,7 @@ catalog:
   date-fns: ^4.1.0
   drizzle-kit: ^1.0.0-rc.4
   drizzle-orm: ^1.0.0-rc.4
-  effect: ^4.0.0-beta.99
+  effect: ^4.0.0-beta.104
   fake-indexeddb: ^6.2.5
   happy-dom: ^20.10.6
   http-message-sig: ^0.1.0
@@ -132,7 +132,8 @@ catalog:
   next-themes: ^0.4.6
   ox: ^0.10.5
   oxfmt: ^0.58.0
-  oxlint: ^1.75.0
+  oxlint: 1.77.0
+  oxlint-tsgolint: 7.0.2001
   pkg-pr-new: ^0.0.78
   pg: ^8.16.3
   playwright: ^1.61.1
@@ -148,7 +149,7 @@ catalog:
   swagger2openapi: ^7.0.8
   tailwind-merge: ^3.4.0
   tailwindcss: ^4.3.2
-  turbo: ^2.10.6
+  turbo: ^2.10.8
   tw-animate-css: ^1.4.0
   typescript: ^7.0.2
   vaul: ^1.1.2
@@ -156,7 +157,7 @@ catalog:
   vite: ^8.1.4
   vite-bundle-analyzer: ^1.3.6
   vitest: ^4.1.10
-  vocs: 2.6.2
+  vocs: 2.8.5
   waku: 1.0.0-beta.7
   yaml: ^2.9.0
 

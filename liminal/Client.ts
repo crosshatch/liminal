@@ -253,7 +253,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
               }
               case "Audition.Failure": {
                 const { expected, actual } = message
-                return yield* new AuditionError({ value: { expected, actual } })
+                return yield* AuditionError.make({ value: { expected, actual } })
               }
               case "Event": {
                 const { event } = message
@@ -404,12 +404,12 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
             const exit = fiber.pollUnsafe()
             if (exit) {
               return yield* Exit.match(exit, {
-                onSuccess: () => new UnresolvedError(),
+                onSuccess: () => UnresolvedError.make(),
                 onFailure: flow(
                   Cause.findError,
                   Result.match({
                     onSuccess: Effect.fail,
-                    onFailure: () => new UnresolvedError(),
+                    onFailure: () => UnresolvedError.make(),
                   }),
                 ),
               })
@@ -434,12 +434,12 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
                 Effect.flatMap(
                   (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
                     Exit.match(exit, {
-                      onSuccess: () => new UnresolvedError(),
+                      onSuccess: () => UnresolvedError.make(),
                       onFailure: flow(
                         Cause.findError,
                         Result.match({
                           onSuccess: Effect.fail,
-                          onFailure: () => new UnresolvedError(),
+                          onFailure: () => UnresolvedError.make(),
                         }),
                       ),
                     }),
@@ -468,9 +468,7 @@ const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers ex
 
 let clientId_: string | undefined
 const clientId = () => {
-  if (!clientId_) {
-    clientId_ = crypto.randomUUID()
-  }
+  clientId_ ??= crypto.randomUUID()
   return clientId_
 }
 
@@ -541,7 +539,7 @@ export const layerSocket = <
                       return yield* publish({ _tag: "Disconnect" })
                     }
                     yield* Effect.annotateLogs(Effect.logDebug(`SocketErrored.${reason._tag}`), { cause })
-                    return yield* new ConnectionError({ cause })
+                    return yield* ConnectionError.make({ cause })
                   }),
                 ),
               )
@@ -554,7 +552,7 @@ export const layerSocket = <
             const message = yield* encodeFPayload(v)
             yield* write(message).pipe(
               Effect.catchTags({
-                SocketError: (cause) => new ConnectionError({ cause }),
+                SocketError: (cause) => ConnectionError.make({ cause }),
               }),
             )
           },
@@ -605,7 +603,7 @@ export const layerWorker = <
       const platform = yield* Worker.WorkerPlatform
       const backing = yield* platform.spawn<string, string>(0).pipe(
         Effect.catchTags({
-          WorkerError: (cause) => new ConnectionError({ cause }),
+          WorkerError: (cause) => ConnectionError.make({ cause }),
         }),
       )
 
@@ -613,7 +611,7 @@ export const layerWorker = <
         encodeClient(message).pipe(
           Effect.flatMap((encoded) => backing.send(encoded)),
           Effect.catchTags({
-            WorkerError: (cause) => new ConnectionError({ cause }),
+            WorkerError: (cause) => ConnectionError.make({ cause }),
           }),
           Boundary.span("send", import.meta.url),
         )
@@ -642,7 +640,7 @@ export const layerWorker = <
               .pipe(
                 Effect.raceFirst(Deferred.await(stop)),
                 Effect.catchTags({
-                  WorkerError: (cause) => new ConnectionError({ cause }),
+                  WorkerError: (cause) => ConnectionError.make({ cause }),
                 }),
               )
           },

@@ -10,10 +10,10 @@
     "sync-repos": "node ./konfik/main.ts sync-repos",
     "destroy": "alchemy destroy",
     "plan": "alchemy plan",
-    "prepare": "effect-tsgo patch",
+    "prepare": "effect-tsgo patch --oxlint",
     "test": "vitest run",
     "watch": "tsc -b -w",
-    "lint": "oxlint --disable-nested-config"
+    "lint": "oxlint --disable-nested-config --type-aware"
   },
   "devDependencies": {
     "@changesets/changelog-github": "catalog:",
@@ -34,17 +34,19 @@
     "@vitest/expect": "catalog:",
     "@vitest/web-worker": "catalog:",
     "alchemy": "catalog:",
+    "crosshatch": "workspace:*",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "happy-dom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "pkg-pr-new": "catalog:",
     "playwright": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c"
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee"
 }

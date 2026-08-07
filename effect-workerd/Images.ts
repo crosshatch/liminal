@@ -2,7 +2,7 @@ import { type Data, Context, Pipeable, Function, Effect } from "effect"
 
 import * as Binding from "./Binding.ts"
 
-export class Images extends Context.Service<Images, globalThis.ImagesBinding>()("effect-workerd/ImageTransformer") {}
+export class Images extends Context.Service<Images, globalThis.ImagesBinding>()("effect-workerd/Images") {}
 
 export const layer = Binding.layer(Images, ["transform", "draw", "output"])
 
