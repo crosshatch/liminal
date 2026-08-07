@@ -1,5 +1,5 @@
 import { Schema as S } from "effect"
 
-export class OutOfTurnError extends S.TaggedErrorClass<OutOfTurnError>()("OutOfTurnError", {}) {}
+export class OutOfTurnError extends S.TaggedError<OutOfTurnError>()("OutOfTurnError", {}) {}
 
-export class SlotTakenError extends S.TaggedErrorClass<SlotTakenError>()("SlotTakenError", {}) {}
+export class SlotTakenError extends S.TaggedError<SlotTakenError>()("SlotTakenError", {}) {}

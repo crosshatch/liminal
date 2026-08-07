@@ -8,7 +8,6 @@ export const Route = createFileRoute("/")({
 })
 
 function RouteComponent() {
-  const state = useAtomValue(stateAtom)
-  console.log(state)
+  useAtomValue(stateAtom)
   return <div>hi</div>
 }

@@ -135,10 +135,6 @@ export default defineConfig({
             text: "Trace Story",
           },
           {
-            link: "/instrumentation/browser-setup",
-            text: "Browser Setup",
-          },
-          {
             link: "/instrumentation/cloudflare-setup",
             text: "Cloudflare Setup",
           },

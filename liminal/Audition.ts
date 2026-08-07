@@ -34,9 +34,9 @@ export const empty: Audition<never, never, {}, never> = {
   pipe() {
     return Pipeable.pipeArguments(this, arguments)
   },
-  state: Stream.fail(new AuditionError()),
-  fn: () => () => new AuditionError(),
-  events: Stream.fail(new AuditionError()),
+  state: Stream.fail(AuditionError.make()),
+  fn: () => () => AuditionError.make(),
+  events: Stream.fail(AuditionError.make()),
 }
 
 export const cycleOn =
@@ -61,7 +61,7 @@ export const cycleOn =
 export const add: {
   <ClientSelf, ClientId extends string, ClientD extends ProtocolDefinition>(
     client: Client.Client<ClientSelf, ClientId, ClientD>,
-  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>> | never, External extends Methods, Event>(
+  ): <AuditionSelf, State extends S.Union<ReadonlyArray<S.Top>>, External extends Methods, Event>(
     audition: Audition<AuditionSelf, State, External, Event>,
   ) => Audition<
     AuditionSelf | ClientSelf,
@@ -71,7 +71,7 @@ export const add: {
   >
   <
     AuditionSelf,
-    State extends S.Union<ReadonlyArray<S.Top>> | never,
+    State extends S.Union<ReadonlyArray<S.Top>>,
     External extends Methods,
     Event,
     ClientSelf,

@@ -17,11 +17,16 @@ export const matrix: {
     layers: Layers,
   ): <A, E, R>(effect: Effect.Effect<A, E, R>) => MatrixEffect<A, E, R, Layers>
   <Layers extends LayerRecord, A, E, R>(effect: Effect.Effect<A, E, R>, layers: Layers): MatrixEffect<A, E, R, Layers>
-} = Function.dual(2, <Layers extends LayerRecord, A, E, R>(effect: Effect.Effect<A, E, R>, layers: Layers) => {
-  return Effect.all(
-    Record.fromEntries(
-      Record.toEntries(layers).map(([key, layer]) => [key, effect.pipe(branch, Effect.provide(layer as never))]),
-    ),
-    { concurrency: "unbounded" },
-  )
-})
+} = Function.dual(
+  2,
+  <Layers extends LayerRecord, A, E, R>(
+    effect: Effect.Effect<A, E, R>,
+    layers: Layers,
+  ): MatrixEffect<A, E, R, Layers> =>
+    Effect.all(
+      Record.fromEntries(
+        Record.toEntries(layers).map(([key, layer]) => [key, effect.pipe(branch, Effect.provide(layer as never))]),
+      ),
+      { concurrency: "unbounded" },
+    ) as never,
+)

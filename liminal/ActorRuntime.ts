@@ -1,4 +1,5 @@
 import * as Boundary from "@crosshatch/util/Boundary"
+import { type TopFromString, encodeJsonString, decodeJsonString } from "@crosshatch/util/schema"
 import { DurableObject } from "cloudflare:workers"
 import {
   Layer,
@@ -21,7 +22,6 @@ import { Clock } from "effect-workerd/platform"
 import { SecWebSocketProtocol } from "effect-workerd/socket_util"
 import { Headers, FetchHttpClient, type HttpClient, HttpTraceContext } from "effect/unstable/http"
 
-import { type TopFromString, encodeJsonString, decodeJsonString } from "./_schema_util.ts"
 import type { ActorNamespace } from "./ActorNamespace.ts"
 import type { ActorTransport } from "./ActorTransport.ts"
 import * as ClientDirectory from "./ClientDirectory.ts"
@@ -209,7 +209,7 @@ export const make = <
       ),
   }
 
-  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/ActorNamespace/NameDecoded") {}
+  class NameDecoded extends Context.Service<NameDecoded, Name["Type"]>()("liminal/ActorRuntime/NameDecoded") {}
 
   return class extends DurableObject {
     readonly run
@@ -426,12 +426,12 @@ export const make = <
       }).pipe(Boundary.span("socket-error", import.meta.url), this.run)
     }
 
-    async rpc<K extends keyof Internal>(
+    rpc<K extends keyof Internal>(
       method: K,
       payload: Internal[K]["payload"]["Type"],
     ): Promise<Exit.Exit<Internal[K]["success"]["Type"], Internal[K]["failure"]["Type"]>> {
       const handler = internal[method]
-      return await handler(payload).pipe(
+      return handler(payload).pipe(
         this.provideActor(null!),
         Boundary.span("fn-internal", import.meta.url),
         Effect.exit,

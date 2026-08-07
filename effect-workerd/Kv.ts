@@ -59,7 +59,7 @@ export const get = Effect.fnUntraced(function* <Self, Id extends string, D exten
   if (value === null) {
     return Option.none()
   }
-  return yield* S.decodeUnknownEffect(kv["~"].value)(value).pipe(Effect.map(Option.some))
+  return yield* S.decodeEffect(kv["~"].value)(value).pipe(Effect.map(Option.some))
 })
 
 export const remove = Effect.fnUntraced(function* <Self, Id extends string, D extends KvDefinition>(

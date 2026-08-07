@@ -1,4 +1,4 @@
-import { type Effect, type Schema as S } from "effect"
+import type { Effect, Schema as S } from "effect"
 
 import type { ClientError, UnresolvedError } from "./errors.ts"
 import type { Methods } from "./Method.ts"
