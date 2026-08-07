@@ -1,4 +1,4 @@
-import { GithubDeployer } from "@crosshatch/alchemy/GithubDeployer"
+import { GithubDeployer } from "@crosshatch/alchemy"
 import * as Alchemy from "alchemy"
 import * as Cloudflare from "alchemy/Cloudflare"
 import * as Github from "alchemy/GitHub"
