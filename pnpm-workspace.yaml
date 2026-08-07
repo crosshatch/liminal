@@ -58,6 +58,8 @@ allowBuilds:
 allowUnusedPatches: true
 
 patchedDependencies:
+  alchemy@2.0.0-beta.70: konfik/patches/alchemy@2.0.0-beta.70.patch
+  effect@4.0.0-beta.104: konfik/patches/effect@4.0.0-beta.104.patch
   "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
   "@changesets/assemble-release-plan@6.0.10": konfik/patches/@changesets__assemble-release-plan@6.0.10.patch
   "@changesets/get-github-info@0.8.0": konfik/patches/@changesets__get-github-info@0.8.0.patch
