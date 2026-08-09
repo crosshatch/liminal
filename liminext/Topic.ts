@@ -21,7 +21,7 @@ export declare namespace TopicProtocol {
   }
 }
 
-export type Topic<P extends TopicProtocol> = (key: P["key"]["Type"]) => Stream.Stream<P["value"]["Type"]>
+export type Topic<P extends TopicProtocol, R> = (key: P["key"]["Type"]) => Stream.Stream<P["value"]["Type"], never, R>
 
 export type TopicProtocols = Record<string, TopicProtocol>
 
@@ -31,6 +31,6 @@ export declare namespace TopicProtocols {
   }
 }
 
-export type Topics<P extends TopicProtocols> = {
-  readonly [K in keyof P]: Topic<P[K]>
+export type Topics<P extends TopicProtocols, R> = {
+  readonly [K in keyof P]: Topic<P[K], R>
 }

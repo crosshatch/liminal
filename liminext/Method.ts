@@ -2,7 +2,7 @@ import { Effect, Schema as S, Stream } from "effect"
 
 import type * as Definition from "./Definition.ts"
 
-export type Side = "server" | "client" | "both"
+export type Side = "actor" | "client" | "both"
 
 export interface MethodDefinition {
   readonly side?: Side | undefined
@@ -24,7 +24,7 @@ export interface MethodProtocol {
 
 export declare namespace MethodProtocol {
   export type FromDefinition<D extends MethodDefinition> = {
-    readonly side: Definition.WithDefault<D, "side", "server">
+    readonly side: Definition.WithDefault<D, "side", "actor">
     readonly payload: Definition.Normalize<D, "payload">
     readonly success: Definition.Normalize<D, "success">
     readonly error: Definition.WithDefault<D, "error", S.Never>
@@ -46,6 +46,20 @@ export type Method<P extends MethodProtocol, R> = (
   ? Stream.Stream<P["success"]["Type"], P["error"]["Type"], R>
   : Effect.Effect<P["success"]["Type"], P["error"]["Type"], R>
 
-export type Methods<P extends MethodProtocols> = {
-  readonly [K in keyof P as P[K]["side"] extends "client" ? never : K]: Method<P[K], never>
+export type ClientMethods<P extends MethodProtocols, R> = {
+  readonly [K in keyof P as P[K]["side"] extends "client" ? never : K]: Method<P[K], R>
 }
+
+export type ActorMethods<P extends MethodProtocols, R> = {
+  readonly [K in keyof P as P[K]["side"] extends "actor" ? never : K]: Method<P[K], R>
+}
+
+export type HandlerServices<H extends Record<string, (...args: ReadonlyArray<any>) => any>> = H[keyof H] extends (
+  ...args: ReadonlyArray<any>
+) => infer Return
+  ? Return extends Effect.Effect<any, any, infer R>
+    ? R
+    : Return extends Stream.Stream<any, any, infer R>
+      ? R
+      : never
+  : never

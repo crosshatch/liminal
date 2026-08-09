@@ -1,4 +1,4 @@
-import { Schema as S, Context, Stream, Function } from "effect"
+import { Schema as S, Context, Stream, Layer } from "effect"
 
 import type * as Definition from "./Definition.ts"
 import * as Method from "./Method.ts"
@@ -37,28 +37,28 @@ export declare namespace ClientProtocol {
 
 const TypeId = "~liminal/Client" as const
 
+// TODO: rename?
 export interface State<P extends ClientProtocol> {
   readonly actor: P["actor"]["Type"]
+
   readonly client: P["client"]["Type"]
 }
 
-export interface Client<P extends ClientProtocol> {
-  readonly state: Stream.Stream<State<P>>
-  readonly topics: Topic.Topics<P["topics"]>
-  readonly methods: Method.Methods<P["methods"]>
+export interface Client<P extends ClientProtocol, R> {
+  readonly state: Stream.Stream<State<P>, never, R>
+
+  readonly topics: Topic.Topics<P["topics"], R>
+
+  readonly methods: Method.ActorMethods<P["methods"], R>
 }
 
-export interface Service<Self, Identifier extends string, P extends ClientProtocol> extends Context.Service<
-  Self,
-  Client<P>
-> {
-  new (_: never): Context.ServiceClass.Shape<Identifier, Client<P>>
+export interface Service<Self, Identifier extends string, P extends ClientProtocol>
+  extends Context.Service<Self, Client<P, never>>, Client<P, Self> {
+  new (_: never): Context.ServiceClass.Shape<Identifier, Client<P, never>>
 
   readonly [TypeId]: typeof TypeId
 
   readonly protocol: P
-
-  readonly state: Stream.Stream<State<P>, never, Self>
 }
 
 export const Service =
@@ -67,26 +67,25 @@ export const Service =
     id: Identifier,
     _definition: D,
   ): Service<Self, Identifier, ClientProtocol.FromDefinition<D>> => {
-    const service = Context.Service<Self, Client<ClientProtocol.FromDefinition<D>>>()(id)
+    const service = Context.Service<Self, Client<ClientProtocol.FromDefinition<D>, never>>()(id)
     return Object.assign(service, {
       [TypeId]: TypeId,
       protocol: null!,
       state: null!,
+      topics: null!,
+      methods: null!,
     })
   }
 
-export const method = Function.dual<
-  <P extends ClientProtocol, K extends keyof P["methods"]>(
-    method: K,
-  ) => <Self, Identifier extends string>(service: Service<Self, Identifier, P>) => Method.Method<P["methods"][K], Self>,
-  <Self, Identifier extends string, P extends ClientProtocol, K extends keyof P["methods"]>(
-    service: Service<Self, Identifier, P>,
-    method: K,
-  ) => Method.Method<P["methods"][K], Self>
+export declare const layer: <
+  Self,
+  Identifier extends string,
+  P extends ClientProtocol,
+  Handlers extends Method.ClientMethods<P["methods"], any>,
 >(
-  2,
-  <Self, Identifier extends string, P extends ClientProtocol, K extends keyof P["methods"]>(
-    _service: Service<Self, Identifier, P>,
-    _method: K,
-  ): Method.Method<P["methods"][K], Self> => null!,
-)
+  service: Service<Self, Identifier, P>,
+  config: {
+    readonly baseUrl?: string | undefined
+    readonly handlers: Handlers
+  },
+) => Layer.Layer<Self, never, Exclude<Method.HandlerServices<Handlers>, Self>>
