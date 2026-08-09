@@ -1,0 +1,25 @@
+{
+  "name": "liminext",
+  "version": "0.0.0-beta.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./*": "./dist/*.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "peerDependencies": {
+    "@crosshatch/util": "workspace:*",
+    "@effect/sql-d1": "catalog:",
+    "crosshatch": "workspace:*",
+    "effect": "catalog:"
+  }
+}
