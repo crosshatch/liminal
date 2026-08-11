@@ -1,653 +1,92 @@
-import * as Boundary from "@crosshatch/util/Boundary"
-import { decodeJsonString, encodeJsonString } from "@crosshatch/util/schema"
-import {
-  Context,
-  Encoding,
-  Deferred,
-  Effect,
-  Layer,
-  Option,
-  PubSub,
-  RcRef,
-  Record,
-  pipe,
-  Ref,
-  Scope,
-  Stream,
-  type Take,
-  type Schema as S,
-  Array,
-  Fiber,
-  Exit,
-  Cause,
-  Result,
-  flow,
-  Tracer,
-  identity,
-  Semaphore,
-  Struct,
-} from "effect"
+import { Schema as S, Context, Stream, Layer } from "effect"
 import { Socket } from "effect/unstable/socket"
-import { Worker } from "effect/unstable/workers"
 
-import { type ClientError, AuditionError, ConnectionError, UnresolvedError } from "./errors.ts"
-import type { Fn, FnError, FnNoSelf } from "./Fn.ts"
-import { Protocol, type ProtocolDefinition } from "./Protocol.ts"
-import type * as Reducer from "./Reducer.ts"
-import * as Tracing from "./Tracing.ts"
+import type * as Definition from "./Definition.ts"
+import * as Method from "./Method.ts"
+import * as Topic from "./Topic.ts"
 
-export const TypeId = "~liminal/Client" as const
-
-export interface ReplayConfig {
-  readonly mode: "startup" | "all-subscribers"
-
-  readonly limit?: number | undefined
+export interface ClientDefinition {
+  readonly actor?: S.Struct.Fields | S.Top | undefined
+  readonly client?: S.Struct.Fields | S.Top | undefined
+  readonly topics?: Topic.TopicDefinitions | undefined
+  readonly methods?: Method.MethodDefinitions | undefined
 }
 
-interface EventTake<A, E> {
-  readonly seq: number
-
-  readonly take: Take.Take<A, E>
+export interface ClientProtocol {
+  readonly actor: S.Top
+  readonly client: S.Top
+  readonly topics: Record<string, Topic.TopicProtocol>
+  readonly methods: Record<string, Method.MethodProtocol>
 }
 
-export type Service<ClientSelf, D extends ProtocolDefinition> = RcRef.RcRef<
-  {
-    readonly state: Stream.Stream<S.Struct<D["state"]>["Type"], ClientError | S.SchemaError>
-
-    readonly events: Stream.Stream<ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"], ClientError | S.SchemaError>
-
-    readonly fnRaw: <K extends keyof D["external"], M extends D["external"][K]>(
-      tag: K,
-      payload: M["payload"]["Type"],
-    ) => Effect.Effect<M["success"]["Type"], M["failure"]["Type"], ClientSelf>
-
-    readonly end: Effect.Effect<void>
-  },
-  ClientError
->
-
-export interface Client<Self, Id extends string, D extends ProtocolDefinition> extends Context.Service<
-  Self,
-  Service<Self, D>
-> {
-  new (_: never): Context.ServiceClass.Shape<Id, Service<Self, D>> & {
-    readonly State: S.Struct<D["state"]>["Type"]
+export declare namespace ClientProtocol {
+  export type FromDefinition<D extends ClientDefinition> = {
+    readonly actor: Definition.Normalize<D, "actor">
+    readonly client: Definition.Normalize<D, "client">
+    readonly topics: "topics" extends keyof D
+      ? D["topics"] extends Topic.TopicDefinitions
+        ? Topic.TopicProtocols.FromDefinitions<D["topics"]>
+        : {}
+      : {}
+    readonly methods: "methods" extends keyof D
+      ? D["methods"] extends Method.MethodDefinitions
+        ? Method.MethodProtocols.FromDefinitions<D["methods"]>
+        : {}
+      : {}
   }
+}
+
+const TypeId = "~liminal/Client" as const
+
+export interface Client<P extends ClientProtocol, R> {
+  readonly state: Stream.Stream<
+    {
+      readonly actor: P["actor"]["Type"]
+      readonly client: P["client"]["Type"]
+    },
+    never,
+    R
+  >
+
+  readonly topics: Topic.Topics<P["topics"], R>
+
+  readonly methods: Method.ActorMethods<P["methods"], R>
+}
+
+export interface Service<Self, Identifier extends string, P extends ClientProtocol>
+  extends Context.Service<Self, Client<P, never>>, Client<P, Self> {
+  new (_: never): Context.ServiceClass.Shape<Identifier, Client<P, never>>
 
   readonly [TypeId]: typeof TypeId
 
-  readonly definition: D
-
-  readonly protocol: Protocol<D>
-
-  readonly state: Stream.Stream<
-    S.Struct<D["state"]>["Type"],
-    ClientError | S.SchemaError,
-    Self | S.Struct<D["state"]>["DecodingServices"]
-  >
-
-  readonly events: Stream.Stream<
-    ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"],
-    ClientError | S.SchemaError,
-    Self
-  >
-
-  readonly fn: Fn<Self, D["external"]>
-
-  readonly invalidate: Effect.Effect<void, never, Self>
-
-  readonly reducer: <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_tag: K, f: R) => R
+  readonly protocol: P
 }
-
-export const fn = <ClientSelf, D extends ProtocolDefinition>(service: Service<ClientSelf, D>) =>
-  ((_tag: keyof D["external"], ...f: Array<any>) =>
-    Effect.fnUntraced(
-      function* (payload: any) {
-        const { fnRaw: fn } = yield* RcRef.get(service)
-        return yield* fn(_tag, payload)
-      },
-      Effect.scoped,
-      ...(f as [any]),
-    )) as FnNoSelf<D["external"]>
 
 export const Service =
   <Self>() =>
-  <Id extends string, D extends ProtocolDefinition>(id: Id, definition: D): Client<Self, Id, D> => {
-    const tag = Context.Service<Self, Service<Self, D>>()(id)
-
-    const protocol = Protocol(definition)
-
-    const state = tag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("state")), Stream.unwrap)
-
-    const events = tag.pipe(Effect.flatMap(RcRef.get), Effect.map(Struct.get("events")), Stream.unwrap)
-
-    const fn = ((_tag: keyof D["external"], ...f: Array<any>) =>
-      Effect.fnUntraced(
-        function* (payload: any) {
-          const { fnRaw: fn } = yield* tag.pipe(Effect.flatMap(RcRef.get))
-          return yield* fn(_tag, payload)
-        },
-        Effect.scoped,
-        ...(f as [any]),
-      )) as Fn<Self, D["external"]>
-
-    const invalidate = tag.pipe(
-      Effect.flatMap((rc) =>
-        RcRef.get(rc).pipe(Effect.flatMap(Struct.get("end")), Effect.andThen(RcRef.invalidate(rc))),
-      ),
-      Effect.scoped,
-      Effect.ignore,
-    )
-
-    const reducer = <K extends keyof D["events"], R extends Reducer.Reducer<D, K>>(_event: K, f: R) => f
-
-    return Object.assign(tag satisfies Context.ServiceClass.Shape<Id, Service<Self, D>> as never, {
+  <Identifier extends string, D extends ClientDefinition>(
+    id: Identifier,
+    _definition: D,
+  ): Service<Self, Identifier, ClientProtocol.FromDefinition<D>> => {
+    const service = Context.Service<Self, Client<ClientProtocol.FromDefinition<D>, never>>()(id)
+    return Object.assign(service, {
       [TypeId]: TypeId,
-      definition,
-      protocol,
-      state,
-      events,
-      fn,
-      invalidate,
-      reducer,
+      protocol: null!,
+      state: null!,
+      topics: null!,
+      methods: null!,
     })
   }
 
-export interface ClientTransport<D extends ProtocolDefinition, R> {
-  readonly listen: (
-    publish: (message: Protocol<D>["Actor"]["Type"]) => Effect.Effect<void, ClientError, R>,
-  ) => Effect.Effect<void, ClientError | S.SchemaError, Scope.Scope | Protocol<D>["Actor"]["DecodingServices"] | R>
-
-  readonly send: (
-    message: Protocol<D>["F"]["Payload"]["Type"],
-  ) => Effect.Effect<void, ClientError | S.SchemaError, Protocol<D>["F"]["Payload"]["EncodingServices"]>
-}
-
-const make = <Self, Id extends string, D extends ProtocolDefinition, Reducers extends Reducer.Reducers<D>, R, CR>({
-  build,
-  client,
-  reducers,
-  onConnect,
-  replay,
-}: {
-  readonly client: Client<Self, Id, D>
-  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
-  readonly reducers: Reducers
-  readonly build: Effect.Effect<
-    ClientTransport<D, Reducer.Reducers.Services<Self, Reducers> | CR>,
-    ClientError,
-    R | Scope.Scope
-  >
-  readonly replay?: ReplayConfig | undefined
-}) =>
-  Effect.gen(function* () {
-    const rcr: Service<Self, D> = yield* RcRef.make({
-      acquire: Effect.gen(function* () {
-        type _ = typeof client.protocol
-        type Event = ReturnType<typeof S.TaggedUnion<D["events"]>>["Type"]
-
-        const { listen, send } = yield* build
-
-        const audition = yield* Deferred.make<void>()
-        const stateDeferred = yield* Deferred.make<Ref.Ref<S.Struct<D["state"]>["Type"]>>()
-
-        const inflights: Record<
-          string,
-          {
-            readonly deferred: Deferred.Deferred<_["F"]["Success"]["Type"], FnError<D["external"], keyof D["external"]>>
-            readonly span?: Tracer.AnySpan | undefined
-          }
-        > = {}
-        let callId = 0
-        let takeCount = 0
-        const eventsPubsub = yield* PubSub.unbounded<EventTake<Event, ClientError>>()
-        const statePubsub = yield* PubSub.unbounded<S.Struct<D["state"]>["Type"]>({ replay: 1 })
-
-        const replayState = yield* Ref.make<{
-          readonly startupOpen: boolean
-          readonly buffer: ReadonlyArray<EventTake<Event, ClientError>>
-        }>({
-          startupOpen: true,
-          buffer: [],
-        })
-
-        const publishTake = (take: Take.Take<Event, ClientError>, replayable?: boolean | undefined) =>
-          Effect.gen(function* () {
-            const eventTake: EventTake<Event, ClientError> = {
-              seq: takeCount++,
-              take,
-            }
-            if (replay && replayable) {
-              yield* Ref.update(replayState, (state) => {
-                if (replay.mode === "startup" && !state.startupOpen) {
-                  return state
-                }
-                const buffer =
-                  replay.limit === undefined
-                    ? [...state.buffer, eventTake]
-                    : [...(state.buffer.length >= replay.limit ? state.buffer.slice(1) : state.buffer), eventTake]
-                const { startupOpen } = state
-                return { startupOpen, buffer }
-              })
-            }
-            yield* PubSub.publish(eventsPubsub, eventTake)
-          })
-
-        const outer = yield* Scope.Scope
-        const scope = yield* Scope.fork(outer, "sequential")
-        const end = Scope.close(scope, Exit.void)
-        const reduceMutex = yield* Semaphore.make(1)
-        const reduceTask = Semaphore.withPermits(reduceMutex, 1)
-
-        const fiber = yield* listen(
-          Effect.fnUntraced(function* (message) {
-            switch (message._tag) {
-              case "Audition.Success": {
-                const { initial } = message
-                yield* PubSub.publish(statePubsub, initial)
-                const state = yield* Ref.make(initial)
-                yield* Deferred.succeed(stateDeferred, state)
-                yield* Deferred.succeed(audition, void 0)
-                yield* onConnect?.(initial) ?? Effect.void
-                return
-              }
-              case "Audition.Failure": {
-                const { expected, actual } = message
-                return yield* AuditionError.make({ value: { expected, actual } })
-              }
-              case "Event": {
-                const { event } = message
-                const { _tag } = event as never
-                const reducer = reducers[_tag]!
-                const state = yield* Deferred.await(stateDeferred)
-                yield* Effect.gen(function* () {
-                  const current = yield* Ref.get(state)
-                  const reduced = yield* reducer(event as never)(current).pipe(
-                    Effect.provideService(client, rcr),
-                    // TODO: rework error-handling
-                    Effect.catchDefect(() => Effect.succeed(undefined)),
-                  ) as Effect.Effect<
-                    S.Struct<D["state"]>["Type"] | undefined,
-                    never,
-                    Reducer.Reducers.Services<Self, Reducers>
-                  >
-                  if (reduced) {
-                    yield* PubSub.publish(statePubsub, reduced)
-                    yield* Ref.set(state, reduced)
-                  }
-                }).pipe(reduceTask)
-                const parent = message.trace ? Tracer.externalSpan(message.trace) : undefined
-                yield* publishTake([event], true).pipe(
-                  Boundary.span("enqueue-event", import.meta.url, {
-                    attributes: { _tag },
-                    kind: "consumer",
-                    parent,
-                  }),
-                )
-                return
-              }
-              case "F.Success":
-              case "F.Failure": {
-                const { id } = message
-                const inflight = inflights[id]
-                if (inflight) {
-                  delete inflights[id]
-                  return yield* Effect.gen(function* () {
-                    switch (message._tag) {
-                      case "F.Success": {
-                        const { value } = message.success as never
-                        yield* Deferred.succeed(inflight.deferred, value)
-                        return
-                      }
-                      case "F.Failure": {
-                        const { _tag, value } = message.failure as never
-                        yield* Effect.annotateLogs(Effect.logDebug("Call.Failed"), { id, _tag })
-                        yield* Deferred.fail(inflight.deferred, value)
-                        return
-                      }
-                    }
-                  }).pipe(inflight.span ? Effect.withParentSpan(inflight.span, { captureStackTrace: false }) : identity)
-                }
-                return
-              }
-              case "Disconnect": {
-                return
-              }
-            }
-          }),
-        ).pipe(
-          Effect.ensuring(
-            Effect.all(
-              [
-                Effect.sync(() => Record.keys(inflights).length).pipe(
-                  Effect.flatMap((unresolved) =>
-                    unresolved === 0
-                      ? Effect.void
-                      : Effect.annotateLogs(Effect.logDebug("Client.Closed"), { unresolved }),
-                  ),
-                ),
-                Deferred.succeed(audition, void 0),
-                RcRef.invalidate(rcr),
-              ],
-              { concurrency: "unbounded" },
-            ),
-          ),
-          Effect.forkScoped,
-          Effect.provideService(Scope.Scope, scope),
-        )
-
-        const interrupt = Stream.interruptWhen(
-          Fiber.await(fiber).pipe(
-            Effect.flatMap(
-              Exit.match({
-                onSuccess: () => Effect.void,
-                onFailure: flow(
-                  Cause.findError,
-                  Result.match({
-                    onSuccess: Effect.fail,
-                    onFailure: () => Effect.void,
-                  }),
-                ),
-              }),
-            ),
-          ),
-        )
-
-        const events = Effect.gen(function* () {
-          const queue = yield* PubSub.subscribe(eventsPubsub)
-          const live = (replayCount: number) =>
-            Stream.fromSubscription(queue).pipe(
-              Stream.filter((entry) => entry.seq > replayCount),
-              Stream.map((entry) => entry.take),
-              Stream.flattenTake,
-            )
-          if (!replay) {
-            return live(-1)
-          }
-          const buffer =
-            replay.mode === "all-subscribers"
-              ? (yield* Ref.get(replayState)).buffer
-              : yield* Ref.modify(replayState, (state) =>
-                  state.startupOpen
-                    ? [
-                        state.buffer,
-                        {
-                          startupOpen: false,
-                          buffer: [],
-                        },
-                      ]
-                    : [[], state],
-                )
-          const replayCount = Array.get(buffer, buffer.length - 1).pipe(
-            Option.map(Struct.get("seq")),
-            Option.getOrElse(() => -1),
-          )
-          return buffer.length === 0
-            ? live(replayCount)
-            : Stream.concat(
-                Stream.fromIterable(buffer).pipe(
-                  Stream.map((entry) => entry.take),
-                  Stream.flattenTake,
-                ),
-                live(replayCount),
-              )
-        }).pipe(Stream.unwrap, interrupt)
-
-        const state = Stream.fromPubSub(statePubsub).pipe(interrupt)
-
-        const encodingServices = yield* Effect.context<_["F"]["Payload"]["EncodingServices"]>()
-
-        yield* Deferred.await(audition)
-
-        const fnRaw = <K extends keyof D["external"]>(_tag: K, value: D["external"][K]["payload"]["Type"]) =>
-          Effect.gen(function* () {
-            const exit = fiber.pollUnsafe()
-            if (exit) {
-              return yield* Exit.match(exit, {
-                onSuccess: () => UnresolvedError.make(),
-                onFailure: flow(
-                  Cause.findError,
-                  Result.match({
-                    onSuccess: Effect.fail,
-                    onFailure: () => UnresolvedError.make(),
-                  }),
-                ),
-              })
-            }
-            const id = callId++
-            const deferred = yield* Deferred.make<
-              _["F"]["Success"]["Type"],
-              FnError<D["external"], keyof D["external"]>
-            >()
-            const span = yield* Tracing.current
-            const trace = span ? Tracing.toTraceEnvelope(span) : undefined
-            inflights[id] = { deferred, span }
-            yield* send({
-              _tag: "F.Payload",
-              id,
-              payload: { _tag, value } as never,
-              ...(trace && { trace }),
-            })
-            return yield* Effect.raceFirst(
-              Deferred.await(deferred),
-              Fiber.await(fiber).pipe(
-                Effect.flatMap(
-                  (exit): Effect.Effect<never, ClientError | UnresolvedError | S.SchemaError> =>
-                    Exit.match(exit, {
-                      onSuccess: () => UnresolvedError.make(),
-                      onFailure: flow(
-                        Cause.findError,
-                        Result.match({
-                          onSuccess: Effect.fail,
-                          onFailure: () => UnresolvedError.make(),
-                        }),
-                      ),
-                    }),
-                ),
-              ),
-            )
-          }).pipe(
-            Boundary.span("fn", import.meta.url, {
-              kind: "client",
-              attributes: { _tag },
-            }),
-            Effect.provide(encodingServices),
-          )
-
-        return { state, events, fnRaw, end }
-      }).pipe(
-        Boundary.span("acquire", import.meta.url, {
-          attributes: { client: client.key },
-        }),
-        Effect.annotateLogs("client", client.key),
-      ),
-    })
-
-    return rcr
-  }).pipe(Layer.effect(client))
-
-let clientId_: string | undefined
-const clientId = () => {
-  clientId_ ??= crypto.randomUUID()
-  return clientId_
-}
-
-export const layerSocket = <
+export declare const layer: <
   Self,
-  Id extends string,
-  D extends ProtocolDefinition,
-  Reducers extends Reducer.Reducers<D>,
-  CR = never,
->({
-  client,
-  reducers,
-  url,
-  protocols,
-  replay,
-  onConnect,
-}: {
-  readonly client: Client<Self, Id, D>
-  readonly reducers: Reducers
-  readonly replay?: ReplayConfig | undefined
-  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
-  readonly protocols?: string | Array<string> | undefined
-  readonly url?: string | undefined
-}): Layer.Layer<
-  Self,
-  never,
-  | Socket.WebSocketConstructor
-  | Protocol<D>["Actor"]["DecodingServices"]
-  | Protocol<D>["F"]["Payload"]["EncodingServices"]
-  | Reducer.Reducers.Services<Self, Reducers>
-  | CR
-> => {
-  const { F, Actor } = client.protocol
-  const encodeFPayload = encodeJsonString(F.Payload)
-  const decodeActor = decodeJsonString(Actor)
-
-  return make<Self, Id, D, Reducers, Socket.WebSocketConstructor, CR>({
-    client,
-    reducers,
-    onConnect,
-    replay,
-    build: Effect.gen(function* () {
-      const socket = yield* Socket.makeWebSocket(url ?? "/", {
-        protocols: [
-          "liminal",
-          clientId(),
-          Encoding.encodeBase64Url(client.key),
-          ...(protocols ? Array.ensure(protocols) : []),
-        ],
-      })
-      return {
-        listen: Effect.fnUntraced(
-          function* (publish) {
-            yield* socket
-              .runRaw((raw) =>
-                pipe(
-                  raw instanceof Uint8Array ? new TextDecoder().decode(raw) : raw,
-                  decodeActor,
-                  Effect.andThen(publish),
-                ),
-              )
-              .pipe(
-                Effect.catchIf(
-                  Socket.isSocketError,
-                  Effect.fnUntraced(function* (cause) {
-                    const { reason } = cause
-                    if (reason._tag === "SocketCloseError" && reason.code === 1000) {
-                      return yield* publish({ _tag: "Disconnect" })
-                    }
-                    yield* Effect.annotateLogs(Effect.logDebug(`SocketErrored.${reason._tag}`), { cause })
-                    return yield* ConnectionError.make({ cause })
-                  }),
-                ),
-              )
-          },
-          Boundary.span("listen", import.meta.url),
-        ),
-        send: Effect.fnUntraced(
-          function* (v) {
-            const write = yield* socket.writer
-            const message = yield* encodeFPayload(v)
-            yield* write(message).pipe(
-              Effect.catchTags({
-                SocketError: (cause) => ConnectionError.make({ cause }),
-              }),
-            )
-          },
-          Boundary.span("send", import.meta.url),
-          Effect.scoped,
-        ),
-      }
-    }),
-  })
-}
-
-export const layerWorker = <
-  Self,
-  Id extends string,
-  D extends ProtocolDefinition,
-  Reducers extends Reducer.Reducers<D>,
-  T extends Protocol<D>,
-  CR = never,
->({
-  client,
-  reducers,
-  replay,
-  onConnect,
-}: {
-  readonly client: Client<Self, Id, D>
-  readonly reducers: Reducers
-  readonly replay?: ReplayConfig | undefined
-  readonly onConnect?: undefined | ((state: S.Struct<D["state"]>["Type"]) => Effect.Effect<void, never, CR>)
-}): Layer.Layer<
-  Self,
-  never,
-  | Worker.WorkerPlatform
-  | Worker.Spawner
-  | T["Actor"]["DecodingServices"]
-  | T["Client"]["EncodingServices"]
-  | Reducer.Reducers.Services<Self, Reducers>
-> => {
-  const { Actor, Client: ClientM } = client.protocol
-  const encodeClient = encodeJsonString(ClientM)
-  const decodeActor = decodeJsonString(Actor)
-
-  return make<Self, Id, D, Reducers, Worker.WorkerPlatform | Worker.Spawner, CR>({
-    client,
-    reducers,
-    onConnect,
-    replay,
-    build: Effect.gen(function* () {
-      const platform = yield* Worker.WorkerPlatform
-      const backing = yield* platform.spawn<string, string>(0).pipe(
-        Effect.catchTags({
-          WorkerError: (cause) => ConnectionError.make({ cause }),
-        }),
-      )
-
-      const send = (message: T["Client"]["Type"]) =>
-        encodeClient(message).pipe(
-          Effect.flatMap((encoded) => backing.send(encoded)),
-          Effect.catchTags({
-            WorkerError: (cause) => ConnectionError.make({ cause }),
-          }),
-          Boundary.span("send", import.meta.url),
-        )
-
-      return {
-        listen: Effect.fnUntraced(
-          function* (publish) {
-            const stop = yield* Deferred.make<void>()
-            const audition = yield* encodeClient({
-              _tag: "Audition.Payload",
-              client: client.key,
-            })
-            yield* backing
-              .run(
-                Effect.fnUntraced(function* (raw) {
-                  const message = yield* decodeActor(raw)
-                  yield* publish(message)
-                  if (message._tag === "Disconnect" || message._tag === "Audition.Failure") {
-                    yield* Deferred.succeed(stop, void 0)
-                  }
-                }),
-                {
-                  onSpawn: backing.send(audition).pipe(Effect.orDie),
-                },
-              )
-              .pipe(
-                Effect.raceFirst(Deferred.await(stop)),
-                Effect.catchTags({
-                  WorkerError: (cause) => ConnectionError.make({ cause }),
-                }),
-              )
-          },
-          Boundary.span("listen", import.meta.url),
-        ),
-        send,
-      }
-    }),
-  })
-}
+  Identifier extends string,
+  P extends ClientProtocol,
+  Handlers extends Method.ClientMethods<P["methods"], any>,
+>(
+  service: Service<Self, Identifier, P>,
+  config: {
+    readonly baseUrl?: string | undefined
+    readonly handlers: Handlers
+  },
+) => Layer.Layer<Self, never, Socket.WebSocketConstructor | Exclude<Method.HandlerServices<Handlers>, Self>>

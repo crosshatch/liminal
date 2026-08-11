@@ -5,5 +5,5 @@ import { defineReactConfig } from "./konfik/oxlint/defineReactConfig.ts"
 
 export default defineConfig({
   extends: [baseConfig, defineReactConfig(["crosshatch/docs/**/*", "docs/**/*", "examples/*/app/**/*"])],
-  ...rest({ ignorePatterns: ["effect-workerd", "liminal"] }),
+  ...rest(),
 })

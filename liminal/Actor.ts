@@ -1,111 +1,125 @@
-import * as Boundary from "@crosshatch/util/Boundary"
-import type { TopFromString } from "@crosshatch/util/schema"
-import { Context, type Schema as S, Effect, flow, Struct } from "effect"
+import { Schema as S, Context, Effect, Data } from "effect"
+import type { HttpServerResponse } from "effect/unstable/http"
 
-import type * as ActorClient from "./Client.ts"
-import type { ClientHandle, Sender } from "./ClientHandle.ts"
-import type { ProtocolDefinition } from "./Protocol.ts"
+import * as Client from "./Client.ts"
+import type { Dispatcher } from "./Dispatcher.ts"
+import * as Method from "./Method.ts"
 
-export const TypeId = "~liminal/Actor" as const
-
-export interface Service<
-  ActorSelf,
-  Name extends TopFromString,
-  AttachmentFields extends S.Struct.Fields,
-  D extends ProtocolDefinition,
-> {
-  readonly name: Name["Type"]
-
-  readonly currentClient: ClientHandle<ActorSelf, AttachmentFields, D>
-
-  readonly clients: ReadonlySet<ClientHandle<ActorSelf, AttachmentFields, D>>
+export interface ActorDefinition {
+  readonly client: Client.Service<any, string, any>
+  readonly name?: (S.Top & { readonly Encoded: string }) | undefined
+  readonly attachments?: S.Struct.Fields | S.Top | undefined
 }
 
-export interface ActorDefinition<
-  Name extends TopFromString,
-  AttachmentFields extends S.Struct.Fields,
-  ClientSelf,
-  ClientId extends string,
-  D extends ProtocolDefinition,
-> {
-  readonly name: Name
-
-  readonly attachments: AttachmentFields
-
-  readonly client: ActorClient.Client<ClientSelf, ClientId, D>
+export interface ActorProtocol {
+  readonly client: Client.Service<any, string, Client.ClientProtocol>
+  readonly name: S.Top & { readonly Encoded: string }
+  readonly attachments: S.Top
 }
 
-export interface Actor<
-  ActorSelf,
-  ActorId extends string,
-  Name extends TopFromString,
-  AttachmentFields extends S.Struct.Fields,
-  ActorClientSelf,
-  ActorClientId extends string,
-  D extends ProtocolDefinition,
-> extends Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>> {
-  new (_: never): Context.ServiceClass.Shape<ActorId, Service<ActorSelf, Name, AttachmentFields, D>>
+export declare namespace ActorProtocol {
+  export type FromDefinition<D extends ActorDefinition> = {
+    readonly client: D["client"]
+    readonly name: "name" extends keyof D ? (D["name"] extends S.Top ? D["name"] : S.String) : S.String
+    readonly attachments: "attachments" extends keyof D
+      ? D["attachments"] extends S.Struct.Fields
+        ? S.Struct<D["attachments"]>
+        : D extends S.Top
+          ? D
+          : S.Void
+      : S.Void
+  }
+}
+
+const TypeId = "~liminal/Actor" as const
+
+export interface StateHandle<T extends S.Top, R> extends Effect.Effect<T["Type"], never, R> {
+  readonly set: <R2 = never>(
+    setter: T["Type"] | ((v: T["Type"]) => Effect.Effect<T["Type"], never, R2>),
+  ) => Effect.Effect<void, never, R | R2>
+}
+
+export interface Handle<P extends ActorProtocol, R> {
+  readonly disconnect: Effect.Effect<void, never, R>
+
+  readonly methods: Method.ClientMethods<P["client"]["protocol"]["methods"], R>
+}
+
+export type ClientKey = typeof ClientKey.Type
+export const ClientKey = S.String.pipe(S.brand("liminal/Actor/ClientKey"))
+
+export interface ClientHandle<P extends ActorProtocol> extends Handle<P, never> {
+  readonly key: ClientKey
+
+  readonly state: StateHandle<P["client"]["protocol"]["client"], never>
+
+  readonly attachments: StateHandle<P["attachments"], never>
+}
+
+export class NoSuchClientError extends Data.TaggedError("NoSuchClientError") {}
+
+export class SessionContext extends Context.Service<
+  SessionContext,
+  {
+    readonly client: ClientHandle<any>
+  }
+>()("liminal/Actor/SessionContext") {}
+
+export interface ActorSession<P extends ActorProtocol> {
+  readonly client: ClientHandle<P>
+}
+
+export interface Actor<P extends ActorProtocol, R> extends Handle<P, R> {
+  readonly name: P["name"]["Type"]
+
+  readonly state: StateHandle<P["client"]["protocol"]["actor"], R>
+
+  readonly clients: Effect.Effect<ReadonlySet<ClientHandle<P>>, never, R>
+
+  readonly getClient: (key: ClientKey) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
+
+  readonly session: Effect.Effect<ActorSession<P>, R>
+}
+
+export interface ActorHandle<Self, P extends ActorProtocol> {
+  readonly upgrade: (
+    attachments: P["attachments"]["Type"],
+  ) => Effect.Effect<
+    HttpServerResponse.HttpServerResponse,
+    never,
+    Dispatcher<Self> | P["attachments"]["EncodingServices"]
+  >
+}
+
+export interface Service<Self, Identifier extends string, P extends ActorProtocol>
+  extends Context.Service<Self, Actor<P, never>>, Actor<P, Self> {
+  new (_: never): Context.ServiceClass.Shape<Identifier, Actor<P, never>>
 
   readonly [TypeId]: typeof TypeId
 
-  readonly definition: ActorDefinition<Name, AttachmentFields, ActorClientSelf, ActorClientId, D>
+  readonly protocol: P
 
-  readonly all: Sender<D, ActorSelf>
-
-  readonly others: Sender<D, ActorSelf>
+  readonly get: (name: P["name"]["Type"]) => ActorHandle<Self, P>
 }
 
 export const Service =
-  <ActorSelf>() =>
-  <
-    ActorId extends string,
-    Name extends TopFromString,
-    D extends ProtocolDefinition,
-    AttachmentFields extends S.Struct.Fields,
-    ClientSelf,
-    ClientId extends string,
-  >(
-    id: ActorId,
-    definition: ActorDefinition<Name, AttachmentFields, ClientSelf, ClientId, D>,
-  ): Actor<ActorSelf, ActorId, Name, AttachmentFields, ClientSelf, ClientId, D> => {
-    const tag = Context.Service<ActorSelf, Service<ActorSelf, Name, AttachmentFields, D>>()(id)
-
-    const all: Sender<D, ActorSelf> = {
-      send: (key, payload) =>
-        tag.pipe(
-          Effect.flatMap(({ clients }) =>
-            Effect.forEach(clients, (client) => client.send(key, payload), { concurrency: "unbounded" }),
-          ),
-          Boundary.span("send-all", import.meta.url),
-        ),
-      disconnect: tag.pipe(
-        Effect.flatMap(flow(Struct.get("clients"), Effect.forEach(Struct.get("disconnect")))),
-        Boundary.span("disconnect-all", import.meta.url),
-      ),
-    }
-
-    const others: Sender<D, ActorSelf> = {
-      send: Effect.fnUntraced(
-        function* (key, payload) {
-          const { clients, currentClient } = yield* tag
-          yield* Effect.forEach(
-            clients,
-            (client) => (client === currentClient ? Effect.void : client.send(key, payload)),
-            { concurrency: "unbounded" },
-          )
-        },
-        Boundary.span("send-others", import.meta.url),
-      ),
-      disconnect: Effect.gen(function* () {
-        const { clients, currentClient } = yield* tag
-        yield* Effect.forEach(clients, (client) => (client === currentClient ? Effect.void : client.disconnect))
-      }).pipe(Boundary.span("disconnect-others", import.meta.url)),
-    }
-
-    return Object.assign(tag, {
+  <Self>() =>
+  <Identifier extends string, D extends ActorDefinition>(
+    id: Identifier,
+    _definition: D,
+  ): Service<Self, Identifier, ActorProtocol.FromDefinition<D>> => {
+    const service = Context.Service<Self, Actor<ActorProtocol.FromDefinition<D>, never>>()(id)
+    return Object.assign(service, {
       [TypeId]: TypeId,
-      definition,
-      all,
-      others,
+      protocol: null!,
+      state: null!,
+      attachments: null!,
+      name: null!,
+      clients: null!,
+      disconnect: null!,
+      methods: null!,
+      getClient: null!,
+      get: null!,
+      session: null!,
     })
   }

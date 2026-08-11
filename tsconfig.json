@@ -2,7 +2,6 @@
   "include": [],
   "references": [
     { "path": "./docs" },
-    { "path": "./effect-workerd" },
     { "path": "./examples" },
     { "path": "./konfik" },
     { "path": "./liminal" },

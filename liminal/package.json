@@ -14,35 +14,22 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "workerd": "./index.ts",
-      "browser": "./index.non-workerd.ts",
-      "node": "./index.non-workerd.ts",
-      "default": "./index.ts"
-    },
+    ".": "./index.ts",
     "./*": "./*.ts",
     "./experimental": "./experimental/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {
-      ".": {
-        "workerd": "./dist/index.js",
-        "browser": "./dist/index.non-workerd.js",
-        "node": "./dist/index.non-workerd.js",
-        "default": "./dist/index.js"
-      },
+      ".": "./dist/index.js",
       "./*": "./dist/*.js",
       "./experimental": "./dist/experimental/index.js",
       "./package.json": "./package.json"
     }
   },
   "peerDependencies": {
-    "@cloudflare/workers-types": "catalog:",
     "@crosshatch/util": "workspace:*",
-    "@effect/platform-browser": "catalog:",
-    "@effect/sql-d1": "catalog:",
-    "effect": "catalog:",
-    "effect-workerd": "workspace:*"
+    "alchemy": "catalog:",
+    "effect": "catalog:"
   }
 }

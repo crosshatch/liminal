@@ -2,7 +2,6 @@ packages:
   - "*"
   - examples/*
   - examples/*/*
-  - effect-workerd
   - crosshatch/*
   - crosshatch/@crosshatch/*
   - crosshatch/examples/*

@@ -1,9 +1,0 @@
-import { Effect, Redacted, Context } from "effect"
-
-import * as Binding from "./Binding.ts"
-
-export class Hyperdrive extends Context.Service<Hyperdrive, globalThis.Hyperdrive>()("effect-workerd/Hyperdrive") {}
-
-export const layer = Binding.layer(Hyperdrive, ["connectionString"])
-
-export const connectionString = Hyperdrive.pipe(Effect.map(({ connectionString }) => Redacted.make(connectionString)))

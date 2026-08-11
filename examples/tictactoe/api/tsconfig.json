@@ -1,11 +1,7 @@
 {
   "extends": "../../../konfik/tsconfig.base",
   "include": ["."],
-  "references": [
-    { "path": "../../../effect-workerd" },
-    { "path": "../../../liminal" },
-    { "path": "../../../crosshatch/@crosshatch/util" }
-  ],
+  "references": [{ "path": "../../../liminal" }, { "path": "../../../crosshatch/@crosshatch/util" }],
   "exclude": ["dist"],
   "compilerOptions": {
     "noEmit": false,

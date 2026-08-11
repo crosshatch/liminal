@@ -14,7 +14,6 @@
     "@vitejs/plugin-react": "catalog:",
     "alchemy": "catalog:",
     "effect": "catalog:",
-    "effect-workerd": "workspace:*",
     "liminal": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
