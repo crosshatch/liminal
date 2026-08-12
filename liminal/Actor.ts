@@ -1,4 +1,4 @@
-import { Schema as S, Context, Effect, Data } from "effect"
+import { Schema as S, Context, Effect, Data, Optic } from "effect"
 import type { HttpServerResponse } from "effect/unstable/http"
 
 import * as Client from "./Client.ts"
@@ -33,10 +33,11 @@ export declare namespace ActorProtocol {
 
 const TypeId = "~liminal/Actor" as const
 
-export interface StateHandle<T extends S.Top, R> extends Effect.Effect<T["Type"], never, R> {
-  readonly set: <R2 = never>(
-    setter: T["Type"] | ((v: T["Type"]) => Effect.Effect<T["Type"], never, R2>),
-  ) => Effect.Effect<void, never, R | R2>
+export interface StateHandle<T extends S.Top, R>
+  extends Effect.Effect<T["Type"], never, R>, Optic.Iso<T["Type"], T["Type"]> {
+  readonly set: <E = never, R2 = never>(
+    setter: T["Type"] | ((v: T["Type"]) => T["Type"] | Effect.Effect<T["Type"], E, R2>),
+  ) => Effect.Effect<void, E, R | R2>
 }
 
 export interface Handle<P extends ActorProtocol, R> {
@@ -70,15 +71,21 @@ export interface ActorSession<P extends ActorProtocol> {
 }
 
 export interface Actor<P extends ActorProtocol, R> extends Handle<P, R> {
-  readonly name: P["name"]["Type"]
+  readonly name: Effect.Effect<P["name"]["Type"], void, R>
 
   readonly state: StateHandle<P["client"]["protocol"]["actor"], R>
+
+  readonly topics: {
+    readonly [K in keyof P["client"]["protocol"]["topics"]]: (
+      key: P["client"]["protocol"]["topics"][K]["key"]["Type"],
+    ) => StateHandle<P["client"]["protocol"]["topics"][K]["value"], R>
+  }
 
   readonly clients: Effect.Effect<ReadonlySet<ClientHandle<P>>, never, R>
 
   readonly getClient: (key: ClientKey) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
 
-  readonly session: Effect.Effect<ActorSession<P>, R>
+  readonly session: Effect.Effect<ActorSession<P>, never, R | SessionContext>
 }
 
 export interface ActorHandle<Self, P extends ActorProtocol> {
@@ -121,5 +128,6 @@ export const Service =
       getClient: null!,
       get: null!,
       session: null!,
+      topics: null!,
     })
   }

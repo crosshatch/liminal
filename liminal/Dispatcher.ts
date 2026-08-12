@@ -17,8 +17,7 @@ class Dispatchers extends Context.Reference("liminal/Dispatcher/Dispatchers", {
   defaultValue: () => new Map(),
 }) {}
 
-export const getDispatcher = () =>
-  Effect.gen(function* () {
-    const dispatchers = yield* Dispatchers
-    console.log(dispatchers)
-  })
+export const getDispatcher = Effect.gen(function* () {
+  const dispatchers = yield* Dispatchers
+  console.log(dispatchers)
+})

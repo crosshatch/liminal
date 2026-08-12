@@ -63,3 +63,8 @@ export type HandlerServices<H extends Record<string, (...args: ReadonlyArray<any
       ? R
       : never
   : never
+
+export const handler = <D extends MethodDefinition, R>(
+  _definition: D,
+  handler: Method<MethodProtocol.FromDefinition<D>, R>,
+) => handler

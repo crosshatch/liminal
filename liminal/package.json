@@ -27,9 +27,17 @@
       "./package.json": "./package.json"
     }
   },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:"
+  },
   "peerDependencies": {
     "@crosshatch/util": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "alchemy": {
+      "optional": true
+    }
   }
 }
