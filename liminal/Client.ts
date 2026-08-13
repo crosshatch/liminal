@@ -1,4 +1,4 @@
-import { Schema as S, Context, Stream, Layer } from "effect"
+import { Schema as S, Context, Stream, Layer, Effect } from "effect"
 import { Socket } from "effect/unstable/socket"
 
 import type * as Definition from "./Definition.ts"
@@ -10,6 +10,7 @@ export interface ClientDefinition {
   readonly client?: S.Struct.Fields | S.Top | undefined
   readonly topics?: Topic.TopicDefinitions | undefined
   readonly methods?: Method.MethodDefinitions | undefined
+  readonly disconnect?: S.Top | undefined
 }
 
 export interface ClientProtocol {
@@ -17,6 +18,7 @@ export interface ClientProtocol {
   readonly client: S.Top
   readonly topics: Record<string, Topic.TopicProtocol>
   readonly methods: Record<string, Method.MethodProtocol>
+  readonly disconnect: S.Top
 }
 
 export declare namespace ClientProtocol {
@@ -33,6 +35,11 @@ export declare namespace ClientProtocol {
         ? Method.MethodProtocols.FromDefinitions<D["methods"]>
         : {}
       : {}
+    readonly disconnect: "disconnect" extends keyof D
+      ? D["disconnect"] extends S.Top
+        ? D["disconnect"]
+        : S.Void
+      : S.Void
   }
 }
 
@@ -83,10 +90,20 @@ export declare const layer: <
   Identifier extends string,
   P extends ClientProtocol,
   Handlers extends Method.ClientMethods<P["methods"], any>,
+  E = never,
+  R = never,
+  E2 = never,
+  R2 = never,
 >(
   service: Service<Self, Identifier, P>,
   config: {
-    readonly baseUrl?: string | undefined
+    readonly url?: string | undefined
     readonly handlers: Handlers
+    readonly hooks?:
+      | {
+          readonly connect?: Effect.Effect<void, E, R> | undefined
+          readonly disconnect?: Effect.Effect<void, E2, R2> | undefined
+        }
+      | undefined
   },
-) => Layer.Layer<Self, never, Socket.WebSocketConstructor | Exclude<Method.HandlerServices<Handlers>, Self>>
+) => Layer.Layer<Self, E | E2, Socket.WebSocketConstructor | Exclude<Method.HandlerServices<Handlers> | R | R2, Self>>

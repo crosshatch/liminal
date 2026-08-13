@@ -1,4 +1,4 @@
-import { Schema as S, Context, Effect, Data, Optic } from "effect"
+import { Schema as S, Context, Effect, Data, Types } from "effect"
 import type { HttpServerResponse } from "effect/unstable/http"
 
 import * as Client from "./Client.ts"
@@ -33,47 +33,37 @@ export declare namespace ActorProtocol {
 
 const TypeId = "~liminal/Actor" as const
 
-export interface StateHandle<T extends S.Top, R>
-  extends Effect.Effect<T["Type"], never, R>, Optic.Iso<T["Type"], T["Type"]> {
-  readonly set: <E = never, R2 = never>(
-    setter: T["Type"] | ((v: T["Type"]) => T["Type"] | Effect.Effect<T["Type"], E, R2>),
-  ) => Effect.Effect<void, E, R | R2>
+export interface StateHandle<T extends S.Top, R> extends Effect.Effect<T["Type"], never, R> {
+  <E = never, R2 = never>(
+    setter:
+      | T["Type"]
+      | ((v: Types.DeepMutable<T["Type"]>) => T["Type"] | void | Effect.Effect<T["Type"] | void, E, R2>),
+  ): Effect.Effect<void, E, R | R2>
 }
 
-export interface Handle<P extends ActorProtocol, R> {
-  readonly disconnect: Effect.Effect<void, never, R>
+export interface Handle<P extends ActorProtocol, T extends S.Top, R> {
+  readonly state: StateHandle<T, R>
+
+  readonly disconnect: (message: P["client"]["protocol"]["disconnect"]["Type"]) => Effect.Effect<void, never, R>
 
   readonly methods: Method.ClientMethods<P["client"]["protocol"]["methods"], R>
 }
 
-export type ClientKey = typeof ClientKey.Type
-export const ClientKey = S.String.pipe(S.brand("liminal/Actor/ClientKey"))
+export type ClientId = typeof ClientId.Type
+export const ClientId = S.String.pipe(S.brand("liminal/Actor/ClientId"))
 
-export interface ClientHandle<P extends ActorProtocol> extends Handle<P, never> {
-  readonly key: ClientKey
-
-  readonly state: StateHandle<P["client"]["protocol"]["client"], never>
+export interface ClientHandle<P extends ActorProtocol> extends Handle<P, P["client"]["protocol"]["client"], never> {
+  readonly id: ClientId
 
   readonly attachments: StateHandle<P["attachments"], never>
 }
 
 export class NoSuchClientError extends Data.TaggedError("NoSuchClientError") {}
 
-export class SessionContext extends Context.Service<
-  SessionContext,
-  {
-    readonly client: ClientHandle<any>
-  }
->()("liminal/Actor/SessionContext") {}
+export class Sender extends Context.Service<Sender, ClientHandle<any>>()("liminal/Actor/Sender") {}
 
-export interface ActorSession<P extends ActorProtocol> {
-  readonly client: ClientHandle<P>
-}
-
-export interface Actor<P extends ActorProtocol, R> extends Handle<P, R> {
-  readonly name: Effect.Effect<P["name"]["Type"], void, R>
-
-  readonly state: StateHandle<P["client"]["protocol"]["actor"], R>
+export interface Actor<P extends ActorProtocol, R> extends Handle<P, P["client"]["protocol"]["actor"], R> {
+  readonly name: Effect.Effect<P["name"]["Type"], never, R>
 
   readonly topics: {
     readonly [K in keyof P["client"]["protocol"]["topics"]]: (
@@ -83,9 +73,7 @@ export interface Actor<P extends ActorProtocol, R> extends Handle<P, R> {
 
   readonly clients: Effect.Effect<ReadonlySet<ClientHandle<P>>, never, R>
 
-  readonly getClient: (key: ClientKey) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
-
-  readonly session: Effect.Effect<ActorSession<P>, never, R | SessionContext>
+  readonly getClient: (key: ClientId) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
 }
 
 export interface ActorHandle<Self, P extends ActorProtocol> {
@@ -107,6 +95,8 @@ export interface Service<Self, Identifier extends string, P extends ActorProtoco
   readonly protocol: P
 
   readonly get: (name: P["name"]["Type"]) => ActorHandle<Self, P>
+
+  readonly sender: Effect.Effect<ClientHandle<P>, never, Self | Sender>
 }
 
 export const Service =
@@ -129,5 +119,8 @@ export const Service =
       get: null!,
       session: null!,
       topics: null!,
+      lens: null!,
+      commit: null!,
+      sender: null!,
     })
   }
