@@ -1,4 +1,4 @@
-import { SocketProtocolsKey } from "@crosshatch/util/SocketProtocols"
+import { SocketProtocols } from "@crosshatch/util"
 import { Effect } from "effect"
 import { HttpBody, HttpServerResponse } from "effect/unstable/http"
 
@@ -11,7 +11,7 @@ export const upgrade = Effect.gen(function* () {
   const rawResponse = new Response(null, {
     status: 101,
     webSocket: client,
-    headers: { [SocketProtocolsKey]: "liminal" },
+    headers: { [SocketProtocols.SocketProtocolsKey]: "liminal" },
   })
   const response = HttpServerResponse.setBody(HttpServerResponse.empty({ status: 101 }), HttpBody.raw(rawResponse))
   return [response, server] as const

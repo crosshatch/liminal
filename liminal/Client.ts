@@ -60,6 +60,8 @@ export interface Client<P extends ClientProtocol, R> {
   readonly methods: Method.ActorMethods<P["methods"], R>
 }
 
+export type Any = Client<any, any>
+
 export interface Service<Self, Identifier extends string, P extends ClientProtocol>
   extends Context.Service<Self, Client<P, never>>, Client<P, Self> {
   new (_: never): Context.ServiceClass.Shape<Identifier, Client<P, never>>

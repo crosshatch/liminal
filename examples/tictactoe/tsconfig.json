@@ -1,4 +1,0 @@
-{
-  "include": [],
-  "references": [{ "path": "./app" }, { "path": "./api" }]
-}

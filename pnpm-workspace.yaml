@@ -14,16 +14,16 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
   - alchemy
-  - "@effect/ai-openai-compat@4.0.0-beta.104"
-  - "@effect/atom-react@4.0.0-beta.104"
-  - "@effect/openapi-generator@4.0.0-beta.104"
-  - "@effect/platform-browser@4.0.0-beta.104"
-  - "@effect/platform-node-shared@4.0.0-beta.104"
-  - "@effect/platform-node@4.0.0-beta.104"
-  - "@effect/sql-d1@4.0.0-beta.104"
-  - "@effect/vitest@4.0.0-beta.104"
-  - effect@4.0.0-beta.104
-  - "@effect/sql-pg@4.0.0-beta.104"
+  - "@effect/ai-openai-compat@4.0.0-rc.109"
+  - "@effect/atom-react@4.0.0-rc.109"
+  - "@effect/openapi-generator@4.0.0-rc.109"
+  - "@effect/platform-browser@4.0.0-rc.109"
+  - "@effect/platform-node-shared@4.0.0-rc.109"
+  - "@effect/platform-node@4.0.0-rc.109"
+  - "@effect/sql-d1@4.0.0-rc.109"
+  - "@effect/vitest@4.0.0-rc.109"
+  - effect@4.0.0-rc.109
+  - "@effect/sql-pg@4.0.0-rc.109"
   - "@turbo/darwin-64@2.9.18"
   - "@turbo/darwin-arm64@2.9.18"
   - "@turbo/linux-64@2.9.18"
@@ -33,14 +33,14 @@ minimumReleaseAgeExclude:
   - turbo@2.9.18
   - vite@8.1.2
   - vocs@2.8.5
-  - "@effect/tsgo-darwin-arm64@0.33.0"
-  - "@effect/tsgo-darwin-x64@0.33.0"
-  - "@effect/tsgo-linux-arm64@0.33.0"
-  - "@effect/tsgo-linux-arm@0.33.0"
-  - "@effect/tsgo-linux-x64@0.33.0"
-  - "@effect/tsgo-win32-arm64@0.33.0"
-  - "@effect/tsgo-win32-x64@0.33.0"
-  - "@effect/tsgo@0.33.0"
+  - "@effect/tsgo-darwin-arm64@0.36.5"
+  - "@effect/tsgo-darwin-x64@0.36.5"
+  - "@effect/tsgo-linux-arm64@0.36.5"
+  - "@effect/tsgo-linux-arm@0.36.5"
+  - "@effect/tsgo-linux-x64@0.36.5"
+  - "@effect/tsgo-win32-arm64@0.36.5"
+  - "@effect/tsgo-win32-x64@0.36.5"
+  - "@effect/tsgo@0.36.5"
 
 allowBuilds:
   bigint-buffer: false
@@ -57,8 +57,6 @@ allowBuilds:
 allowUnusedPatches: true
 
 patchedDependencies:
-  alchemy@2.0.0-beta.70: konfik/patches/alchemy@2.0.0-beta.70.patch
-  effect@4.0.0-beta.104: konfik/patches/effect@4.0.0-beta.104.patch
   "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
   "@changesets/assemble-release-plan@6.0.10": konfik/patches/@changesets__assemble-release-plan@6.0.10.patch
   "@changesets/get-github-info@0.8.0": konfik/patches/@changesets__get-github-info@0.8.0.patch
@@ -70,16 +68,16 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.18.4
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^5.20260713.1
-  "@distilled.cloud/coinbase": 1.0.0-rc.2
-  "@effect/ai-openai-compat": ^4.0.0-beta.104
-  "@effect/atom-react": ^4.0.0-beta.104
+  "@distilled.cloud/coinbase": 1.0.0-rc.4
+  "@effect/ai-openai-compat": ^4.0.0-rc.109
+  "@effect/atom-react": ^4.0.0-rc.109
   "@effect/language-service": ^0.86.6
-  "@effect/openapi-generator": ^4.0.0-beta.104
-  "@effect/platform-browser": ^4.0.0-beta.104
-  "@effect/platform-node": ^4.0.0-beta.104
-  "@effect/sql-d1": ^4.0.0-beta.104
-  "@effect/sql-pg": ^4.0.0-beta.104
-  "@effect/vitest": ^4.0.0-beta.104
+  "@effect/openapi-generator": ^4.0.0-rc.109
+  "@effect/platform-browser": ^4.0.0-rc.109
+  "@effect/platform-node": ^4.0.0-rc.109
+  "@effect/sql-d1": ^4.0.0-rc.109
+  "@effect/sql-pg": ^4.0.0-rc.109
+  "@effect/vitest": ^4.0.0-rc.109
   "@electric-sql/pglite": ^0.3.15
   "@icons-pack/react-simple-icons": ^13.13.0
   "@kitlangton/motel": ^0.2.6
@@ -112,8 +110,8 @@ catalog:
   "@vitest/coverage-v8": ^4.1.10
   "@vitest/expect": ^4.1.10
   "@vitest/web-worker": ^4.1.10
-  alchemy: 2.0.0-beta.70
-  "@effect/tsgo": 0.33.0
+  alchemy: 2.0.0-beta.72
+  "@effect/tsgo": 0.36.5
   babel-plugin-react-compiler: ^1.0.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -121,7 +119,7 @@ catalog:
   date-fns: ^4.1.0
   drizzle-kit: ^1.0.0-rc.4
   drizzle-orm: ^1.0.0-rc.4
-  effect: ^4.0.0-beta.104
+  effect: ^4.0.0-rc.109
   fake-indexeddb: ^6.2.5
   happy-dom: ^20.10.6
   http-message-sig: ^0.1.0

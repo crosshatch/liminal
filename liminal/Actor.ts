@@ -76,7 +76,7 @@ export interface Actor<P extends ActorProtocol, R> extends Handle<P, P["client"]
   readonly getClient: (key: ClientId) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
 }
 
-export interface ActorHandle<Self, P extends ActorProtocol> {
+export interface ActorHandle<Self, P extends ActorProtocol> extends Handle<P, P["client"]["protocol"]["actor"], never> {
   readonly upgrade: (
     attachments: P["attachments"]["Type"],
   ) => Effect.Effect<
