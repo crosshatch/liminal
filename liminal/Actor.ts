@@ -12,7 +12,7 @@ export interface ActorDefinition {
 }
 
 export interface ActorProtocol {
-  readonly client: Client.Service<any, string, Client.ClientProtocol>
+  readonly client: Client.Service<any, string, any>
   readonly name: S.Top & { readonly Encoded: string }
   readonly attachments: S.Top
 }
@@ -60,7 +60,7 @@ export interface ClientHandle<P extends ActorProtocol> extends Handle<P, P["clie
 
 export class NoSuchClientError extends Data.TaggedError("NoSuchClientError") {}
 
-export class Sender extends Context.Service<Sender, ClientHandle<any>>()("liminal/Actor/Sender") {}
+export class Sender extends Context.Service<Sender, ClientId>()("liminal/Actor/Sender") {}
 
 export interface Actor<P extends ActorProtocol, R> extends Handle<P, P["client"]["protocol"]["actor"], R> {
   readonly name: Effect.Effect<P["name"]["Type"], never, R>
@@ -76,7 +76,7 @@ export interface Actor<P extends ActorProtocol, R> extends Handle<P, P["client"]
   readonly getClient: (key: ClientId) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
 }
 
-export interface ActorHandle<Self, P extends ActorProtocol> extends Handle<P, P["client"]["protocol"]["actor"], never> {
+export interface ActorHandle<Self, P extends ActorProtocol> extends Actor<P, Dispatcher<Self>> {
   readonly upgrade: (
     attachments: P["attachments"]["Type"],
   ) => Effect.Effect<

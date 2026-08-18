@@ -14,16 +14,16 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
   - alchemy
-  - "@effect/ai-openai-compat@4.0.0-rc.109"
-  - "@effect/atom-react@4.0.0-rc.109"
-  - "@effect/openapi-generator@4.0.0-rc.109"
-  - "@effect/platform-browser@4.0.0-rc.109"
-  - "@effect/platform-node-shared@4.0.0-rc.109"
-  - "@effect/platform-node@4.0.0-rc.109"
-  - "@effect/sql-d1@4.0.0-rc.109"
-  - "@effect/vitest@4.0.0-rc.109"
-  - effect@4.0.0-rc.109
-  - "@effect/sql-pg@4.0.0-rc.109"
+  - "@effect/ai-openai-compat@4.0.0-rc.110"
+  - "@effect/atom-react@4.0.0-rc.110"
+  - "@effect/openapi-generator@4.0.0-rc.110"
+  - "@effect/platform-browser@4.0.0-rc.110"
+  - "@effect/platform-node-shared@4.0.0-rc.110"
+  - "@effect/platform-node@4.0.0-rc.110"
+  - "@effect/sql-d1@4.0.0-rc.110"
+  - "@effect/vitest@4.0.0-rc.110"
+  - effect@4.0.0-rc.110
+  - "@effect/sql-pg@4.0.0-rc.110"
   - "@turbo/darwin-64@2.9.18"
   - "@turbo/darwin-arm64@2.9.18"
   - "@turbo/linux-64@2.9.18"
@@ -56,28 +56,23 @@ allowBuilds:
 
 allowUnusedPatches: true
 
-patchedDependencies:
-  "@changesets/apply-release-plan@7.1.1": konfik/patches/@changesets__apply-release-plan@7.1.1.patch
-  "@changesets/assemble-release-plan@6.0.10": konfik/patches/@changesets__assemble-release-plan@6.0.10.patch
-  "@changesets/get-github-info@0.8.0": konfik/patches/@changesets__get-github-info@0.8.0.patch
-
 catalog:
-  "@changesets/changelog-github": ^0.7.0
-  "@changesets/cli": ^2.31.0
+  "@changesets/changelog-github": ^1.0.0
+  "@changesets/cli": ^3.0.0
   "@cloudflare/vite-plugin": ^1.32.3
   "@cloudflare/vitest-pool-workers": ^0.18.4
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^5.20260713.1
   "@distilled.cloud/coinbase": 1.0.0-rc.4
-  "@effect/ai-openai-compat": ^4.0.0-rc.109
-  "@effect/atom-react": ^4.0.0-rc.109
+  "@effect/ai-openai-compat": ^4.0.0-rc.110
+  "@effect/atom-react": ^4.0.0-rc.110
   "@effect/language-service": ^0.86.6
-  "@effect/openapi-generator": ^4.0.0-rc.109
-  "@effect/platform-browser": ^4.0.0-rc.109
-  "@effect/platform-node": ^4.0.0-rc.109
-  "@effect/sql-d1": ^4.0.0-rc.109
-  "@effect/sql-pg": ^4.0.0-rc.109
-  "@effect/vitest": ^4.0.0-rc.109
+  "@effect/openapi-generator": ^4.0.0-rc.110
+  "@effect/platform-browser": ^4.0.0-rc.110
+  "@effect/platform-node": ^4.0.0-rc.110
+  "@effect/sql-d1": ^4.0.0-rc.110
+  "@effect/sql-pg": ^4.0.0-rc.110
+  "@effect/vitest": ^4.0.0-rc.110
   "@electric-sql/pglite": ^0.3.15
   "@icons-pack/react-simple-icons": ^13.13.0
   "@kitlangton/motel": ^0.2.6
@@ -119,7 +114,7 @@ catalog:
   date-fns: ^4.1.0
   drizzle-kit: ^1.0.0-rc.4
   drizzle-orm: ^1.0.0-rc.4
-  effect: ^4.0.0-rc.109
+  effect: ^4.0.0-rc.110
   fake-indexeddb: ^6.2.5
   happy-dom: ^20.10.6
   http-message-sig: ^0.1.0
@@ -170,6 +165,7 @@ overrides:
   "liminal.actor>typescript": 5.9.3
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
+  effect: 4.0.0-rc.110
   react: ^19.2.4
   react-dom: ^19.2.4
   zod: 3.25.76

@@ -9,9 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
       id-token: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -22,9 +20,11 @@ jobs:
       - uses: ./.github/actions/checkout-liminal
       - uses: ./konfik/configure-environment
       - run: pnpm build
+      - run: git config fetch.recurseSubmodules false
       - uses: changesets/action@v1
         with:
           setupGitUser: false
+          version: bash -c "pnpm changeset version && pnpm format"
           publish: pnpm changeset publish
           commit: version packages
           title: version packages
