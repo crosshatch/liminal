@@ -104,7 +104,7 @@ export declare const layer: <
     readonly hooks?:
       | {
           readonly connect?: Effect.Effect<void, E, R> | undefined
-          readonly disconnect?: Effect.Effect<void, E2, R2> | undefined
+          readonly disconnect?: (disconnect: P["disconnect"]["Type"]) => Effect.Effect<void, E2, R2> | undefined
         }
       | undefined
   },
