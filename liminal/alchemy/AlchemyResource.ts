@@ -36,6 +36,7 @@ export declare const Service: <ResourceSelf>() => <
       R
     >
     readonly handlers: Handlers
+    // hooks: { create, destroy, hibernate, awaken, connect, disconnect, destroy }
     readonly hooks: (P["client"]["protocol"]["actor"] extends S.Void
       ? {}
       : { readonly awaken: Effect.Effect<P["client"]["protocol"]["actor"]["Type"], never, RIn> }) &
