@@ -1,7 +1,6 @@
 export * as Client from "./Client.ts"
 export * as Actor from "./Actor.ts"
-export * as ActorRuntime from "./ActorRuntime.ts"
-export * as Dispatcher from "./Dispatcher.ts"
+export * as Dispatch from "./Dispatch.ts"
 export * as Method from "./Method.ts"
 export * as Protocol from "./Protocol.ts"
 export * as Topic from "./Topic.ts"

@@ -16,6 +16,7 @@
   "exports": {
     ".": "./index.ts",
     "./*": "./*.ts",
+    "./alchemy": "./alchemy/index.ts",
     "./experimental": "./experimental/index.ts",
     "./package.json": "./package.json"
   },
@@ -23,6 +24,7 @@
     "exports": {
       ".": "./dist/index.js",
       "./*": "./dist/*.js",
+      "./alchemy": "./alchemy/index.js",
       "./experimental": "./dist/experimental/index.js",
       "./package.json": "./package.json"
     }

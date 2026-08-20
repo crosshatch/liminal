@@ -2,7 +2,7 @@ import { Schema as S, Context, Effect, Data, Types } from "effect"
 import type { HttpServerResponse } from "effect/unstable/http"
 
 import * as Client from "./Client.ts"
-import type { Dispatcher } from "./Dispatcher.ts"
+import type { Dispatch } from "./Dispatch.ts"
 import * as Method from "./Method.ts"
 
 export interface ActorDefinition {
@@ -46,7 +46,7 @@ export interface Handle<P extends ActorProtocol, T extends S.Top, R> {
 
   readonly disconnect: (message: P["client"]["protocol"]["disconnect"]["Type"]) => Effect.Effect<void, never, R>
 
-  readonly methods: Method.ClientMethods<P["client"]["protocol"]["methods"], R>
+  readonly methods: Method.Methods<P["client"]["protocol"]["methods"], R>
 }
 
 export type ClientId = typeof ClientId.Type
@@ -76,13 +76,13 @@ export interface Actor<P extends ActorProtocol, R> extends Handle<P, P["client"]
   readonly getClient: (key: ClientId) => Effect.Effect<ClientHandle<P>, NoSuchClientError, R>
 }
 
-export interface ActorHandle<Self, P extends ActorProtocol> extends Actor<P, Dispatcher<Self>> {
+export interface ActorHandle<Self, P extends ActorProtocol> extends Actor<P, Dispatch<Self>> {
   readonly upgrade: (
     attachments: P["attachments"]["Type"],
   ) => Effect.Effect<
     HttpServerResponse.HttpServerResponse,
     never,
-    Dispatcher<Self> | P["attachments"]["EncodingServices"]
+    Dispatch<Self> | P["attachments"]["EncodingServices"]
   >
 }
 
@@ -122,5 +122,7 @@ export const Service =
       lens: null!,
       commit: null!,
       sender: null!,
+      make: null!,
+      prelude: null!,
     })
   }
