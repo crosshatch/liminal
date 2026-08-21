@@ -43,5 +43,5 @@ export declare const Service: <ResourceSelf>() => <
       (P["client"]["protocol"]["client"] extends S.Void
         ? {}
         : { readonly connect: Effect.Effect<P["client"]["protocol"]["client"]["Type"], never, RIn> })
-  }) => Layer.Layer<ResourceSelf, E2, Exclude<R, DurableObjectServices> | Worker>
+  }) => Layer.Layer<ResourceSelf, E2, Exclude<R, DurableObjectServices>>
 }

@@ -24,7 +24,7 @@ export interface MethodProtocol {
 
 export declare namespace MethodProtocol {
   export type FromDefinition<D extends MethodDefinition> = {
-    readonly side: Definition.WithDefault<D, "side", "neither">
+    readonly side: Definition.WithDefault<D, "side", "actor">
     readonly payload: Definition.Normalize<D, "payload">
     readonly success: Definition.Normalize<D, "success">
     readonly error: Definition.WithDefault<D, "error", S.Never>
