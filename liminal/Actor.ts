@@ -1,4 +1,4 @@
-import { Schema as S, Context, Effect, Data, Types } from "effect"
+import { Schema as S, Context, Effect, Data } from "effect"
 import type { HttpServerResponse } from "effect/unstable/http"
 
 import * as Client from "./Client.ts"
@@ -35,9 +35,7 @@ const TypeId = "~liminal/Actor" as const
 
 export interface StateHandle<T extends S.Top, R> extends Effect.Effect<T["Type"], never, R> {
   <E = never, R2 = never>(
-    setter:
-      | T["Type"]
-      | ((v: Types.DeepMutable<T["Type"]>) => T["Type"] | void | Effect.Effect<T["Type"] | void, E, R2>),
+    setter: T["Type"] | ((v: T["Type"]) => T["Type"] | void | Effect.Effect<T["Type"] | void, E, R2>),
   ): Effect.Effect<void, E, R | R2>
 }
 

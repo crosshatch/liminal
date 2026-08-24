@@ -10,6 +10,8 @@ packages:
   - "!crosshatch/konfik"
   - "!konfik"
 
+blockExoticSubdeps: false
+
 minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
@@ -63,7 +65,7 @@ catalog:
   "@cloudflare/vitest-pool-workers": ^0.18.4
   "@cloudflare/worker-bundler": ^0.1.2
   "@cloudflare/workers-types": ^5.20260713.1
-  "@distilled.cloud/coinbase": 1.0.0-rc.4
+  "@distilled.cloud/coinbase": 1.0.0-rc.5
   "@effect/ai-openai-compat": ^4.0.0-rc.110
   "@effect/atom-react": ^4.0.0-rc.110
   "@effect/language-service": ^0.86.6
@@ -105,8 +107,10 @@ catalog:
   "@vitest/coverage-v8": ^4.1.10
   "@vitest/expect": ^4.1.10
   "@vitest/web-worker": ^4.1.10
-  alchemy: 2.0.0-beta.72
+  "alchemy": https://pkg.ing/alchemy/08b1197
+  "@alchemy.run/frontend-frameworks": https://pkg.ing/@alchemy.run/frontend-frameworks/08b1197
   "@effect/tsgo": 0.36.5
+  hono: ^4.12.31
   babel-plugin-react-compiler: ^1.0.0
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
