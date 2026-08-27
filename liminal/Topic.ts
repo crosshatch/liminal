@@ -1,17 +1,17 @@
-import { Schema as S, Stream } from "effect"
+import type { Schema as S, Stream } from "effect"
 
 import type * as Definition from "./Definition.ts"
 
 export interface TopicDefinition {
-  key?: typeof S.Json | S.Void | undefined
-  value: S.Top
+  readonly key?: typeof S.Json | S.Void | undefined
+  readonly value: S.Top
 }
 
 export type TopicDefinitions = Record<string, TopicDefinition>
 
 export interface TopicProtocol {
-  key: typeof S.Json | S.Void
-  value: S.Top
+  readonly key: typeof S.Json | S.Void
+  readonly value: S.Top
 }
 
 export declare namespace TopicProtocol {

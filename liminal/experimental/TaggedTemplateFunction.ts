@@ -16,14 +16,13 @@ export const raw = Effect.fnUntraced(function* <Substitutions extends Array<unkn
   template: TemplateStringsArrayLike,
   ...substitutions: Substitutions
 ): Effect.fn.Return<string, ExtractE<Substitutions[number]>, ExtractR<Substitutions[number]>> {
-  return String.raw(
-    template,
-    ...(yield* Effect.forEach(substitutions, (v) => (Effect.isEffect(v) ? v : Effect.succeed(v))) as Effect.Effect<
-      Array<string>,
-      ExtractE<Substitutions[number]>,
-      ExtractR<Substitutions[number]>
-    >),
-  )
+  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context
+  const _ = Effect.forEach(substitutions, (v) => (Effect.isEffect(v) ? v : Effect.succeed(v))) as Effect.Effect<
+    Array<string>,
+    ExtractE<Substitutions[number]>,
+    ExtractR<Substitutions[number]>
+  >
+  return String.raw(template, ...(yield* _))
 })
 
 export type TaggableHead = TemplateStringsArrayLike | string | Effect.Effect<string, any, any>
@@ -35,6 +34,7 @@ export const normalize = Effect.fnUntraced(function* <H extends TaggableHead, AR
   ...aRest: ARest
 ): Effect.fn.Return<string, ExtractE<H | ARest[number]>, ExtractR<H | ARest[number]>> {
   if (Effect.isEffect(a0)) {
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context
     return yield* a0
   }
   if (typeof a0 === "string") {

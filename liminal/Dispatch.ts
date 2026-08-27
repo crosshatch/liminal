@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import type { Effect } from "effect"
 import type { HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 
 const TypeId = "~liminal/Dispatcher" as const

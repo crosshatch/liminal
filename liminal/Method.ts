@@ -1,4 +1,4 @@
-import { Effect, Schema as S, Stream } from "effect"
+import type { Effect, Schema as S, Stream } from "effect"
 
 import type * as Definition from "./Definition.ts"
 

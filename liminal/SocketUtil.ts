@@ -1,19 +1,20 @@
 import { SocketProtocols } from "@crosshatch/util"
-import { DurableObjectState } from "alchemy/Cloudflare"
 import { Effect } from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
+
+import { DurableObjectState } from "./DurableObjectState.ts"
 
 const response = (webSocket: WebSocket) =>
   new Response(null, {
     status: 101,
-    webSocket,
     headers: { [SocketProtocols.SocketProtocolsKey]: "liminal" },
+    webSocket,
   })
 
 export const upgrade = Effect.gen(function* () {
   const state = yield* DurableObjectState
   const { 0: client, 1: server } = new WebSocketPair()
-  yield* state.acceptWebSocket(server as never)
+  state.acceptWebSocket(server)
   return [HttpServerResponse.raw(response(client)), server] as const
 })
 

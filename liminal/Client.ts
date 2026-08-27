@@ -1,9 +1,9 @@
-import { Schema as S, Context, Stream, Layer, Effect } from "effect"
-import { Socket } from "effect/unstable/socket"
+import { type Schema as S, Context, type Stream, type Layer, type Effect } from "effect"
+import type { Socket } from "effect/unstable/socket"
 
 import type * as Definition from "./Definition.ts"
-import * as Method from "./Method.ts"
-import * as Topic from "./Topic.ts"
+import type * as Method from "./Method.ts"
+import type * as Topic from "./Topic.ts"
 
 export interface ClientDefinition {
   readonly actor?: S.Struct.Fields | S.Top | undefined

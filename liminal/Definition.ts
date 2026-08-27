@@ -1,4 +1,4 @@
-import { Schema as S } from "effect"
+import type { Schema as S } from "effect"
 
 export type Normalize<T, K> = K extends keyof T
   ? T[K] extends S.Struct.Fields

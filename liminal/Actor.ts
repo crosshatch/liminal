@@ -1,9 +1,9 @@
-import { Schema as S, Context, Effect, Data } from "effect"
+import { Schema as S, Context, type Effect, Data } from "effect"
 import type { HttpServerResponse } from "effect/unstable/http"
 
-import * as Client from "./Client.ts"
+import type * as Client from "./Client.ts"
 import type { Dispatch } from "./Dispatch.ts"
-import * as Method from "./Method.ts"
+import type * as Method from "./Method.ts"
 
 export interface ActorDefinition {
   readonly client: Client.Service<any, string, any>

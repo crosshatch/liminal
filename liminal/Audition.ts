@@ -1,13 +1,12 @@
-import { Stream, Types } from "effect"
+import type { Stream, Types } from "effect"
 
-import * as Client from "./Client.ts"
+import type * as Client from "./Client.ts"
 
 export interface Audition<C extends Record<string, Client.Any>> {
   readonly state: Stream.Stream<
     {
       readonly [K in keyof C]: { readonly _tag: K } & Stream.Success<C[K]["state"]>
-    }[keyof C],
-    never
+    }[keyof C]
   >
 
   // TODO: formulate with mapped type that ensures each same-named method signature is identical

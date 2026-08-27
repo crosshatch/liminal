@@ -1,11 +1,11 @@
-*.tsbuildinfo
-.DS_Store
 .alchemy
 .dev.vars
-.direnv/
+.DS_Store
 .env*
+.planning
 .tanstack
 .turbo/
+*.tsbuildinfo
 dist/
 node_modules/
 repos

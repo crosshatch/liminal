@@ -1,5 +1,5 @@
 import type { RuntimeContext } from "alchemy"
-import { DurableObject, Worker, type DurableObjectServices } from "alchemy/Cloudflare"
+import type { DurableObject, Worker, DurableObjectServices, DurableObjectState } from "alchemy/Cloudflare"
 import type { Config, Effect, Layer, Scope, Schema as S } from "effect"
 
 import type * as Actor from "../Actor.ts"
@@ -17,7 +17,7 @@ export declare const Service: <ResourceSelf>() => <
 ) => Effect.Effect<DurableObject<ResourceSelf>, never, Worker | ResourceSelf> & {
   new (_: never): {
     /** @internal */
-    "~alchemy/name": ActorIdentifier
+    readonly "~alchemy/name": ActorIdentifier
   }
 
   readonly prelude: Effect.Effect<Layer.Layer<Dispatch<ActorSelf>>>

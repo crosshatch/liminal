@@ -25,14 +25,12 @@
       ".": "./dist/index.js",
       "./*": "./dist/*.js",
       "./alchemy": "./alchemy/index.js",
-      "./experimental": "./dist/experimental/index.js",
+      "./experimental": "./experimental/index.js",
       "./package.json": "./package.json"
     }
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "catalog:"
-  },
   "peerDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@crosshatch/util": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
