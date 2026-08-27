@@ -1,6 +1,7 @@
 import type { RuntimeContext } from "alchemy"
 import type { DurableObject, Worker, DurableObjectServices, DurableObjectState } from "alchemy/Cloudflare"
 import type { Config, Effect, Layer, Scope, Schema as S } from "effect"
+import type { HttpServerRequest } from "effect/unstable/http"
 
 import type * as Actor from "../Actor.ts"
 import type { Dispatch } from "../Dispatch.ts"
@@ -27,7 +28,12 @@ export declare const Service: <ResourceSelf>() => <
       Layer.Layer<
         Exclude<
           Method.HandlerServices<Handlers>,
-          ActorSelf | Actor.Sender | RuntimeContext | DurableObjectState | Scope.Scope
+          | ActorSelf
+          | Actor.Sender
+          | RuntimeContext
+          | DurableObjectState
+          | Scope.Scope
+          | HttpServerRequest.HttpServerRequest
         >,
         Config.ConfigError,
         RIn
