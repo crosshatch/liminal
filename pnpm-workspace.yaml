@@ -16,16 +16,16 @@ minimumReleaseAgeExclude:
   - "@aws-sdk/*"
   - "@distilled.cloud/*"
   - alchemy
-  - "@effect/ai-openai-compat@4.0.0-rc.110"
-  - "@effect/atom-react@4.0.0-rc.110"
-  - "@effect/openapi-generator@4.0.0-rc.110"
-  - "@effect/platform-browser@4.0.0-rc.110"
-  - "@effect/platform-node-shared@4.0.0-rc.110"
-  - "@effect/platform-node@4.0.0-rc.110"
-  - "@effect/sql-d1@4.0.0-rc.110"
-  - "@effect/vitest@4.0.0-rc.110"
-  - effect@4.0.0-rc.110
-  - "@effect/sql-pg@4.0.0-rc.110"
+  - "@effect/ai-openai-compat@4.0.0-rc.112"
+  - "@effect/atom-react@4.0.0-rc.112"
+  - "@effect/openapi-generator@4.0.0-rc.112"
+  - "@effect/platform-browser@4.0.0-rc.112"
+  - "@effect/platform-node-shared@4.0.0-rc.112"
+  - "@effect/platform-node@4.0.0-rc.112"
+  - "@effect/sql-d1@4.0.0-rc.112"
+  - "@effect/vitest@4.0.0-rc.112"
+  - effect@4.0.0-rc.112
+  - "@effect/sql-pg@4.0.0-rc.112"
   - "@turbo/darwin-64@2.9.18"
   - "@turbo/darwin-arm64@2.9.18"
   - "@turbo/linux-64@2.9.18"
@@ -63,13 +63,13 @@ catalog:
   "@changesets/changelog-github": ^1.0.0
   "@changesets/cli": ^3.0.0
   "@cloudflare/workers-types": "5.20260827.1"
-  "@effect/ai-openai-compat": ^4.0.0-rc.110
-  "@effect/atom-react": ^4.0.0-rc.110
+  "@effect/ai-openai-compat": ^4.0.0-rc.112
+  "@effect/atom-react": ^4.0.0-rc.112
   "@effect/language-service": ^0.86.6
-  "@effect/platform-browser": ^4.0.0-rc.110
-  "@effect/platform-node": ^4.0.0-rc.110
-  "@effect/sql-pg": ^4.0.0-rc.110
-  "@effect/vitest": ^4.0.0-rc.110
+  "@effect/platform-browser": ^4.0.0-rc.112
+  "@effect/platform-node": ^4.0.0-rc.112
+  "@effect/sql-pg": ^4.0.0-rc.112
+  "@effect/vitest": ^4.0.0-rc.112
   "@icons-pack/react-simple-icons": ^13.13.0
   "@napi-rs/keyring": ^1.3.0
   "@oxlint/plugins": ^1.75.0
@@ -85,13 +85,13 @@ catalog:
   "@types/react": ^19.2.17
   "@types/react-dom": ^19.2.3
   "@vitejs/plugin-react": ^6.0.3
-  "alchemy": https://pkg.ing/alchemy/08b1197
-  "@alchemy.run/frontend-frameworks": https://pkg.ing/@alchemy.run/frontend-frameworks/08b1197
+  "alchemy": https://pkg.ing/alchemy/6ffc7b7
+  "@alchemy.run/frontend-frameworks": https://pkg.ing/@alchemy.run/frontend-frameworks/6ffc7b7
   "@effect/tsgo": 0.36.5
   hono: ^4.12.31
   drizzle-kit: ^1.0.0-rc.4
   drizzle-orm: ^1.0.0-rc.4
-  effect: ^4.0.0-rc.110
+  effect: ^4.0.0-rc.112
   http-message-sig: ^0.1.0
   lucide-react: ^1.24.0
   ox: ^0.10.5
@@ -118,7 +118,7 @@ overrides:
   "liminal.actor>typescript": 5.9.3
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
-  effect: 4.0.0-rc.110
+  effect: 4.0.0-rc.112
   react: ^19.2.4
   react-dom: ^19.2.4
   zod: 3.25.76
