@@ -14,6 +14,6 @@ export default Alchemy.Stack(
   },
   docs({
     domain: PackageJson.name,
-    devPort: 4389,
+    port: 4389,
   }),
 )

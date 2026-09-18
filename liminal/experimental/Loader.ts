@@ -22,7 +22,7 @@ export const layerFs = Layer.effect(
         const { dir, name } = path.parse(new URL(url).pathname)
         const templatePathname = path.join(dir, `${name}.md`)
         if (yield* fs.exists(templatePathname)) {
-          return yield* fs.readFileString(templatePathname).pipe(Effect.map(Option.some))
+          return yield* fs.readFileString(templatePathname).pipe(Effect.asSome)
         }
         return Option.none()
       },
