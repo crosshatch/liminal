@@ -6,14 +6,14 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   changesets:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: write
       id-token: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: useblacksmith/checkout@v1
         with:
           token: ${{ secrets.MADHATCHER_PAT }}
       - run: |
