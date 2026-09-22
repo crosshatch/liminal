@@ -1,5 +1,17 @@
 # liminal
 
+## 0.17.23
+
+### Patch Changes
+
+- [#495](https://github.com/crosshatch/liminal/pull/495)
+  [`f20a9ee`](https://github.com/crosshatch/liminal/commit/f20a9eeb51253221e9369d1222efda885aaa3f93) -
+  Add missing type-only modifiers.
+
+- Updated dependencies
+  [[`f20a9ee`](https://github.com/crosshatch/liminal/commit/f20a9eeb51253221e9369d1222efda885aaa3f93)]:
+  - effect-workerd@0.0.13
+
 ## 0.17.22
 
 ### Patch Changes
